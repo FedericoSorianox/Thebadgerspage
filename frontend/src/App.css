@@ -1,4 +1,4 @@
-#root {
+/*#root {
   max-width: 1280px;
   margin: 0 auto;
   padding: 2rem;
@@ -39,4 +39,67 @@
 
 .read-the-docs {
   color: #888;
+}
+
+/* Animación para el logo flotante */
+/*.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-16px); }
+}
+
+/* Parallax background para el hero */ 
+/*.hero-parallax-bg {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%;
+  height: 120%;
+  z-index: 0;
+  background: linear-gradient(120deg, #164e63 0%, #000 100%);
+  background-attachment: fixed;
+  background-size: cover;
+  background-repeat: no-repeat;
+  transition: background-position 0.2s;
+  pointer-events: none;
+}
+*/
+.hero-content {
+  position: relative;
+  z-index: 1;
+}
+
+/* Animación para fade-in */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 1s cubic-bezier(0.4,0,0.2,1) both;
+}
+.animate-fade-in.delay-100 {
+  animation-delay: 0.1s;
+}
+.animate-fade-in.delay-200 {
+  animation-delay: 0.2s;
+}
+.animate-fade-in.delay-300 {
+  animation-delay: 0.3s;
+}
+
+/* Animación bounce para el logo */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-18px); }
+}
+.animate-bounce {
+  animation: bounce 4s infinite;
+}
+
+.navbar-badgers {
+  background: linear-gradient(90deg, #0e7490cc 0%, #0f172acc 100%);
+  border-bottom: 2px solid #22d3ee44;
+  box-shadow: 0 4px 24px 0 #0e749055, 0 1.5px 0 #22d3ee44;
+  backdrop-filter: blur(8px);
 }

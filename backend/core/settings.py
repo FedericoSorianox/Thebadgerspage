@@ -7,6 +7,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
+    'core',
 ]
 
 MIDDLEWARE = [
@@ -48,4 +49,12 @@ DATABASES = {
 DEBUG = True
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
-STATIC_URL = "static/" 
+STATIC_URL = "static/"
+ROOT_URLCONF = 'urls'
+
+import os
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+SECRET_KEY = 'dev-secret-key-1234567890abcdef' 
