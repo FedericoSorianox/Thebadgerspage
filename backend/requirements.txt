@@ -4,3 +4,5 @@ django-cors-headers==4.7.0
 djangorestframework==3.16.0
 sqlparse==0.5.3
 gunicorn 
+dj-database-url
+corsheaders

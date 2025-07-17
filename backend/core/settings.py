@@ -47,7 +47,9 @@ DATABASES = {
 }
 
 DEBUG = True
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['localhost', '127.0.0.1',
+'https://thebadgerspage.onrender.com',
+'https://the-badgers.com/']
 
 STATIC_URL = "static/"
 ROOT_URLCONF = 'urls'
