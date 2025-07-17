@@ -40,12 +40,24 @@ TEMPLATES = [
 
 CORS_ALLOW_ALL_ORIGINS = True
 
+import os
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Configuración de base de datos
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': 'db.sqlite3',
     }
 }
+
+# Configuración para Render
+import dj_database_url
+if os.environ.get('DATABASE_URL'):
+    DATABASES['default'] = dj_database_url.config(
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 
 DEBUG = True
 ALLOWED_HOSTS = [
@@ -58,9 +70,6 @@ ALLOWED_HOSTS = [
 
 STATIC_URL = "static/"
 ROOT_URLCONF = 'urls'
-
-import os
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Static files configuration
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
@@ -75,12 +84,4 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-SECRET_KEY = 'dev-secret-key-1234567890abcdef'
-
-# Configuración para Render
-import dj_database_url
-if os.environ.get('DATABASE_URL'):
-    DATABASES['default'] = dj_database_url.config(
-        conn_max_age=600,
-        conn_health_checks=True,
-    ) 
+SECRET_KEY = 'dev-secret-key-1234567890abcdef' 
