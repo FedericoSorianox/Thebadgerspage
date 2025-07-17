@@ -15,4 +15,6 @@ services:
       - key: DEBUG
         value: false
       - key: ALLOWED_HOSTS
-        value: the-badgers.com,www.the-badgers.com,thebadgerspage.onrender.com 
+        value: the-badgers.com,www.the-badgers.com,thebadgerspage.onrender.com
+      - key: DATABASE_URL
+        value: sqlite:///db.sqlite3 
