@@ -31,26 +31,64 @@ def galeria_list(request):
 def galeria_upload(request):
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    # Verificar autenticación
     if not request.META.get('HTTP_AUTHORIZATION'):
         return JsonResponse({'error': 'No autenticado'}, status=401)
+    
     auth = request.META['HTTP_AUTHORIZATION']
     if not auth.startswith('Basic '):
         return JsonResponse({'error': 'Tipo de autenticación no soportado'}, status=401)
-    userpass = base64.b64decode(auth.split(' ')[1]).decode('utf-8')
-    username, password = userpass.split(':', 1)
-    user = authenticate(username=username, password=password)
-    if not user:
-        return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
+    
+    try:
+        userpass = base64.b64decode(auth.split(' ')[1]).decode('utf-8')
+        username, password = userpass.split(':', 1)
+        user = authenticate(username=username, password=password)
+        if not user:
+            return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
+    except Exception as e:
+        return JsonResponse({'error': 'Error en autenticación'}, status=401)
+    
+    # Verificar campos requeridos
     nombre = request.POST.get('nombre')
     archivo = request.FILES.get('archivo')
-    if not nombre or not archivo:
-        return JsonResponse({'error': 'Faltan campos'}, status=400)
-    item = GaleriaItem.objects.create(nombre=nombre, archivo=archivo)
-    items = GaleriaItem.objects.order_by('-fecha_subida')
-    if items.count() > 8:
-        for old in items[8:]:
-            old.delete()
-    return JsonResponse({'ok': True})
+    
+    if not nombre:
+        return JsonResponse({'error': 'El nombre es requerido'}, status=400)
+    
+    if not archivo:
+        return JsonResponse({'error': 'El archivo es requerido'}, status=400)
+    
+    # Verificar que el archivo no esté vacío
+    if archivo.size == 0:
+        return JsonResponse({'error': 'El archivo está vacío'}, status=400)
+    
+    # Verificar tipo de archivo
+    allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'video/mp4']
+    if archivo.content_type not in allowed_types:
+        return JsonResponse({'error': f'Tipo de archivo no permitido: {archivo.content_type}'}, status=400)
+    
+    # Verificar tamaño del archivo (máximo 10MB)
+    if archivo.size > 10 * 1024 * 1024:
+        return JsonResponse({'error': 'El archivo es demasiado grande (máximo 10MB)'}, status=400)
+    
+    try:
+        item = GaleriaItem.objects.create(nombre=nombre, archivo=archivo)
+        
+        # Mantener solo los últimos 8 elementos
+        items = GaleriaItem.objects.order_by('-fecha_subida')
+        if items.count() > 8:
+            for old in items[8:]:
+                old.delete()
+        
+        return JsonResponse({
+            'ok': True,
+            'message': 'Archivo subido exitosamente',
+            'id': item.id,
+            'url': request.build_absolute_uri(item.archivo.url)
+        })
+    except Exception as e:
+        return JsonResponse({'error': f'Error al guardar el archivo: {str(e)}'}, status=500)
 
 @csrf_exempt
 def crear_usuario(request):
