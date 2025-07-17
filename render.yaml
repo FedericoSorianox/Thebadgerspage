@@ -9,7 +9,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: DJANGO_SETTINGS_MODULE
-        value: core.settings_render
+        value: core.settings
       - key: DEBUG
         value: false
       - key: ALLOWED_HOSTS
