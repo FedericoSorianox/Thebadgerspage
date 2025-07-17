@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: thebadgerspage-backend
+    env: python
+    plan: free
+    buildCommand: ./build.sh
+    startCommand: cd backend && python manage.py runserver 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: DJANGO_SETTINGS_MODULE
+        value: core.settings_render
+      - key: DEBUG
+        value: false
+      - key: ALLOWED_HOSTS
+        value: the-badgers.com,www.the-badgers.com,thebadgerspage.onrender.com,localhost,127.0.0.1
+
+  - type: static
+    name: thebadgerspage-frontend
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/dist
+    envVars:
+      - key: NODE_VERSION
+        value: 18.0.0 
