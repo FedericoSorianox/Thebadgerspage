@@ -13,6 +13,7 @@ urlpatterns = [
     path('api/galeria/', views.galeria_list),
     path('api/galeria/upload/', views.galeria_upload),
     path('api/usuarios/crear/', views.crear_usuario),
+    path('api/usuarios/setup/', views.setup_usuarios),
     
     # Servir archivos estáticos con MIME types correctos
     re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),

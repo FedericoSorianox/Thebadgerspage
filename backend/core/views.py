@@ -139,6 +139,44 @@ def cambiar_password(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
 
+@csrf_exempt
+def setup_usuarios(request):
+    """Endpoint temporal para configurar usuarios en producción"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        # Crear usuario admin si no existe
+        admin_user, created = User.objects.get_or_create(
+            username='admin',
+            defaults={
+                'email': 'admin@admin.com',
+                'is_staff': True,
+                'is_superuser': True
+            }
+        )
+        admin_user.set_password('admin123')
+        admin_user.save()
+        
+        # Crear usuario federico_sorianox si no existe
+        federico_user, created = User.objects.get_or_create(
+            username='federico_sorianox',
+            defaults={
+                'email': 'federico@example.com'
+            }
+        )
+        federico_user.set_password('evRWh0Z7')
+        federico_user.save()
+        
+        return JsonResponse({
+            'ok': True,
+            'message': 'Usuarios configurados exitosamente',
+            'admin_created': created,
+            'federico_created': created
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
 class FrontendAppView(View):
     def get(self, request):
         # Buscar el archivo index.html en diferentes ubicaciones
