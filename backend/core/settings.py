@@ -116,4 +116,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Configuración de AutoField para evitar warnings
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+# Configuración para subida de archivos
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
+FILE_UPLOAD_TEMP_DIR = None
+
 SECRET_KEY = 'dev-secret-key-1234567890abcdef' 

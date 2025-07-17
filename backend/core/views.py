@@ -31,9 +31,11 @@ def galeria_list(request):
 @csrf_exempt
 def galeria_upload(request):
     print(f"DEBUG: Método de la petición: {request.method}")
-    print(f"DEBUG: Headers: {dict(request.META)}")
+    print(f"DEBUG: Content-Type: {request.META.get('CONTENT_TYPE', 'No especificado')}")
+    print(f"DEBUG: Content-Length: {request.META.get('CONTENT_LENGTH', 'No especificado')}")
     print(f"DEBUG: POST data: {dict(request.POST)}")
     print(f"DEBUG: FILES: {dict(request.FILES)}")
+    print(f"DEBUG: Número de archivos: {len(request.FILES)}")
     
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
@@ -69,6 +71,10 @@ def galeria_upload(request):
         print(f"DEBUG: Tamaño del archivo: {archivo.size}")
         print(f"DEBUG: Tipo del archivo: {archivo.content_type}")
         print(f"DEBUG: Nombre del archivo: {archivo.name}")
+        print(f"DEBUG: Archivo es válido: {archivo.name and archivo.size > 0}")
+    else:
+        print(f"DEBUG: No se recibió archivo en request.FILES")
+        print(f"DEBUG: Claves disponibles en FILES: {list(request.FILES.keys())}")
     
     if not nombre:
         return JsonResponse({'error': 'El nombre es requerido'}, status=400)
@@ -105,6 +111,7 @@ def galeria_upload(request):
             'url': request.build_absolute_uri(item.archivo.url)
         })
     except Exception as e:
+        print(f"DEBUG: Error al guardar el archivo: {e}")
         return JsonResponse({'error': f'Error al guardar el archivo: {str(e)}'}, status=500)
 
 @csrf_exempt

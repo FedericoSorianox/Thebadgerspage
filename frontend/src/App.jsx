@@ -424,11 +424,23 @@ function Galeria() {
     setUploading(true);
     const nombre = e.target.nombre.value;
     const file = e.target.file.files[0];
+    
+    console.log('DEBUG: Archivo seleccionado:', file);
+    console.log('DEBUG: Nombre:', nombre);
+    
     if (!nombre || !file) {
       setUploadError('Completa todos los campos');
       setUploading(false);
       return;
     }
+    
+    // Verificar que el archivo no esté vacío
+    if (file.size === 0) {
+      setUploadError('El archivo está vacío');
+      setUploading(false);
+      return;
+    }
+    
     const isImg = file.type.startsWith('image/');
     const isVid = file.type === 'video/mp4';
     if (!isImg && !isVid) {
@@ -436,10 +448,21 @@ function Galeria() {
       setUploading(false);
       return;
     }
+    
+    console.log('DEBUG: Tipo de archivo:', file.type);
+    console.log('DEBUG: Tamaño del archivo:', file.size);
+    
     // Subir a la API
     const formData = new FormData();
     formData.append('nombre', nombre);
     formData.append('archivo', file);
+    
+    // Verificar que el FormData se creó correctamente
+    console.log('DEBUG: FormData creado');
+    for (let [key, value] of formData.entries()) {
+      console.log('DEBUG: FormData entry:', key, value);
+    }
+    
     fetch(`${API_BASE}/api/galeria/upload/`, {
       method: 'POST',
       headers: {
@@ -447,8 +470,17 @@ function Galeria() {
       },
       body: formData
     })
-      .then(res => res.json())
+      .then(res => {
+        console.log('DEBUG: Respuesta del servidor:', res.status, res.statusText);
+        if (!res.ok) {
+          return res.json().then(data => {
+            throw new Error(data.error || `Error ${res.status}: ${res.statusText}`);
+          });
+        }
+        return res.json();
+      })
       .then(data => {
+        console.log('DEBUG: Datos de respuesta:', data);
         if (!data.ok) throw new Error(data.error || 'Error al subir');
         // Refrescar galería
         return fetch(`${API_BASE}/api/galeria/`).then(res => res.json());
@@ -458,7 +490,10 @@ function Galeria() {
         setSelectedIdx(data.length - 1);
         setShowUpload(false);
       })
-      .catch(err => setUploadError(err.message))
+      .catch(err => {
+        console.error('DEBUG: Error en subida:', err);
+        setUploadError(err.message);
+      })
       .finally(() => setUploading(false));
   }
 

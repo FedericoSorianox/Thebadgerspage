@@ -1,114 +1,103 @@
 #!/usr/bin/env python3
 """
-Script para probar la subida de archivos a la galería en producción
+Script de prueba para verificar la subida de archivos a la galería
 """
 
 import requests
 import base64
-import json
-import tempfile
 import os
+from pathlib import Path
 
 # Configuración
 API_BASE = 'https://thebadgerspage.onrender.com'
 USERNAME = 'federico_sorianox'
 PASSWORD = 'evRWh0Z7'
 
-def get_auth_header():
-    """Genera el header de autenticación"""
-    auth = base64.b64encode(f"{USERNAME}:{PASSWORD}".encode()).decode()
-    return {"Authorization": f"Basic {auth}"}
-
-def crear_imagen_prueba():
-    """Crea una imagen de prueba real"""
-    # Crear un archivo temporal con extensión PNG
-    fd, path = tempfile.mkstemp(suffix='.png')
+def test_upload():
+    """Prueba la subida de un archivo a la galería"""
     
-    # Datos de una imagen PNG 1x1 pixel transparente
-    png_data = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x02\x00\x00\x00\x90wS\xde\x00\x00\x00\x0cIDATx\x9cc```\x00\x00\x00\x04\x00\x01\xf5\x00\x01\x00\x00\x00\x00IEND\xaeB`\x82'
+    # Crear autenticación básica
+    auth_string = f"{USERNAME}:{PASSWORD}"
+    auth_bytes = auth_string.encode('utf-8')
+    auth_b64 = base64.b64encode(auth_bytes).decode('utf-8')
     
-    with os.fdopen(fd, 'wb') as f:
-        f.write(png_data)
+    # Buscar una imagen de prueba
+    sample_images_dir = Path('sample_images')
+    if not sample_images_dir.exists():
+        print("❌ No se encontró el directorio sample_images")
+        return
     
-    return path
-
-def subir_archivo(nombre, archivo_path):
-    """Sube un archivo a la galería"""
+    image_files = list(sample_images_dir.glob('*.jpg')) + list(sample_images_dir.glob('*.png'))
+    if not image_files:
+        print("❌ No se encontraron imágenes de prueba")
+        return
+    
+    test_image = image_files[0]
+    print(f"📁 Usando imagen de prueba: {test_image}")
+    
+    # Preparar datos para la subida
     url = f"{API_BASE}/api/galeria/upload/"
+    headers = {
+        'Authorization': f'Basic {auth_b64}',
+        'Accept': '*/*'
+    }
     
-    with open(archivo_path, 'rb') as f:
-        files = {'archivo': (f'{nombre}.png', f, 'image/png')}
-        data = {'nombre': nombre}
-        headers = get_auth_header()
+    # Crear FormData
+    with open(test_image, 'rb') as f:
+        files = {
+            'archivo': (test_image.name, f, 'image/jpeg'),
+            'nombre': (None, 'Prueba de subida')
+        }
         
-        print(f"📤 Subiendo: {nombre}")
-        response = requests.post(url, files=files, data=data, headers=headers)
+        print(f"🚀 Enviando petición a: {url}")
+        print(f"📊 Tamaño del archivo: {test_image.stat().st_size} bytes")
+        
+        try:
+            response = requests.post(url, headers=headers, files=files)
+            
+            print(f"📡 Status Code: {response.status_code}")
+            print(f"📡 Headers de respuesta: {dict(response.headers)}")
+            
+            if response.status_code == 200:
+                data = response.json()
+                print(f"✅ Subida exitosa: {data}")
+            else:
+                print(f"❌ Error en la subida:")
+                print(f"   Status: {response.status_code}")
+                print(f"   Respuesta: {response.text}")
+                
+        except Exception as e:
+            print(f"❌ Error de conexión: {e}")
+
+def test_galeria_list():
+    """Prueba obtener la lista de la galería"""
+    
+    url = f"{API_BASE}/api/galeria/"
+    print(f"📋 Obteniendo lista de galería: {url}")
+    
+    try:
+        response = requests.get(url)
+        print(f"📡 Status Code: {response.status_code}")
         
         if response.status_code == 200:
-            result = response.json()
-            print(f"✅ Subido exitosamente: {nombre}")
-            return result
+            data = response.json()
+            print(f"✅ Lista obtenida: {len(data)} elementos")
+            for item in data:
+                print(f"   - {item['nombre']} ({item['tipo']})")
         else:
-            print(f"❌ Error subiendo {nombre}: {response.status_code}")
-            print(f"   Response: {response.text}")
-            return None
-
-def obtener_galeria():
-    """Obtiene la lista de elementos de la galería"""
-    url = f"{API_BASE}/api/galeria/"
-    response = requests.get(url)
-    
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print(f"❌ Error obteniendo galería: {response.status_code}")
-        return []
-
-def main():
-    print("🧪 Probando subida de archivos a la galería...")
-    print(f"Usuario: {USERNAME}")
-    print(f"URL: {API_BASE}")
-    
-    # Verificar galería inicial
-    galeria_inicial = obtener_galeria()
-    print(f"📊 Galería inicial: {len(galeria_inicial)} elementos")
-    
-    # Crear y subir archivos de prueba
-    archivos_prueba = []
-    for i in range(3):  # Subir 3 archivos de prueba
-        archivo_path = crear_imagen_prueba()
-        archivos_prueba.append((f"Prueba {i+1}", archivo_path))
-    
-    print(f"\n📤 Subiendo {len(archivos_prueba)} archivos...")
-    
-    # Subir archivos
-    for nombre, archivo_path in archivos_prueba:
-        subir_archivo(nombre, archivo_path)
-    
-    # Verificar galería final
-    print("\n📊 Verificando galería final...")
-    galeria_final = obtener_galeria()
-    
-    print(f"📈 Elementos en galería: {len(galeria_final)}")
-    
-    if len(galeria_final) > len(galeria_inicial):
-        print("✅ ¡Éxito! Se agregaron archivos a la galería")
-    else:
-        print("❌ No se agregaron archivos a la galería")
-    
-    print("\n📋 Elementos en la galería:")
-    for i, item in enumerate(galeria_final):
-        print(f"  {i+1}. {item['nombre']} ({item['fecha']}) - {item['tipo']}")
-    
-    # Limpiar archivos temporales
-    for _, archivo_path in archivos_prueba:
-        try:
-            os.unlink(archivo_path)
-        except:
-            pass
-    
-    print("\n🧹 Archivos temporales eliminados")
-    print("\n🎯 Prueba completada!")
+            print(f"❌ Error al obtener lista: {response.text}")
+            
+    except Exception as e:
+        print(f"❌ Error de conexión: {e}")
 
 if __name__ == "__main__":
-    main() 
+    print("🧪 Iniciando pruebas de galería...")
+    print("=" * 50)
+    
+    print("\n1️⃣ Probando lista de galería:")
+    test_galeria_list()
+    
+    print("\n2️⃣ Probando subida de archivo:")
+    test_upload()
+    
+    print("\n✅ Pruebas completadas") 
