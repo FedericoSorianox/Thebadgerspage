@@ -14,7 +14,7 @@ def api_root(request):
     return JsonResponse({"mensaje": "¡API funcionando correctamente!"})
 
 def galeria_list(request):
-    items = GaleriaItem.objects.order_by('-fecha_subida')
+    items = GaleriaItem.objects.order_by('-fecha_subida')[:8]
     data = [
         {
             'id': item.id,
@@ -91,6 +91,12 @@ def galeria_upload(request):
     
     try:
         item = GaleriaItem.objects.create(nombre=nombre, archivo=archivo, usuario=user)
+        
+        # Mantener solo los últimos 8 elementos
+        items = GaleriaItem.objects.order_by('-fecha_subida')
+        if items.count() > 8:
+            for old in items[8:]:
+                old.delete()
         
         return JsonResponse({
             'ok': True,
