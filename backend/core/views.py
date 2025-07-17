@@ -23,7 +23,7 @@ def galeria_list(request):
             'fecha': item.fecha_subida.strftime('%Y-%m-%d'),
             'tipo': item.tipo,
         }
-        for item in items[::-1]
+        for item in items
     ]
     return JsonResponse(data, safe=False)
 
