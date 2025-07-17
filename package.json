@@ -1,0 +1,13 @@
+{
+  "name": "thebadgerspage",
+  "version": "1.0.0",
+  "description": "Academia The Badgers - Jiu Jitsu & Muay Thai",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build && cp -r dist/* ../backend/frontend_build/",
+    "start": "cd backend && python manage.py runserver 0.0.0.0:$PORT"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  }
+} 

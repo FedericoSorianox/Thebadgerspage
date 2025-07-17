@@ -13,6 +13,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -52,6 +53,7 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     'thebadgerspage.onrender.com',
     'the-badgers.com',
+    'www.the-badgers.com',
 ]
 
 STATIC_URL = "static/"
@@ -66,8 +68,19 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'frontend_build'),
 ]
 
+# Configuración de WhiteNoise para archivos estáticos
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 # Media files configuration
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-SECRET_KEY = 'dev-secret-key-1234567890abcdef' 
+SECRET_KEY = 'dev-secret-key-1234567890abcdef'
+
+# Configuración para Render
+import dj_database_url
+if os.environ.get('DATABASE_URL'):
+    DATABASES['default'] = dj_database_url.config(
+        conn_max_age=600,
+        conn_health_checks=True,
+    ) 

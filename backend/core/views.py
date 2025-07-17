@@ -7,6 +7,7 @@ import json
 import base64
 from django.views.generic import View
 from django.http import FileResponse
+from django.conf import settings
 import os
 
 def api_root(request):
@@ -48,9 +49,8 @@ def galeria_upload(request):
     items = GaleriaItem.objects.order_by('-fecha_subida')
     if items.count() > 8:
         for old in items[8:]:
-            old.archivo.delete(save=False)
             old.delete()
-    return JsonResponse({'ok': True, 'id': item.id})
+    return JsonResponse({'ok': True})
 
 @csrf_exempt
 def crear_usuario(request):
@@ -64,7 +64,7 @@ def crear_usuario(request):
             return JsonResponse({'error': 'Faltan campos'}, status=400)
         if User.objects.filter(username=username).exists():
             return JsonResponse({'error': 'Usuario ya existe'}, status=400)
-        User.objects.create_user(username=username, password=password)
+        user = User.objects.create_user(username=username, password=password)
         return JsonResponse({'ok': True})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=400)
@@ -99,5 +99,17 @@ def cambiar_password(request):
 
 class FrontendAppView(View):
     def get(self, request):
-        index_path = os.path.join(os.path.dirname(__file__), '../frontend_build/index.html')
-        return FileResponse(open(index_path, 'rb')) 
+        # Buscar el archivo index.html en diferentes ubicaciones
+        possible_paths = [
+            os.path.join(settings.BASE_DIR, 'frontend_build', 'index.html'),
+            os.path.join(settings.STATIC_ROOT, 'index.html'),
+            os.path.join(settings.BASE_DIR, 'staticfiles', 'index.html'),
+        ]
+        
+        for index_path in possible_paths:
+            if os.path.exists(index_path):
+                return FileResponse(open(index_path, 'rb'), content_type='text/html')
+        
+        # Si no se encuentra, devolver un error 404
+        from django.http import HttpResponse
+        return HttpResponse("Frontend build not found. Please run 'npm run build' in the frontend directory.", status=404) 
