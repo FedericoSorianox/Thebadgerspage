@@ -377,7 +377,7 @@ function Galeria() {
   const API_BASE = '';
   useEffect(() => {
     setLoadingGallery(true);
-    fetch(`${API_BASE}/galeria/`)
+    fetch(`${API_BASE}/api/galeria/`)
       .then(res => res.json())
       .then(data => {
         setGallery(data);
@@ -399,8 +399,8 @@ function Galeria() {
     setLoginError('');
     const user = e.target.user.value;
     const pass = e.target.pass.value;
-    // Probar login haciendo un request a /galeria/ con auth básica
-    fetch(`${API_BASE}/galeria/`, {
+    // Probar login haciendo un request a /api/galeria/ con auth básica
+    fetch(`${API_BASE}/api/galeria/`, {
       headers: {
         'Authorization': 'Basic ' + btoa(`${user}:${pass}`)
       }
@@ -447,7 +447,7 @@ function Galeria() {
     const formData = new FormData();
     formData.append('nombre', nombre);
     formData.append('archivo', file);
-    fetch(`${API_BASE}/galeria/upload/`, {
+    fetch(`${API_BASE}/api/galeria/upload/`, {
       method: 'POST',
       headers: {
         'Authorization': 'Basic ' + btoa(`${loginUser}:${loginPass}`)
@@ -458,7 +458,7 @@ function Galeria() {
       .then(data => {
         if (!data.ok) throw new Error(data.error || 'Error al subir');
         // Refrescar galería
-        return fetch(`${API_BASE}/galeria/`).then(res => res.json());
+        return fetch(`${API_BASE}/api/galeria/`).then(res => res.json());
       })
       .then(data => {
         setGallery(data);

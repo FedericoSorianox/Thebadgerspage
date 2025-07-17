@@ -8,10 +8,10 @@ from core.views import FrontendAppView
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', views.api_root),
-    path('galeria/', views.galeria_list),
-    path('galeria/upload/', views.galeria_upload),
-    path('usuarios/crear/', views.crear_usuario),
-    re_path(r'^(?!admin|api|galeria|usuarios).*$', FrontendAppView.as_view()),
+    path('api/galeria/', views.galeria_list),
+    path('api/galeria/upload/', views.galeria_upload),
+    path('api/usuarios/crear/', views.crear_usuario),
+    re_path(r'^(?!admin|api).*$', FrontendAppView.as_view()),
 ]
 
 if settings.DEBUG:

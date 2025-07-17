@@ -99,5 +99,5 @@ def cambiar_password(request):
 
 class FrontendAppView(View):
     def get(self, request):
-        index_path = os.path.join(os.path.dirname(__file__), '../../frontend_build/index.html')
+        index_path = os.path.join(os.path.dirname(__file__), '../frontend_build/index.html')
         return FileResponse(open(index_path, 'rb')) 
