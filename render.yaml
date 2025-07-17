@@ -5,6 +5,9 @@ services:
     plan: free
     buildCommand: ./build.sh
     startCommand: cd backend && python manage.py migrate && python manage.py runserver 0.0.0.0:$PORT
+    customDomains:
+      - name: the-badgers.com
+      - name: www.the-badgers.com
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
