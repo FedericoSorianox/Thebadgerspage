@@ -508,7 +508,7 @@ function Galeria() {
       setChangePassError('Las contraseñas no coinciden');
       return;
     }
-    fetch(`${API_BASE}/cambiar-password/`, {
+    fetch(`${API_BASE}/api/usuarios/cambiar-password/`, {
       method: 'POST',
       headers: {
         'Authorization': 'Basic ' + btoa(`${loginUser}:${oldPass}`),
