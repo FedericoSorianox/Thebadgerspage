@@ -11,6 +11,7 @@ ALLOWED_HOSTS = [
     'thebadgerspage.onrender.com',
     'localhost',
     '127.0.0.1',
+    '*',  # Temporal para desarrollo
 ]
 
 # Configuración de archivos estáticos para Render
