@@ -10,8 +10,8 @@ from pathlib import Path
 
 # Configuración
 API_BASE = 'https://thebadgerspage.onrender.com'
-USERNAME = 'federico_sorianox'
-PASSWORD = 'evRWh0Z7'
+USERNAME = 'test_user'
+PASSWORD = 'test123456'
 
 def test_upload():
     """Prueba la subida de un archivo a la galería"""

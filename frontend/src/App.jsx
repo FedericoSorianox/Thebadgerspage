@@ -367,7 +367,7 @@ function Galeria() {
   const [changePassSuccess, setChangePassSuccess] = useState('');
 
   // --- API real ---
-  const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://thebadgersadmin.onrender.com';
+  const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://thebadgerspage.onrender.com';
   useEffect(() => {
     setLoadingGallery(true);
     fetch(`${API_BASE}/api/galeria/`)
