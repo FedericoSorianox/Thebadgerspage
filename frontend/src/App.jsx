@@ -9,6 +9,7 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import badgersHeroBg from "./assets/the-badgers-academia.jpeg";
+import gymBackground from "./assets/gym-background.jpeg";
 
 const NAV_ITEMS = [
   { label: "Inicio", href: "/#inicio" },
@@ -88,14 +89,15 @@ function Hero() {
   );
 }
 
-function SobreNosotros() {
+function SobreNosotrosYClases() {
   return (
     <Parallax
-      bgImage="https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=1500&q=80"
-      strength={300}
-      bgImageStyle={{ minHeight: '100vh', objectFit: 'cover' }}
+      bgImage={gymBackground}
+      strength={200}
+      bgImageStyle={{ minHeight: '200vh', objectFit: 'cover' }}
     >
-      <section id="sobre" className="flex items-center justify-center min-h-screen w-full py-24 bg-white">
+      {/* Sección Sobre Nosotros */}
+      <section id="sobre" className="flex items-center justify-center min-h-screen w-full py-24">
         <div className="max-w-2xl bg-black/85 rounded-3xl shadow-2xl border-2 border-cyan-900 p-10 text-center backdrop-blur-md animate-fade-in flex flex-col items-center gap-6">
           <h2 className="text-3xl md:text-4xl font-bold text-cyan-200 mb-4 drop-shadow">Sobre Nosotros</h2>
           <p className="text-cyan-100 text-lg leading-relaxed whitespace-pre-line">
@@ -107,18 +109,9 @@ function SobreNosotros() {
           </p>
         </div>
       </section>
-    </Parallax>
-  );
-}
 
-function Clases() {
-  return (
-    <Parallax
-      bgImage="https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1500&q=80"
-      strength={250}
-      bgImageStyle={{ minHeight: '100vh', objectFit: 'cover' }}
-    >
-      <section id="clases" className="flex items-center justify-center min-h-screen w-full py-24 bg-black/70">
+      {/* Sección Clases */}
+      <section id="clases" className="flex items-center justify-center min-h-screen w-full py-24">
         <div className="max-w-4xl w-full flex flex-col items-center animate-fade-in">
           <h2 className="text-3xl md:text-4xl font-bold text-cyan-200 mb-8 drop-shadow text-center">Clases</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full">
@@ -374,7 +367,7 @@ function Galeria() {
   const [changePassSuccess, setChangePassSuccess] = useState('');
 
   // --- API real ---
-  const API_BASE = '';
+  const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://thebadgersadmin.onrender.com';
   useEffect(() => {
     setLoadingGallery(true);
     fetch(`${API_BASE}/api/galeria/`)
@@ -522,27 +515,30 @@ function Galeria() {
                 )}
                 <div className="w-full px-4 py-2 bg-black/80 text-cyan-100 text-base flex flex-col items-start">
                   <span className="font-bold truncate w-full" title={gallery[selectedIdx].nombre}>{gallery[selectedIdx].nombre}</span>
-                  <span className="text-cyan-400">{gallery[selectedIdx].fecha}</span>
+                  <div className="flex justify-between items-center w-full">
+                    <span className="text-cyan-400">{gallery[selectedIdx].fecha}</span>
+                    <span className="text-cyan-300 text-sm">por {gallery[selectedIdx].usuario || 'Anónimo'}</span>
+                  </div>
                 </div>
               </button>
             </div>
           )}
           {/* Miniaturas */}
-          <div className="flex flex-wrap justify-center gap-4 max-w-5xl mb-8">
+          <div className="flex flex-wrap justify-center gap-6 max-w-6xl mb-8">
             {gallery.map((item, idx) => (
               <button
                 key={idx}
                 onClick={() => setSelectedIdx(idx)}
                 className={`border-4 ${selectedIdx === idx ? 'border-cyan-400 scale-105 shadow-2xl' : 'border-cyan-900'} rounded-xl overflow-hidden focus:outline-none transition-all duration-200 hover:scale-110 hover:shadow-xl bg-black relative`}
-                style={{ width: 140, height: 100 }}
+                style={{ width: 200, height: 150 }}
                 aria-label={`Ver elemento ${idx+1}`}
               >
                 <div className="relative w-full h-full">
                   {item.tipo === 'video' ? (
                     <>
                       <video src={item.url} className="w-full h-full object-cover bg-black" />
-                      <span className="absolute top-1 right-1 bg-black/70 rounded-full p-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-cyan-300">
+                      <span className="absolute top-2 right-2 bg-black/70 rounded-full p-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-6 h-6 text-cyan-300">
                           <path d="M4.5 3.75A2.25 2.25 0 0 0 2.25 6v8A2.25 2.25 0 0 0 4.5 16.25h11A2.25 2.25 0 0 0 17.75 14V6A2.25 2.25 0 0 0 15.5 3.75h-11zm3.75 3.5a.75.75 0 0 1 1.13-.65l4.5 2.75a.75.75 0 0 1 0 1.3l-4.5 2.75A.75.75 0 0 1 8.25 12V6.75z" />
                         </svg>
                       </span>
@@ -550,10 +546,13 @@ function Galeria() {
                   ) : (
                     <img src={item.url} alt={`Miniatura ${idx+1}`} className="w-full h-full object-cover" />
                   )}
-                  {/* Nombre y fecha */}
-                  <div className="absolute bottom-0 left-0 w-full bg-black/70 text-cyan-100 text-xs px-2 py-1 flex flex-col items-start">
+                  {/* Nombre, fecha y usuario */}
+                  <div className="absolute bottom-0 left-0 w-full bg-black/70 text-cyan-100 text-sm px-3 py-2 flex flex-col items-start">
                     <span className="font-bold truncate w-full" title={item.nombre}>{item.nombre}</span>
-                    <span className="text-cyan-400">{item.fecha}</span>
+                    <div className="flex justify-between items-center w-full">
+                      <span className="text-cyan-400 text-xs">{item.fecha}</span>
+                      <span className="text-cyan-300 text-xs">por {item.usuario || 'Anónimo'}</span>
+                    </div>
                   </div>
                 </div>
               </button>
@@ -627,8 +626,7 @@ function App() {
         <Route path="/" element={
           <>
             <Hero />
-            <SobreNosotros />
-            <Clases />
+            <SobreNosotrosYClases />
             <Contacto />
           </>
         } />

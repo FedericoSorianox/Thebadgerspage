@@ -22,6 +22,7 @@ def galeria_list(request):
             'nombre': item.nombre,
             'fecha': item.fecha_subida.strftime('%Y-%m-%d'),
             'tipo': item.tipo,
+            'usuario': item.usuario.username if item.usuario else 'Anónimo',
         }
         for item in items
     ]
@@ -77,7 +78,7 @@ def galeria_upload(request):
         return JsonResponse({'error': 'El archivo es demasiado grande (máximo 10MB)'}, status=400)
     
     try:
-        item = GaleriaItem.objects.create(nombre=nombre, archivo=archivo)
+        item = GaleriaItem.objects.create(nombre=nombre, archivo=archivo, usuario=user)
         
         # Mantener solo los últimos 8 elementos
         items = GaleriaItem.objects.order_by('-fecha_subida')

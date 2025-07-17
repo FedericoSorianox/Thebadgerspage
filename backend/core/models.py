@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 class GaleriaItem(models.Model):
     archivo = models.FileField(upload_to='galeria/')
@@ -6,6 +7,8 @@ class GaleriaItem(models.Model):
     fecha_subida = models.DateTimeField(auto_now_add=True)
     # El tipo se puede deducir del archivo, pero lo dejamos para consulta rápida
     tipo = models.CharField(max_length=10, choices=[('img', 'Imagen'), ('video', 'Video')], blank=True)
+    # Usuario que subió la imagen
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
 
     def save(self, *args, **kwargs):
         # Deducir tipo por extensión
