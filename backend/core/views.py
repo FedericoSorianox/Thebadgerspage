@@ -43,10 +43,14 @@ def galeria_upload(request):
     try:
         userpass = base64.b64decode(auth.split(' ')[1]).decode('utf-8')
         username, password = userpass.split(':', 1)
+        print(f"DEBUG: Intentando autenticar usuario: {username}")
         user = authenticate(username=username, password=password)
         if not user:
+            print(f"DEBUG: Autenticación fallida para usuario: {username}")
             return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
+        print(f"DEBUG: Usuario autenticado exitosamente: {username}")
     except Exception as e:
+        print(f"DEBUG: Error en autenticación: {e}")
         return JsonResponse({'error': 'Error en autenticación'}, status=401)
     
     # Verificar campos requeridos
