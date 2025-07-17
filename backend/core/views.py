@@ -5,6 +5,9 @@ from django.contrib.auth.models import User
 from core.models import GaleriaItem
 import json
 import base64
+from django.views.generic import View
+from django.http import FileResponse
+import os
 
 def api_root(request):
     return JsonResponse({"mensaje": "¡API funcionando correctamente!"})
@@ -92,4 +95,9 @@ def cambiar_password(request):
         user.save()
         return JsonResponse({'ok': True})
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=400) 
+        return JsonResponse({'error': str(e)}, status=400)
+
+class FrontendAppView(View):
+    def get(self, request):
+        index_path = os.path.join(os.path.dirname(__file__), '../../frontend_build/index.html')
+        return FileResponse(open(index_path, 'rb')) 
