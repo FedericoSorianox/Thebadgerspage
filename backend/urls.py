@@ -11,8 +11,12 @@ urlpatterns = [
     path('api/galeria/', views.galeria_list),
     path('api/galeria/upload/', views.galeria_upload),
     path('api/usuarios/crear/', views.crear_usuario),
-    re_path(r'^(?!admin|api).*$', FrontendAppView.as_view()),
+    # Servir el frontend React para todas las demás rutas
+    re_path(r'^$', FrontendAppView.as_view()),  # Página principal
+    re_path(r'^(?!admin|api|static|media).*/$', FrontendAppView.as_view()),  # Rutas con /
+    re_path(r'^(?!admin|api|static|media).*$', FrontendAppView.as_view()),   # Rutas sin /
 ]
 
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) 
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) 
