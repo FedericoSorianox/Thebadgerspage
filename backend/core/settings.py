@@ -44,28 +44,29 @@ import os
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Configuración de base de datos
+# Usar PostgreSQL compartido con el sistema de socios
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'badgersdb',
+        'USER': 'badgersdb_user',
+        'PASSWORD': '6uI9aBMZlUg8sXXiKDIHkhDlJN5wbrhi',
+        'HOST': 'dpg-d1jrhpemcj7s73a8sskg-a.oregon-postgres.render.com',
+        'PORT': '5432',
+        'OPTIONS': {
+            'sslmode': 'require',
+        },
     }
 }
 
-# Configuración para Render - Usar SQLite en lugar de PostgreSQL
-# import dj_database_url
-# if os.environ.get('DATABASE_URL'):
-#     DATABASES['default'] = dj_database_url.config(
-#         conn_max_age=600,
-#         conn_health_checks=True,
-#     )
-# else:
-#     # Configuración local con SQLite
-#     DATABASES = {
-#         'default': {
-#             'ENGINE': 'django.db.backends.sqlite3',
-#             'NAME': 'db.sqlite3',
-#         }
-#     }
+# Configuración para desarrollo local (SQLite)
+if os.environ.get('USE_SQLITE', 'false').lower() == 'true':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': 'db.sqlite3',
+        }
+    }
 
 DEBUG = True
 ALLOWED_HOSTS = [
