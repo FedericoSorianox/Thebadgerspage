@@ -30,6 +30,11 @@ def galeria_list(request):
 
 @csrf_exempt
 def galeria_upload(request):
+    print(f"DEBUG: Método de la petición: {request.method}")
+    print(f"DEBUG: Headers: {dict(request.META)}")
+    print(f"DEBUG: POST data: {dict(request.POST)}")
+    print(f"DEBUG: FILES: {dict(request.FILES)}")
+    
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
     
@@ -57,6 +62,13 @@ def galeria_upload(request):
     # Verificar campos requeridos
     nombre = request.POST.get('nombre')
     archivo = request.FILES.get('archivo')
+    
+    print(f"DEBUG: Nombre recibido: {nombre}")
+    print(f"DEBUG: Archivo recibido: {archivo}")
+    if archivo:
+        print(f"DEBUG: Tamaño del archivo: {archivo.size}")
+        print(f"DEBUG: Tipo del archivo: {archivo.content_type}")
+        print(f"DEBUG: Nombre del archivo: {archivo.name}")
     
     if not nombre:
         return JsonResponse({'error': 'El nombre es requerido'}, status=400)
