@@ -35,12 +35,33 @@ def galeria_list(request):
         
         print(f"DEBUG galeria_list: is_cloudinary = {is_cloudinary}")
         
-        if is_cloudinary:
-            # Si usamos Cloudinary, la URL ya es completa
+        # Verificar si el archivo está en Cloudinary o en almacenamiento local
+        is_file_in_cloudinary = (
+            is_cloudinary and 
+            hasattr(item.archivo.storage, '__class__') and
+            'cloudinary' in str(item.archivo.storage.__class__).lower()
+        )
+        
+        print(f"DEBUG galeria_list: is_file_in_cloudinary = {is_file_in_cloudinary}")
+        
+        if is_file_in_cloudinary:
+            # El archivo está en Cloudinary, usar URL directa
             file_url = item.archivo.url
-            print(f"DEBUG galeria_list: Usando URL de Cloudinary: {file_url}")
+            print(f"DEBUG galeria_list: Archivo en Cloudinary, URL: {file_url}")
+        elif is_cloudinary:
+            # Estamos usando Cloudinary pero el archivo está en almacenamiento local
+            # Intentar construir URL de Cloudinary basada en el nombre del archivo
+            cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME')
+            if cloud_name:
+                # Asumir que el archivo existe en Cloudinary con el mismo nombre
+                file_url = f"https://res.cloudinary.com/{cloud_name}/image/upload/v1/media/{item.archivo.name}"
+                print(f"DEBUG galeria_list: Construyendo URL de Cloudinary: {file_url}")
+            else:
+                # Fallback a URL local
+                file_url = request.build_absolute_uri(item.archivo.url).replace('http://', 'https://')
+                print(f"DEBUG galeria_list: Fallback a URL local: {file_url}")
         else:
-            # Si usamos almacenamiento local, construir URL absoluta
+            # Usando almacenamiento local
             file_url = request.build_absolute_uri(item.archivo.url).replace('http://', 'https://')
             print(f"DEBUG galeria_list: Usando URL local: {file_url}")
         
