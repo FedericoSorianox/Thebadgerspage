@@ -150,7 +150,7 @@ if CLOUDINARY_CONFIGURED and not DEBUG:
     print("DEBUG: Usando Cloudinary para almacenamiento de archivos")
     print(f"DEBUG: Cloudinary configurado con cloud_name: {os.environ.get('CLOUDINARY_CLOUD_NAME')}")
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    MEDIA_URL = '/media/'
+    # No establecer MEDIA_URL cuando usamos Cloudinary, dejar que Cloudinary maneje las URLs
 else:
     print(f"DEBUG: Usando almacenamiento local. DEBUG={DEBUG}, CLOUDINARY_CONFIGURED={CLOUDINARY_CONFIGURED}")
     print(f"DEBUG: Variables de entorno - CLOUD_NAME: {os.environ.get('CLOUDINARY_CLOUD_NAME')}, API_KEY: {os.environ.get('CLOUDINARY_API_KEY')}, API_SECRET: {'Configurado' if os.environ.get('CLOUDINARY_API_SECRET') else 'No configurado'}")
