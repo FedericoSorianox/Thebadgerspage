@@ -441,6 +441,18 @@ function Galeria() {
   // --- API real ---
   const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://thebadgerspage.onrender.com';
   
+  // URLs de ejemplo de Unsplash para reemplazar URLs locales que no funcionen
+  const unsplashUrls = [
+    'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80'
+  ];
+  
   // Imágenes de ejemplo para ambiente local
   const imagenesEjemplo = [
     {
@@ -496,8 +508,22 @@ function Galeria() {
           setGallery(imagenesEjemplo);
           setSelectedIdx(imagenesEjemplo.length - 1);
         } else {
-          setGallery(data);
-          setSelectedIdx(data.length - 1);
+          // Procesar las URLs para reemplazar URLs locales con URLs de Unsplash
+          const processedData = data.map((item, index) => {
+            // Si la URL es local (contiene thebadgerspage.onrender.com), reemplazarla con Unsplash
+            if (item.url && item.url.includes('thebadgerspage.onrender.com')) {
+              const unsplashUrl = unsplashUrls[index % unsplashUrls.length];
+              console.log(`Reemplazando URL local con Unsplash: ${item.url} -> ${unsplashUrl}`);
+              return {
+                ...item,
+                url: unsplashUrl
+              };
+            }
+            return item;
+          });
+          
+          setGallery(processedData);
+          setSelectedIdx(processedData.length - 1);
         }
       })
       .catch(() => {
