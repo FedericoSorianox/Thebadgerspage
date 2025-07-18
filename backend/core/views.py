@@ -39,6 +39,10 @@ def galeria_list(request):
             # Si ya es una URL completa (Cloudinary), usarla directamente
             file_url = item.archivo.url
             print(f"DEBUG galeria_list: URL completa encontrada: {file_url}")
+        elif 'cloudinary.com' in item.archivo.url:
+            # Si la URL contiene cloudinary.com, usarla directamente
+            file_url = item.archivo.url
+            print(f"DEBUG galeria_list: URL de Cloudinary encontrada: {file_url}")
         else:
             # Si es una URL local, usar URL de ejemplo de Cloudinary
             if i < len(cloudinary_urls):
