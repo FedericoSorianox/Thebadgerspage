@@ -150,12 +150,12 @@ def galeria_upload(request):
                 api_secret=os.environ.get('CLOUDINARY_API_SECRET')
             )
             
-                            # Subir a Cloudinary
-                result = cloudinary.uploader.upload(
-                    archivo,
-                    public_id=f"galeria/{nombre}_{user.username}",
-                    resource_type="auto"
-                )
+            # Subir a Cloudinary
+            result = cloudinary.uploader.upload(
+                archivo,
+                public_id=f"galeria/{nombre}_{user.username}",
+                resource_type="auto"
+            )
             
             print(f"DEBUG: ✅ Archivo subido a Cloudinary: {result['secure_url']}")
             
