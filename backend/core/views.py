@@ -9,6 +9,8 @@ from django.views.generic import View
 from django.http import FileResponse
 from django.conf import settings
 import os
+import cloudinary
+import cloudinary.uploader
 
 def api_root(request):
     return JsonResponse({"mensaje": "¡API funcionando correctamente!"})
@@ -314,6 +316,86 @@ def setup_usuarios(request):
         })
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+def migrate_to_cloudinary_endpoint(request):
+    """Endpoint temporal para migrar archivos a Cloudinary"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    # Verificar autenticación básica
+    if not request.META.get('HTTP_AUTHORIZATION'):
+        return JsonResponse({'error': 'No autenticado'}, status=401)
+    
+    auth = request.META['HTTP_AUTHORIZATION']
+    if not auth.startswith('Basic '):
+        return JsonResponse({'error': 'Tipo de autenticación no soportado'}, status=401)
+    
+    try:
+        userpass = base64.b64decode(auth.split(' ')[1]).decode('utf-8')
+        username, password = userpass.split(':', 1)
+        user = authenticate(username=username, password=password)
+        if not user:
+            return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
+    except Exception as e:
+        return JsonResponse({'error': 'Error en autenticación'}, status=401)
+    
+    try:
+        # Configurar Cloudinary
+        cloudinary.config(
+            cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
+            api_key=os.environ.get('CLOUDINARY_API_KEY'),
+            api_secret=os.environ.get('CLOUDINARY_API_SECRET')
+        )
+        
+        # Verificar configuración
+        if not all([os.environ.get('CLOUDINARY_CLOUD_NAME'), 
+                   os.environ.get('CLOUDINARY_API_KEY'), 
+                   os.environ.get('CLOUDINARY_API_SECRET')]):
+            return JsonResponse({'error': 'Cloudinary no está configurado correctamente'}, status=500)
+        
+        # Obtener todos los items de la galería
+        items = GaleriaItem.objects.all()
+        migrated_count = 0
+        errors = []
+        
+        for item in items:
+            try:
+                # Verificar si el archivo existe localmente
+                if item.archivo and hasattr(item.archivo, 'path'):
+                    local_path = item.archivo.path
+                    if os.path.exists(local_path):
+                        # Subir a Cloudinary
+                        with open(local_path, 'rb') as f:
+                            result = cloudinary.uploader.upload(
+                                f,
+                                public_id=f"galeria/{item.nombre}_{item.id}",
+                                resource_type="auto"
+                            )
+                        
+                        # Actualizar el modelo con la nueva URL
+                        item.archivo.name = f"galeria/{item.nombre}_{item.id}"
+                        item.save()
+                        
+                        migrated_count += 1
+                    else:
+                        errors.append(f"Archivo no encontrado para item {item.id}: {local_path}")
+                else:
+                    errors.append(f"Item {item.id} no tiene archivo válido")
+                    
+            except Exception as e:
+                errors.append(f"Error migrando item {item.id}: {str(e)}")
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Migración completada. {migrated_count} archivos migrados.',
+            'migrated_count': migrated_count,
+            'total_items': items.count(),
+            'errors': errors
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': f'Error en migración: {str(e)}'}, status=500)
 
 class FrontendAppView(View):
     def get(self, request):

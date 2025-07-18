@@ -12,6 +12,7 @@ urlpatterns = [
     path('api/', views.api_root),
     path('api/galeria/', views.galeria_list),
     path('api/galeria/upload/', views.galeria_upload),
+    path('api/migrate-to-cloudinary/', views.migrate_to_cloudinary_endpoint),
     path('api/usuarios/crear/', views.crear_usuario),
     path('api/usuarios/cambiar-password/', views.cambiar_password),
     path('api/usuarios/setup/', views.setup_usuarios),
