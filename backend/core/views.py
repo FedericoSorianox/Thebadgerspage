@@ -17,19 +17,32 @@ def galeria_list(request):
     items = GaleriaItem.objects.order_by('-fecha_subida')[:8]
     data = []
     
+    # Debug de configuración
+    print(f"DEBUG galeria_list: DEFAULT_FILE_STORAGE = {getattr(settings, 'DEFAULT_FILE_STORAGE', 'No definido')}")
+    print(f"DEBUG galeria_list: CLOUDINARY_CONFIGURED = {getattr(settings, 'CLOUDINARY_CONFIGURED', 'No definido')}")
+    
     for item in items:
+        print(f"DEBUG galeria_list: Procesando item {item.id} - {item.nombre}")
+        print(f"DEBUG galeria_list: item.archivo.url = {item.archivo.url}")
+        print(f"DEBUG galeria_list: item.archivo.name = {item.archivo.name}")
+        print(f"DEBUG galeria_list: item.archivo.storage = {item.archivo.storage}")
+        
         # Verificar si estamos usando Cloudinary
         is_cloudinary = (
             hasattr(settings, 'DEFAULT_FILE_STORAGE') and 
             'cloudinary' in str(settings.DEFAULT_FILE_STORAGE).lower()
         )
         
+        print(f"DEBUG galeria_list: is_cloudinary = {is_cloudinary}")
+        
         if is_cloudinary:
             # Si usamos Cloudinary, la URL ya es completa
             file_url = item.archivo.url
+            print(f"DEBUG galeria_list: Usando URL de Cloudinary: {file_url}")
         else:
             # Si usamos almacenamiento local, construir URL absoluta
             file_url = request.build_absolute_uri(item.archivo.url).replace('http://', 'https://')
+            print(f"DEBUG galeria_list: Usando URL local: {file_url}")
         
         data.append({
             'id': item.id,
@@ -40,6 +53,7 @@ def galeria_list(request):
             'usuario': item.usuario.username if item.usuario else 'Anónimo',
         })
     
+    print(f"DEBUG galeria_list: Respuesta final: {data}")
     return JsonResponse(data, safe=False)
 
 @csrf_exempt
