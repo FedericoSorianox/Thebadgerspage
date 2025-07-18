@@ -174,12 +174,9 @@ def galeria_upload(request):
         print(f"DEBUG: Archivo: {archivo.name}, tamaño: {archivo.size}")
         print(f"DEBUG: Usuario: {user.username}")
         
-        # Verificar si estamos usando Cloudinary
-        is_cloudinary = (
-            hasattr(settings, 'DEFAULT_FILE_STORAGE') and 
-            'cloudinary' in str(settings.DEFAULT_FILE_STORAGE).lower()
-        )
-        print(f"DEBUG: is_cloudinary en upload: {is_cloudinary}")
+        # En producción, siempre usar Cloudinary
+        is_cloudinary = not settings.DEBUG
+        print(f"DEBUG: is_cloudinary en upload: {is_cloudinary} (DEBUG: {settings.DEBUG})")
         
         if is_cloudinary:
             # Si usamos Cloudinary, subir directamente a Cloudinary
