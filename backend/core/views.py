@@ -147,7 +147,18 @@ def galeria_upload(request):
                 old.delete()
         
         # Generar la URL correcta según el storage configurado
-        if hasattr(settings, 'DEFAULT_FILE_STORAGE') and 'cloudinary' in settings.DEFAULT_FILE_STORAGE:
+        print(f"DEBUG: DEFAULT_FILE_STORAGE: {getattr(settings, 'DEFAULT_FILE_STORAGE', 'No definido')}")
+        print(f"DEBUG: CLOUDINARY_CONFIGURED: {getattr(settings, 'CLOUDINARY_CONFIGURED', 'No definido')}")
+        print(f"DEBUG: DEBUG setting: {settings.DEBUG}")
+        
+        # Verificar si estamos usando Cloudinary
+        is_cloudinary = (
+            hasattr(settings, 'DEFAULT_FILE_STORAGE') and 
+            'cloudinary' in str(settings.DEFAULT_FILE_STORAGE).lower()
+        )
+        print(f"DEBUG: is_cloudinary: {is_cloudinary}")
+        
+        if is_cloudinary:
             # Si usamos Cloudinary, la URL ya es completa
             file_url = item.archivo.url
             print(f"DEBUG: Usando URL de Cloudinary: {file_url}")
