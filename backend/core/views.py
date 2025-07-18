@@ -21,14 +21,14 @@ def galeria_list(request):
     
     # URLs de ejemplo de Cloudinary para reemplazar URLs locales
     cloudinary_urls = [
-        'https://res.cloudinary.com/dczcabe7j/image/upload/v1752862265/galeria/academia_the_badgers.jpg',
-        'https://res.cloudinary.com/dczcabe7j/image/upload/v1752862265/galeria/clase_muay_thai.jpg',
-        'https://res.cloudinary.com/dczcabe7j/image/upload/v1752862265/galeria/tatami_entrenamiento.jpg',
-        'https://res.cloudinary.com/dczcabe7j/image/upload/v1752862265/galeria/academia_vista_general.jpg',
-        'https://res.cloudinary.com/dczcabe7j/image/upload/v1752862265/galeria/academia.jpg',
-        'https://res.cloudinary.com/dczcabe7j/image/upload/v1752862265/galeria/test_cloudinary.jpg',
-        'https://res.cloudinary.com/dczcabe7j/image/upload/v1752862265/galeria/tatami.jpg',
-        'https://res.cloudinary.com/dczcabe7j/image/upload/v1752862265/galeria/bjj_gi.jpg'
+        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80'
     ]
     
     for i, item in enumerate(items):
@@ -46,7 +46,7 @@ def galeria_list(request):
                 print(f"DEBUG galeria_list: URL local reemplazada con Cloudinary: {file_url}")
             else:
                 # Si no hay URL de ejemplo disponible, usar una genérica
-                file_url = 'https://res.cloudinary.com/dczcabe7j/image/upload/v1752862265/galeria/default_image.jpg'
+                file_url = 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80'
                 print(f"DEBUG galeria_list: URL local reemplazada con URL genérica: {file_url}")
         
         data.append({
