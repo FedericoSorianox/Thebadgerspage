@@ -19,53 +19,18 @@ def galeria_list(request):
     items = GaleriaItem.objects.order_by('-fecha_subida')[:8]
     data = []
     
-    # Debug de configuración
-    print(f"DEBUG galeria_list: DEFAULT_FILE_STORAGE = {getattr(settings, 'DEFAULT_FILE_STORAGE', 'No definido')}")
-    print(f"DEBUG galeria_list: CLOUDINARY_CONFIGURED = {getattr(settings, 'CLOUDINARY_CONFIGURED', 'No definido')}")
-    
     for item in items:
         print(f"DEBUG galeria_list: Procesando item {item.id} - {item.nombre}")
-        print(f"DEBUG galeria_list: item.archivo.url = {item.archivo.url}")
-        print(f"DEBUG galeria_list: item.archivo.name = {item.archivo.name}")
-        print(f"DEBUG galeria_list: item.archivo.storage = {item.archivo.storage}")
         
-        # Verificar si estamos usando Cloudinary
-        is_cloudinary = (
-            hasattr(settings, 'DEFAULT_FILE_STORAGE') and 
-            'cloudinary' in str(settings.DEFAULT_FILE_STORAGE).lower()
-        )
-        
-        print(f"DEBUG galeria_list: is_cloudinary = {is_cloudinary}")
-        
-        # Verificar si el archivo está en Cloudinary o en almacenamiento local
-        is_file_in_cloudinary = (
-            is_cloudinary and 
-            hasattr(item.archivo.storage, '__class__') and
-            'cloudinary' in str(item.archivo.storage.__class__).lower()
-        )
-        
-        print(f"DEBUG galeria_list: is_file_in_cloudinary = {is_file_in_cloudinary}")
-        
-        if is_file_in_cloudinary:
-            # El archivo está en Cloudinary, usar URL directa
+        # SOLUCIÓN SIMPLE: Usar directamente la URL guardada
+        if item.archivo.url.startswith('http'):
+            # Si ya es una URL completa (Cloudinary), usarla directamente
             file_url = item.archivo.url
-            print(f"DEBUG galeria_list: Archivo en Cloudinary, URL: {file_url}")
-        elif is_cloudinary:
-            # Estamos usando Cloudinary pero el archivo está en almacenamiento local
-            # Intentar construir URL de Cloudinary basada en el nombre del archivo
-            cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME')
-            if cloud_name:
-                # Asumir que el archivo existe en Cloudinary con el mismo nombre
-                file_url = f"https://res.cloudinary.com/{cloud_name}/image/upload/v1/media/{item.archivo.name}"
-                print(f"DEBUG galeria_list: Construyendo URL de Cloudinary: {file_url}")
-            else:
-                # Fallback a URL local
-                file_url = request.build_absolute_uri(item.archivo.url).replace('http://', 'https://')
-                print(f"DEBUG galeria_list: Fallback a URL local: {file_url}")
+            print(f"DEBUG galeria_list: URL completa encontrada: {file_url}")
         else:
-            # Usando almacenamiento local
+            # Si es una URL local, construir URL absoluta
             file_url = request.build_absolute_uri(item.archivo.url).replace('http://', 'https://')
-            print(f"DEBUG galeria_list: Usando URL local: {file_url}")
+            print(f"DEBUG galeria_list: URL local convertida: {file_url}")
         
         data.append({
             'id': item.id,
@@ -174,49 +139,39 @@ def galeria_upload(request):
         print(f"DEBUG: Archivo: {archivo.name}, tamaño: {archivo.size}")
         print(f"DEBUG: Usuario: {user.username}")
         
-        # En producción, siempre usar Cloudinary
-        is_cloudinary = not settings.DEBUG
-        print(f"DEBUG: is_cloudinary en upload: {is_cloudinary} (DEBUG: {settings.DEBUG})")
+        # SOLUCIÓN SIMPLE: Siempre subir a Cloudinary en producción
+        print(f"DEBUG: Subiendo a Cloudinary directamente")
         
-        if is_cloudinary:
-            # Si usamos Cloudinary, subir directamente a Cloudinary
-            print(f"DEBUG: Subiendo directamente a Cloudinary")
-            try:
-                # Configurar Cloudinary
-                cloudinary.config(
-                    cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
-                    api_key=os.environ.get('CLOUDINARY_API_KEY'),
-                    api_secret=os.environ.get('CLOUDINARY_API_SECRET')
-                )
-                
-                # Subir a Cloudinary
+        try:
+            # Configurar Cloudinary
+            cloudinary.config(
+                cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
+                api_key=os.environ.get('CLOUDINARY_API_KEY'),
+                api_secret=os.environ.get('CLOUDINARY_API_SECRET')
+            )
+            
+                            # Subir a Cloudinary
                 result = cloudinary.uploader.upload(
                     archivo,
                     public_id=f"galeria/{nombre}_{user.username}",
                     resource_type="auto"
                 )
-                
-                print(f"DEBUG: Archivo subido a Cloudinary: {result['secure_url']}")
-                
-                # Crear el item con la URL de Cloudinary
-                item = GaleriaItem.objects.create(
-                    nombre=nombre, 
-                    archivo=f"galeria/{nombre}_{user.username}", 
-                    usuario=user
-                )
-                
-            except Exception as e:
-                print(f"DEBUG: Error subiendo a Cloudinary: {e}")
-                # Fallback a almacenamiento local
-                item = GaleriaItem.objects.create(nombre=nombre, archivo=archivo, usuario=user)
-        else:
-            # Usar almacenamiento local
-            print(f"DEBUG: Usando almacenamiento local")
-            # Verificar que el directorio media existe
+            
+            print(f"DEBUG: ✅ Archivo subido a Cloudinary: {result['secure_url']}")
+            
+            # Crear el item con la URL de Cloudinary
+            item = GaleriaItem.objects.create(
+                nombre=nombre, 
+                archivo=result['secure_url'],  # Guardar la URL completa de Cloudinary
+                usuario=user
+            )
+            
+        except Exception as e:
+            print(f"DEBUG: ❌ Error subiendo a Cloudinary: {e}")
+            # Si falla Cloudinary, usar almacenamiento local
             media_dir = os.path.join(settings.MEDIA_ROOT, 'galeria')
             if not os.path.exists(media_dir):
                 os.makedirs(media_dir, exist_ok=True)
-                print(f"DEBUG: Creado directorio: {media_dir}")
             
             item = GaleriaItem.objects.create(nombre=nombre, archivo=archivo, usuario=user)
         print(f"DEBUG: GaleriaItem creado exitosamente con ID: {item.id}")
