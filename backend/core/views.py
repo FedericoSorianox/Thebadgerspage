@@ -174,13 +174,54 @@ def galeria_upload(request):
         print(f"DEBUG: Archivo: {archivo.name}, tamaño: {archivo.size}")
         print(f"DEBUG: Usuario: {user.username}")
         
-        # Verificar que el directorio media existe
-        media_dir = os.path.join(settings.MEDIA_ROOT, 'galeria')
-        if not os.path.exists(media_dir):
-            os.makedirs(media_dir, exist_ok=True)
-            print(f"DEBUG: Creado directorio: {media_dir}")
+        # Verificar si estamos usando Cloudinary
+        is_cloudinary = (
+            hasattr(settings, 'DEFAULT_FILE_STORAGE') and 
+            'cloudinary' in str(settings.DEFAULT_FILE_STORAGE).lower()
+        )
+        print(f"DEBUG: is_cloudinary en upload: {is_cloudinary}")
         
-        item = GaleriaItem.objects.create(nombre=nombre, archivo=archivo, usuario=user)
+        if is_cloudinary:
+            # Si usamos Cloudinary, subir directamente a Cloudinary
+            print(f"DEBUG: Subiendo directamente a Cloudinary")
+            try:
+                # Configurar Cloudinary
+                cloudinary.config(
+                    cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
+                    api_key=os.environ.get('CLOUDINARY_API_KEY'),
+                    api_secret=os.environ.get('CLOUDINARY_API_SECRET')
+                )
+                
+                # Subir a Cloudinary
+                result = cloudinary.uploader.upload(
+                    archivo,
+                    public_id=f"galeria/{nombre}_{user.username}",
+                    resource_type="auto"
+                )
+                
+                print(f"DEBUG: Archivo subido a Cloudinary: {result['secure_url']}")
+                
+                # Crear el item con la URL de Cloudinary
+                item = GaleriaItem.objects.create(
+                    nombre=nombre, 
+                    archivo=f"galeria/{nombre}_{user.username}", 
+                    usuario=user
+                )
+                
+            except Exception as e:
+                print(f"DEBUG: Error subiendo a Cloudinary: {e}")
+                # Fallback a almacenamiento local
+                item = GaleriaItem.objects.create(nombre=nombre, archivo=archivo, usuario=user)
+        else:
+            # Usar almacenamiento local
+            print(f"DEBUG: Usando almacenamiento local")
+            # Verificar que el directorio media existe
+            media_dir = os.path.join(settings.MEDIA_ROOT, 'galeria')
+            if not os.path.exists(media_dir):
+                os.makedirs(media_dir, exist_ok=True)
+                print(f"DEBUG: Creado directorio: {media_dir}")
+            
+            item = GaleriaItem.objects.create(nombre=nombre, archivo=archivo, usuario=user)
         print(f"DEBUG: GaleriaItem creado exitosamente con ID: {item.id}")
         
         # Verificar que el archivo se guardó correctamente
