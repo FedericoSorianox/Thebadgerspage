@@ -390,6 +390,102 @@ def migrate_to_cloudinary_endpoint(request):
     except Exception as e:
         return JsonResponse({'error': f'Error en migración: {str(e)}'}, status=500)
 
+@csrf_exempt
+def migrate_existing_images_endpoint(request):
+    """Endpoint temporal para migrar imágenes existentes a Cloudinary"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    # Verificar autenticación básica
+    if not request.META.get('HTTP_AUTHORIZATION'):
+        return JsonResponse({'error': 'No autenticado'}, status=401)
+    
+    auth = request.META['HTTP_AUTHORIZATION']
+    if not auth.startswith('Basic '):
+        return JsonResponse({'error': 'Tipo de autenticación no soportado'}, status=401)
+    
+    try:
+        userpass = base64.b64decode(auth.split(' ')[1]).decode('utf-8')
+        username, password = userpass.split(':', 1)
+        user = authenticate(username=username, password=password)
+        if not user:
+            return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
+    except Exception as e:
+        return JsonResponse({'error': 'Error en autenticación'}, status=401)
+    
+    try:
+        # Configurar Cloudinary
+        cloudinary.config(
+            cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
+            api_key=os.environ.get('CLOUDINARY_API_KEY'),
+            api_secret=os.environ.get('CLOUDINARY_API_SECRET')
+        )
+        
+        # Verificar configuración
+        if not all([os.environ.get('CLOUDINARY_CLOUD_NAME'), 
+                   os.environ.get('CLOUDINARY_API_KEY'), 
+                   os.environ.get('CLOUDINARY_API_SECRET')]):
+            return JsonResponse({'error': 'Cloudinary no está configurado correctamente'}, status=500)
+        
+        # Obtener todos los items de la galería
+        items = GaleriaItem.objects.all()
+        migrated_count = 0
+        errors = []
+        
+        for item in items:
+            try:
+                print(f'Procesando item {item.id}: {item.nombre}')
+                
+                # Verificar si ya es una URL de Cloudinary
+                if item.archivo.url.startswith('http'):
+                    print(f'  Item {item.id} ya es una URL de Cloudinary, saltando...')
+                    continue
+                
+                # Verificar si el archivo existe localmente
+                if item.archivo and hasattr(item.archivo, 'path'):
+                    local_path = item.archivo.path
+                    if os.path.exists(local_path):
+                        print(f'  Subiendo archivo local: {local_path}')
+                        
+                        # Subir a Cloudinary
+                        with open(local_path, 'rb') as f:
+                            result = cloudinary.uploader.upload(
+                                f,
+                                public_id=f"galeria/{item.nombre}_{item.id}",
+                                resource_type="auto"
+                            )
+                        
+                        # Actualizar el modelo con la nueva URL
+                        item.archivo = result['secure_url']
+                        item.save()
+                        
+                        migrated_count += 1
+                        print(f'  ✅ Migrado exitosamente: {result["secure_url"]}')
+                    else:
+                        error_msg = f"Archivo no encontrado para item {item.id}: {local_path}"
+                        print(f'  ⚠️ {error_msg}')
+                        errors.append(error_msg)
+                else:
+                    error_msg = f"Item {item.id} no tiene archivo válido"
+                    print(f'  ⚠️ {error_msg}')
+                    errors.append(error_msg)
+                    
+            except Exception as e:
+                error_msg = f"Error migrando item {item.id}: {str(e)}"
+                print(f'  ❌ {error_msg}')
+                errors.append(error_msg)
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Migración completada. {migrated_count} archivos migrados.',
+            'migrated_count': migrated_count,
+            'total_items': items.count(),
+            'errors': errors
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': f'Error en migración: {str(e)}'}, status=500)
+
 class FrontendAppView(View):
     def get(self, request):
         # Buscar el archivo index.html en diferentes ubicaciones
