@@ -814,7 +814,19 @@ function Galeria() {
             <button type="button" onClick={() => setShowUpload(false)} className="absolute top-3 right-3 text-slate-500 text-2xl font-bold hover:text-slate-700">×</button>
             <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">Subir foto/video</h2>
             <input name="nombre" type="text" placeholder="Nombre" className="w-full mb-3 px-3 py-2 rounded-lg bg-slate-50 text-slate-800 border border-slate-200 focus:border-indigo-500 focus:outline-none" />
-            <input name="file" type="file" accept="image/*,video/mp4" className="w-full mb-3 px-3 py-2 rounded-lg bg-slate-50 text-slate-800 border border-slate-200 focus:border-indigo-500 focus:outline-none" />
+            <input 
+              name="file" 
+              type="file" 
+              accept="image/*,video/mp4" 
+              className="w-full mb-3 px-3 py-2 rounded-lg bg-slate-50 text-slate-800 border border-slate-200 focus:border-indigo-500 focus:outline-none" 
+              required
+              onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                  console.log('DEBUG: Archivo seleccionado en input:', file.name, file.size, file.type);
+                }
+              }}
+            />
             {uploadError && <div className="text-red-500 text-sm mb-2">{uploadError}</div>}
             <button type="submit" disabled={uploading} className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 disabled:opacity-50">{uploading ? 'Subiendo...' : 'Subir'}</button>
           </form>
