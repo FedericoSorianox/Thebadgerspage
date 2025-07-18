@@ -18,7 +18,7 @@ def galeria_list(request):
     data = [
         {
             'id': item.id,
-            'url': request.build_absolute_uri(item.archivo.url),
+            'url': request.build_absolute_uri(item.archivo.url).replace('http://', 'https://'),
             'nombre': item.nombre,
             'fecha': item.fecha_subida.strftime('%Y-%m-%d'),
             'tipo': item.tipo,
@@ -127,7 +127,7 @@ def galeria_upload(request):
             'ok': True,
             'message': 'Archivo subido exitosamente',
             'id': item.id,
-            'url': request.build_absolute_uri(item.archivo.url)
+            'url': request.build_absolute_uri(item.archivo.url).replace('http://', 'https://')
         }
         print(f"DEBUG: Respuesta exitosa: {response_data}")
         return JsonResponse(response_data)
