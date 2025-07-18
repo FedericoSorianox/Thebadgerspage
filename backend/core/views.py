@@ -15,17 +15,31 @@ def api_root(request):
 
 def galeria_list(request):
     items = GaleriaItem.objects.order_by('-fecha_subida')[:8]
-    data = [
-        {
+    data = []
+    
+    for item in items:
+        # Verificar si estamos usando Cloudinary
+        is_cloudinary = (
+            hasattr(settings, 'DEFAULT_FILE_STORAGE') and 
+            'cloudinary' in str(settings.DEFAULT_FILE_STORAGE).lower()
+        )
+        
+        if is_cloudinary:
+            # Si usamos Cloudinary, la URL ya es completa
+            file_url = item.archivo.url
+        else:
+            # Si usamos almacenamiento local, construir URL absoluta
+            file_url = request.build_absolute_uri(item.archivo.url).replace('http://', 'https://')
+        
+        data.append({
             'id': item.id,
-            'url': request.build_absolute_uri(item.archivo.url).replace('http://', 'https://'),
+            'url': file_url,
             'nombre': item.nombre,
             'fecha': item.fecha_subida.strftime('%Y-%m-%d'),
             'tipo': item.tipo,
             'usuario': item.usuario.username if item.usuario else 'Anónimo',
-        }
-        for item in items
-    ]
+        })
+    
     return JsonResponse(data, safe=False)
 
 @csrf_exempt
