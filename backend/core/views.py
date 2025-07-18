@@ -136,6 +136,7 @@ def galeria_upload(request):
         if item.archivo:
             print(f"DEBUG: Archivo guardado en: {item.archivo.path}")
             print(f"DEBUG: URL del archivo: {item.archivo.url}")
+            print(f"DEBUG: Nombre del archivo en Cloudinary: {item.archivo.name}")
         else:
             print(f"DEBUG: ADVERTENCIA: El archivo no se guardó correctamente")
         
@@ -145,11 +146,21 @@ def galeria_upload(request):
             for old in items[8:]:
                 old.delete()
         
+        # Generar la URL correcta según el storage configurado
+        if hasattr(settings, 'DEFAULT_FILE_STORAGE') and 'cloudinary' in settings.DEFAULT_FILE_STORAGE:
+            # Si usamos Cloudinary, la URL ya es completa
+            file_url = item.archivo.url
+            print(f"DEBUG: Usando URL de Cloudinary: {file_url}")
+        else:
+            # Si usamos almacenamiento local, construir URL absoluta
+            file_url = request.build_absolute_uri(item.archivo.url).replace('http://', 'https://')
+            print(f"DEBUG: Usando URL local: {file_url}")
+        
         response_data = {
             'ok': True,
             'message': 'Archivo subido exitosamente',
             'id': item.id,
-            'url': request.build_absolute_uri(item.archivo.url).replace('http://', 'https://')
+            'url': file_url
         }
         print(f"DEBUG: Respuesta exitosa: {response_data}")
         return JsonResponse(response_data)
