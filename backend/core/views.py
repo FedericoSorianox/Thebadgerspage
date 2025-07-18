@@ -223,6 +223,10 @@ def galeria_upload(request):
                 usuario=user
             )
             
+            # Para Cloudinary, devolver directamente la URL sin procesar
+            file_url = result['secure_url']
+            print(f"DEBUG: Usando URL directa de Cloudinary: {file_url}")
+            
         except Exception as e:
             print(f"DEBUG: ❌ Error subiendo a Cloudinary: {e}")
             # Si falla Cloudinary, usar almacenamiento local
@@ -231,6 +235,11 @@ def galeria_upload(request):
                 os.makedirs(media_dir, exist_ok=True)
             
             item = GaleriaItem.objects.create(nombre=nombre, archivo=archivo, usuario=user)
+            
+            # Para almacenamiento local, construir URL absoluta
+            file_url = request.build_absolute_uri(item.archivo.url).replace('http://', 'https://')
+            print(f"DEBUG: Usando URL local: {file_url}")
+        
         print(f"DEBUG: GaleriaItem creado exitosamente con ID: {item.id}")
         
         # Verificar que el archivo se guardó correctamente
@@ -248,27 +257,6 @@ def galeria_upload(request):
         if items.count() > 8:
             for old in items[8:]:
                 old.delete()
-        
-        # Generar la URL correcta según el storage configurado
-        print(f"DEBUG: DEFAULT_FILE_STORAGE: {getattr(settings, 'DEFAULT_FILE_STORAGE', 'No definido')}")
-        print(f"DEBUG: CLOUDINARY_CONFIGURED: {getattr(settings, 'CLOUDINARY_CONFIGURED', 'No definido')}")
-        print(f"DEBUG: DEBUG setting: {settings.DEBUG}")
-        
-        # Verificar si estamos usando Cloudinary
-        is_cloudinary = (
-            hasattr(settings, 'DEFAULT_FILE_STORAGE') and 
-            'cloudinary' in str(settings.DEFAULT_FILE_STORAGE).lower()
-        )
-        print(f"DEBUG: is_cloudinary: {is_cloudinary}")
-        
-        if is_cloudinary:
-            # Si usamos Cloudinary, la URL ya es completa
-            file_url = item.archivo.url
-            print(f"DEBUG: Usando URL de Cloudinary: {file_url}")
-        else:
-            # Si usamos almacenamiento local, construir URL absoluta
-            file_url = request.build_absolute_uri(item.archivo.url).replace('http://', 'https://')
-            print(f"DEBUG: Usando URL local: {file_url}")
         
         response_data = {
             'ok': True,
