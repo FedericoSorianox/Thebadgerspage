@@ -264,12 +264,6 @@ function ProductoModal({ producto, onClose }) {
         <h2 className="text-2xl font-bold text-cyan-200 text-center mb-2">{producto.nombre}</h2>
         <div className="text-cyan-400 font-semibold text-xl text-center mb-2">${parseFloat(producto.precio_venta).toLocaleString('es-UY', {minimumFractionDigits:2})}</div>
         <div className="text-cyan-100 text-center mb-2">Stock: {producto.stock > 0 ? producto.stock : <span className='text-red-400 font-bold'>Sin stock</span>}</div>
-        {producto.ganancia !== undefined && (
-          <div className="text-cyan-700 text-center text-sm mb-2">Ganancia: ${parseFloat(producto.ganancia).toLocaleString('es-UY', {minimumFractionDigits:2})}</div>
-        )}
-        {producto.precio_costo && (
-          <div className="text-cyan-900 text-center text-xs">Costo: ${parseFloat(producto.precio_costo).toLocaleString('es-UY', {minimumFractionDigits:2})}</div>
-        )}
       </div>
     </div>
   );
