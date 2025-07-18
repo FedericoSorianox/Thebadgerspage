@@ -486,6 +486,61 @@ def migrate_existing_images_endpoint(request):
     except Exception as e:
         return JsonResponse({'error': f'Error en migración: {str(e)}'}, status=500)
 
+@csrf_exempt
+def update_item_cloudinary_url(request):
+    """Endpoint para actualizar un item específico con URL de Cloudinary"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    # Verificar autenticación básica
+    if not request.META.get('HTTP_AUTHORIZATION'):
+        return JsonResponse({'error': 'No autenticado'}, status=401)
+    
+    auth = request.META['HTTP_AUTHORIZATION']
+    if not auth.startswith('Basic '):
+        return JsonResponse({'error': 'Tipo de autenticación no soportado'}, status=401)
+    
+    try:
+        userpass = base64.b64decode(auth.split(' ')[1]).decode('utf-8')
+        username, password = userpass.split(':', 1)
+        user = authenticate(username=username, password=password)
+        if not user:
+            return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
+    except Exception as e:
+        return JsonResponse({'error': 'Error en autenticación'}, status=401)
+    
+    try:
+        data = json.loads(request.body)
+        item_id = data.get('item_id')
+        cloudinary_url = data.get('cloudinary_url')
+        
+        if not item_id or not cloudinary_url:
+            return JsonResponse({'error': 'Faltan campos requeridos'}, status=400)
+        
+        # Buscar el item
+        try:
+            item = GaleriaItem.objects.get(id=item_id)
+        except GaleriaItem.DoesNotExist:
+            return JsonResponse({'error': f'Item {item_id} no encontrado'}, status=404)
+        
+        # Actualizar con la URL de Cloudinary
+        item.archivo = cloudinary_url
+        item.save()
+        
+        print(f'✅ Item {item_id} actualizado con URL: {cloudinary_url}')
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Item {item_id} actualizado exitosamente',
+            'item_id': item_id,
+            'cloudinary_url': cloudinary_url
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'JSON inválido'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': f'Error actualizando item: {str(e)}'}, status=500)
+
 class FrontendAppView(View):
     def get(self, request):
         # Buscar el archivo index.html en diferentes ubicaciones
