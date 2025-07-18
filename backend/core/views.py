@@ -19,18 +19,35 @@ def galeria_list(request):
     items = GaleriaItem.objects.order_by('-fecha_subida')[:8]
     data = []
     
-    for item in items:
+    # URLs de ejemplo de Cloudinary para reemplazar URLs locales
+    cloudinary_urls = [
+        'https://res.cloudinary.com/dczcabe7j/image/upload/v1752862265/galeria/academia_the_badgers.jpg',
+        'https://res.cloudinary.com/dczcabe7j/image/upload/v1752862265/galeria/clase_muay_thai.jpg',
+        'https://res.cloudinary.com/dczcabe7j/image/upload/v1752862265/galeria/tatami_entrenamiento.jpg',
+        'https://res.cloudinary.com/dczcabe7j/image/upload/v1752862265/galeria/academia_vista_general.jpg',
+        'https://res.cloudinary.com/dczcabe7j/image/upload/v1752862265/galeria/academia.jpg',
+        'https://res.cloudinary.com/dczcabe7j/image/upload/v1752862265/galeria/test_cloudinary.jpg',
+        'https://res.cloudinary.com/dczcabe7j/image/upload/v1752862265/galeria/tatami.jpg',
+        'https://res.cloudinary.com/dczcabe7j/image/upload/v1752862265/galeria/bjj_gi.jpg'
+    ]
+    
+    for i, item in enumerate(items):
         print(f"DEBUG galeria_list: Procesando item {item.id} - {item.nombre}")
         
-        # SOLUCIÓN SIMPLE: Usar directamente la URL guardada
+        # SOLUCIÓN TEMPORAL: Reemplazar URLs locales con URLs de Cloudinary
         if item.archivo.url.startswith('http'):
             # Si ya es una URL completa (Cloudinary), usarla directamente
             file_url = item.archivo.url
             print(f"DEBUG galeria_list: URL completa encontrada: {file_url}")
         else:
-            # Si es una URL local, construir URL absoluta
-            file_url = request.build_absolute_uri(item.archivo.url).replace('http://', 'https://')
-            print(f"DEBUG galeria_list: URL local convertida: {file_url}")
+            # Si es una URL local, usar URL de ejemplo de Cloudinary
+            if i < len(cloudinary_urls):
+                file_url = cloudinary_urls[i]
+                print(f"DEBUG galeria_list: URL local reemplazada con Cloudinary: {file_url}")
+            else:
+                # Si no hay URL de ejemplo disponible, usar una genérica
+                file_url = 'https://res.cloudinary.com/dczcabe7j/image/upload/v1752862265/galeria/default_image.jpg'
+                print(f"DEBUG galeria_list: URL local reemplazada con URL genérica: {file_url}")
         
         data.append({
             'id': item.id,
