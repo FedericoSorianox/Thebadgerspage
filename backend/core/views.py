@@ -137,6 +137,8 @@ def galeria_upload(request):
             print(f"DEBUG: Archivo guardado en: {item.archivo.path}")
             print(f"DEBUG: URL del archivo: {item.archivo.url}")
             print(f"DEBUG: Nombre del archivo en Cloudinary: {item.archivo.name}")
+            print(f"DEBUG: Tipo de archivo: {type(item.archivo)}")
+            print(f"DEBUG: Storage del archivo: {item.archivo.storage}")
         else:
             print(f"DEBUG: ADVERTENCIA: El archivo no se guardó correctamente")
         
