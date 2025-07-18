@@ -1,21 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
-from django.conf import settings
-
-# Importar CloudinaryStorage si está disponible
-try:
-    from cloudinary_storage.storage import MediaCloudinaryStorage
-    CLOUDINARY_AVAILABLE = True
-except ImportError:
-    CLOUDINARY_AVAILABLE = False
 
 class GaleriaItem(models.Model):
-    # Usar CloudinaryStorage si está configurado, sino usar el almacenamiento por defecto
-    if CLOUDINARY_AVAILABLE and hasattr(settings, 'CLOUDINARY_CONFIGURED') and settings.CLOUDINARY_CONFIGURED and not settings.DEBUG:
-        archivo = models.FileField(upload_to='galeria/', storage=MediaCloudinaryStorage())
-    else:
-        archivo = models.FileField(upload_to='galeria/')
-    
+    archivo = models.FileField(upload_to='galeria/')
     nombre = models.CharField(max_length=100)
     fecha_subida = models.DateTimeField(auto_now_add=True)
     # El tipo se puede deducir del archivo, pero lo dejamos para consulta rápida
