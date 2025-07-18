@@ -34,9 +34,16 @@ def galeria_list(request):
     for i, item in enumerate(items):
         print(f"DEBUG galeria_list: Procesando item {item.id} - {item.nombre}")
         
-        # SOLUCIÓN TEMPORAL: Reemplazar URLs locales con URLs de Cloudinary
-        if item.archivo.url.startswith('http'):
-            # Si ya es una URL completa (Cloudinary), usarla directamente
+        # Verificar si el campo archivo contiene una URL completa de Cloudinary
+        archivo_value = str(item.archivo)
+        print(f"DEBUG galeria_list: Valor real del campo archivo: {archivo_value}")
+        
+        if archivo_value.startswith('http') and 'cloudinary.com' in archivo_value:
+            # Es una URL directa de Cloudinary, usarla sin procesar
+            file_url = archivo_value
+            print(f"DEBUG galeria_list: URL directa de Cloudinary encontrada: {file_url}")
+        elif item.archivo.url.startswith('http'):
+            # Si ya es una URL completa (otro servicio), usarla directamente
             file_url = item.archivo.url
             print(f"DEBUG galeria_list: URL completa encontrada: {file_url}")
         elif 'cloudinary.com' in item.archivo.url:
