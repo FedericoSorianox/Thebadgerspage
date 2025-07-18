@@ -36,6 +36,8 @@ def galeria_upload(request):
     print(f"DEBUG: POST data: {dict(request.POST)}")
     print(f"DEBUG: FILES: {dict(request.FILES)}")
     print(f"DEBUG: Número de archivos: {len(request.FILES)}")
+    print(f"DEBUG: Claves en FILES: {list(request.FILES.keys())}")
+    print(f"DEBUG: Headers completos: {dict(request.META)}")
     
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
@@ -67,14 +69,27 @@ def galeria_upload(request):
     
     print(f"DEBUG: Nombre recibido: {nombre}")
     print(f"DEBUG: Archivo recibido: {archivo}")
+    print(f"DEBUG: Tipo de archivo: {type(archivo)}")
+    
     if archivo:
         print(f"DEBUG: Tamaño del archivo: {archivo.size}")
         print(f"DEBUG: Tipo del archivo: {archivo.content_type}")
         print(f"DEBUG: Nombre del archivo: {archivo.name}")
         print(f"DEBUG: Archivo es válido: {archivo.name and archivo.size > 0}")
+        print(f"DEBUG: Archivo tiene contenido: {hasattr(archivo, 'read')}")
+        
+        # Intentar leer los primeros bytes para verificar que no esté vacío
+        try:
+            archivo.seek(0)
+            first_bytes = archivo.read(10)
+            print(f"DEBUG: Primeros 10 bytes: {first_bytes}")
+            archivo.seek(0)  # Resetear posición
+        except Exception as e:
+            print(f"DEBUG: Error al leer archivo: {e}")
     else:
         print(f"DEBUG: No se recibió archivo en request.FILES")
         print(f"DEBUG: Claves disponibles en FILES: {list(request.FILES.keys())}")
+        print(f"DEBUG: Todos los archivos: {request.FILES}")
     
     if not nombre:
         return JsonResponse({'error': 'El nombre es requerido'}, status=400)
