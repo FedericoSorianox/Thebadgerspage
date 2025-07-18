@@ -7,6 +7,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'corsheaders',
+    'cloudinary_storage',
     'core',
 ]
 
@@ -127,4 +128,21 @@ SECRET_KEY = 'dev-secret-key-1234567890abcdef'
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 SECURE_SSL_REDIRECT = True
 SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True 
+CSRF_COOKIE_SECURE = True
+
+# Configuración de Cloudinary para almacenamiento de archivos
+import os
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', 'your-cloud-name'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY', 'your-api-key'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', 'your-api-secret'),
+}
+
+# Usar Cloudinary para archivos media en producción
+if not DEBUG:
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    MEDIA_URL = '/media/'
+else:
+    # En desarrollo, usar almacenamiento local
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 
