@@ -584,22 +584,39 @@ function Galeria() {
     
     console.log('DEBUG: Tipo de archivo:', file.type);
     console.log('DEBUG: Tamaño del archivo:', file.size);
+    console.log('DEBUG: Nombre del archivo:', file.name);
     
     // Subir a la API
     const formData = new FormData();
     formData.append('nombre', nombre);
-    formData.append('archivo', file);
+    formData.append('archivo', file, file.name); // Agregar el nombre del archivo explícitamente
     
     // Verificar que el FormData se creó correctamente
     console.log('DEBUG: FormData creado');
     for (let [key, value] of formData.entries()) {
       console.log('DEBUG: FormData entry:', key, value);
+      if (value instanceof File) {
+        console.log('DEBUG: File en FormData:', value.name, value.size, value.type);
+      }
+    }
+    
+    // Verificar que el archivo esté en el FormData
+    const archivoEnFormData = formData.get('archivo');
+    console.log('DEBUG: Archivo en FormData:', archivoEnFormData);
+    if (archivoEnFormData instanceof File) {
+      console.log('DEBUG: Archivo válido en FormData:', archivoEnFormData.name, archivoEnFormData.size);
+    } else {
+      console.error('DEBUG: ERROR - Archivo no válido en FormData');
+      setUploadError('Error al preparar el archivo');
+      setUploading(false);
+      return;
     }
     
     fetch(`${API_BASE}/api/galeria/upload/`, {
       method: 'POST',
       headers: {
         'Authorization': 'Basic ' + btoa(`${loginUser}:${loginPass}`)
+        // NO incluir Content-Type para FormData, el navegador lo establece automáticamente
       },
       body: formData
     })
@@ -730,7 +747,7 @@ function Galeria() {
                         <video src={item.url} className="w-full h-full object-cover bg-slate-50" />
                         <span className="absolute top-3 right-3 bg-black/80 rounded-full p-2 backdrop-blur-sm">
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-white">
-                            <path d="M4.5 3.75A2.25 2.25 0 0 0 2.25 6v8A2.25 2.25 0 0 0 4.5 16.25h11A2.25 2.25 0 0 0 17.75 14V6A2.25 2.25 0 0 0 15.5 3.75h-11zm3.75 3.5a.75.75 0 0 1 1.13-.65l4.5 2.75a.75.75 0 0 1 0 1.3l-4.5 2.75A.75.75 0 0 1 8.25 12V6.75z" />
+                            <path d="M4.5 3.75A2.25 2.25 0 0 0 2.25 6v8A2.25 2.25 0 0 0 4.5 16.25h11A2.25 2.25 0 0 0 20.5 14V6A2.25 2.25 0 0 0 18.25 3.75h-11zm3.75 3.5a.75.75 0 0 1 1.13-.65l4.5 2.75a.75.75 0 0 1 0 1.3l-4.5 2.75A.75.75 0 0 1 8.25 12V6.75z" />
                           </svg>
                         </span>
                       </>
