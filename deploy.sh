@@ -26,12 +26,13 @@ echo "🐍 Instalando dependencias del backend..."
 cd backend
 pip install -r requirements.txt
 
-# Ejecutar migraciones
-echo "🗄️ Ejecutando migraciones..."
-python manage.py migrate
+# NOTA: Las migraciones NO se ejecutan automáticamente para proteger la base de datos compartida
+echo "⚠️  Migraciones NO ejecutadas automáticamente para proteger la base de datos compartida"
+echo "📋 Si necesitas ejecutar migraciones, usa: python safe_migrate.py"
 
 # Recolectar archivos estáticos
 echo "📂 Recolectando archivos estáticos..."
 python manage.py collectstatic --noinput
 
-echo "✅ Despliegue completado exitosamente!" 
+echo "✅ Despliegue completado exitosamente!"
+echo "🛡️  La base de datos compartida está protegida" 

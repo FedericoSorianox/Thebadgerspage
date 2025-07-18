@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import "./App.css";
 import badgersLogo from "./assets/badgers-logo.png";
 import { Parallax } from 'react-parallax';
-import { Routes, Route, Link, useLocation } from 'react-router-dom';
+import { Routes, Route, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Navigation, Pagination } from 'swiper/modules';
 import 'swiper/css';
@@ -22,6 +22,30 @@ const NAV_ITEMS = [
 
 function Navbar() {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleNavigation = (href) => {
+    if (href.startsWith('/#')) {
+      // Si estamos en otra página, navegar primero a la página principal
+      if (location.pathname !== '/') {
+        navigate('/');
+        // Esperar un poco para que la navegación se complete antes de hacer scroll
+        setTimeout(() => {
+          const element = document.querySelector(href.substring(1));
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth' });
+          }
+        }, 100);
+      } else {
+        // Si ya estamos en la página principal, solo hacer scroll
+        const element = document.querySelector(href.substring(1));
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }
+    }
+  };
+
   return (
     <nav className="navbar-badgers fixed top-0 left-0 w-full z-50 shadow-xl border-b border-cyan-500/60 backdrop-blur-md">
       <div className="max-w-4xl mx-auto px-4 py-2 flex justify-between items-center">
@@ -39,13 +63,20 @@ function Navbar() {
                 >
                   {item.label}
                 </Link>
+              ) : item.href.startsWith('/galeria') ? (
+                <Link
+                  to={item.href}
+                  className={`text-cyan-100 font-semibold hover:text-cyan-400 transition-colors duration-200 drop-shadow ${location.pathname === '/galeria' ? 'text-cyan-400' : ''}`}
+                >
+                  {item.label}
+                </Link>
               ) : (
-                <a
-                  href={item.href}
+                <button
+                  onClick={() => handleNavigation(item.href)}
                   className="text-cyan-100 font-semibold hover:text-cyan-400 transition-colors duration-200 drop-shadow"
                 >
                   {item.label}
-                </a>
+                </button>
               )}
             </li>
           ))}
@@ -208,62 +239,90 @@ function SobreNosotrosYClases() {
 
 function Contacto() {
   return (
-    <Parallax
-      bgImage="https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=1500&q=80"
-      strength={150}
-      bgImageStyle={{ minHeight: '100vh', objectFit: 'cover' }}
-    >
-      <section id="contacto" className="flex items-center justify-center min-h-screen w-full py-24 bg-black/80">
-        <div className="max-w-2xl bg-black/90 rounded-3xl shadow-2xl border-2 border-cyan-900 p-10 text-center backdrop-blur-md animate-fade-in flex flex-col items-center gap-6">
-          <h2 className="text-3xl md:text-4xl font-bold text-cyan-200 mb-4 drop-shadow">Contacto</h2>
-          <p className="text-lg text-cyan-100 mb-4">¿Listo para comenzar? Reserva tu clase o consúltanos por WhatsApp o Instagram.</p>
-          <div className="text-cyan-200 font-bold text-lg mb-2">Cel: <span className="text-cyan-100">092 627 480</span></div>
-          <a href="https://www.instagram.com/thebadgers.uy/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-cyan-300 font-bold underline mb-2 hover:text-cyan-400 transition-colors text-lg">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-6 h-6">
-              <path d="M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2zm0 1.5A4.25 4.25 0 0 0 3.5 7.75v8.5A4.25 4.25 0 0 0 7.75 20.5h8.5A4.25 4.25 0 0 0 20.5 16.25v-8.5A4.25 4.25 0 0 0 16.25 3.5zm4.25 3.25a5.25 5.25 0 1 1 0 10.5a5.25 5.25 0 0 1 0-10.5zm0 1.5a3.75 3.75 0 1 0 0 7.5a3.75 3.75 0 0 0 0-7.5zm5.13.62a1.13 1.13 0 1 1 0 2.25a1.13 1.13 0 0 1 0-2.25z"/>
-            </svg>
-            Instagram
-          </a>
-          <a
-            href="https://wa.me/59892627480?text=Estoy%20interesado%20en%20tener%20una%20clase%20de%20prueba"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block px-7 py-3 bg-cyan-500 hover:bg-cyan-400 text-cyan-900 font-bold rounded-full shadow-lg transition-all duration-300 text-base uppercase tracking-wider mt-2 mb-6 border-2 border-cyan-200"
-          >
-            ¡Reserva tu clase!
-          </a>
-          <div className="w-full flex justify-center mt-2">
-            <iframe
-              title="Ubicación The Badgers Academia"
-              src="https://www.google.com/maps?q=Academia+The+Badgers&output=embed"
-              width="100%"
-              height="300"
-              style={{ border: 0, borderRadius: '1rem', minWidth: '250px' }}
-              allowFullScreen=""
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-            ></iframe>
-          </div>
+    <section id="contacto" className="flex items-center justify-center min-h-screen w-full py-24 relative overflow-hidden">
+      {/* Fondo moderno con gradientes y elementos decorativos */}
+      <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100"></div>
+      
+      {/* Elementos decorativos de fondo */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Círculos decorativos grandes */}
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200 to-indigo-300 rounded-full opacity-30 blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-cyan-200 to-blue-300 rounded-full opacity-30 blur-3xl"></div>
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-indigo-200 to-purple-200 rounded-full opacity-20 blur-3xl"></div>
+        
+        {/* Elementos geométricos sutiles */}
+        <div className="absolute top-20 right-1/4 w-32 h-32 bg-gradient-to-br from-blue-300 to-indigo-400 rounded-full opacity-10 blur-2xl"></div>
+        <div className="absolute bottom-20 left-1/3 w-24 h-24 bg-gradient-to-tl from-cyan-300 to-blue-400 rounded-full opacity-15 blur-2xl"></div>
+      </div>
+      
+      {/* Patrón de puntos decorativo */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-32 left-20 w-2 h-2 bg-indigo-600 rounded-full"></div>
+        <div className="absolute top-48 right-32 w-1 h-1 bg-blue-600 rounded-full"></div>
+        <div className="absolute top-64 left-1/3 w-1.5 h-1.5 bg-cyan-600 rounded-full"></div>
+        <div className="absolute top-80 right-1/4 w-1 h-1 bg-indigo-600 rounded-full"></div>
+        <div className="absolute top-96 left-1/2 w-2 h-2 bg-blue-600 rounded-full"></div>
+        <div className="absolute top-40 right-1/3 w-1.5 h-1.5 bg-cyan-600 rounded-full"></div>
+        <div className="absolute bottom-32 left-1/4 w-1 h-1 bg-indigo-600 rounded-full"></div>
+        <div className="absolute bottom-48 right-1/3 w-2 h-2 bg-blue-600 rounded-full"></div>
+      </div>
+
+      {/* Líneas decorativas sutiles */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute top-1/4 left-0 w-32 h-px bg-gradient-to-r from-transparent via-indigo-400 to-transparent"></div>
+        <div className="absolute bottom-1/4 right-0 w-32 h-px bg-gradient-to-l from-transparent via-blue-400 to-transparent"></div>
+        <div className="absolute top-1/2 left-1/4 w-24 h-px bg-gradient-to-r from-transparent via-cyan-400 to-transparent"></div>
+      </div>
+
+      <div className="relative z-10 max-w-2xl bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl border border-slate-200 p-10 text-center animate-fade-in flex flex-col items-center gap-6">
+        <h2 className="text-3xl md:text-4xl font-bold text-slate-800 mb-4 drop-shadow">Contacto</h2>
+        <p className="text-lg text-slate-600 mb-4">¿Listo para comenzar? Reserva tu clase o consúltanos por WhatsApp o Instagram.</p>
+        <div className="text-slate-700 font-bold text-lg mb-2">Cel: <span className="text-indigo-600">092 627 480</span></div>
+        <a href="https://www.instagram.com/thebadgers.uy/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-indigo-600 font-bold underline mb-2 hover:text-indigo-700 transition-colors text-lg">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-6 h-6">
+            <path d="M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2zm0 1.5A4.25 4.25 0 0 0 3.5 7.75v8.5A4.25 4.25 0 0 0 7.75 20.5h8.5A4.25 4.25 0 0 0 20.5 16.25v-8.5A4.25 4.25 0 0 0 16.25 3.5zm4.25 3.25a5.25 5.25 0 1 1 0 10.5a5.25 5.25 0 0 1 0-10.5zm0 1.5a3.75 3.75 0 1 0 0 7.5a3.75 3.75 0 0 0 0-7.5zm5.13.62a1.13 1.13 0 1 1 0 2.25a1.13 1.13 0 0 1 0-2.25z"/>
+          </svg>
+          Instagram
+        </a>
+        <a
+          href="https://wa.me/59892627480?text=Estoy%20interesado%20en%20tener%20una%20clase%20de%20prueba"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block px-8 py-4 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold rounded-full shadow-lg transition-all duration-300 text-base uppercase tracking-wider mt-2 mb-6 border-0 transform hover:scale-105"
+        >
+          ¡Reserva tu clase!
+        </a>
+        <div className="w-full flex justify-center mt-2">
+          <iframe
+            title="Ubicación The Badgers Academia"
+            src="https://www.google.com/maps?q=Academia+The+Badgers&output=embed"
+            width="100%"
+            height="300"
+            style={{ border: 0, borderRadius: '1rem', minWidth: '250px' }}
+            allowFullScreen=""
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+          ></iframe>
         </div>
-      </section>
-    </Parallax>
+      </div>
+    </section>
   );
 }
 
 function ProductoModal({ producto, onClose }) {
   if (!producto) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm" onClick={onClose}>
-      <div className="bg-black rounded-2xl shadow-2xl border-2 border-cyan-900 max-w-md w-full p-6 relative animate-fade-in" onClick={e => e.stopPropagation()}>
-        <button onClick={onClose} className="absolute top-3 right-3 text-cyan-300 text-2xl font-bold hover:text-cyan-400">×</button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 relative animate-fade-in" onClick={e => e.stopPropagation()}>
+        <button onClick={onClose} className="absolute top-3 right-3 text-slate-500 text-2xl font-bold hover:text-slate-700">×</button>
         {producto.foto_url ? (
-          <img src={producto.foto_url} alt={producto.nombre} className="w-48 h-48 object-contain rounded-xl mx-auto mb-4 bg-black" />
+          <img src={producto.foto_url} alt={producto.nombre} className="w-48 h-48 object-contain rounded-xl mx-auto mb-4 bg-slate-50" />
         ) : (
-          <div className="w-48 h-48 flex items-center justify-center rounded-xl mx-auto mb-4 bg-cyan-950 text-cyan-300 text-2xl">Sin foto</div>
+          <div className="w-48 h-48 flex items-center justify-center rounded-xl mx-auto mb-4 bg-slate-100 text-slate-500 text-2xl">Sin foto</div>
         )}
-        <h2 className="text-2xl font-bold text-cyan-200 text-center mb-2">{producto.nombre}</h2>
-        <div className="text-cyan-400 font-semibold text-xl text-center mb-2">${parseFloat(producto.precio_venta).toLocaleString('es-UY', {minimumFractionDigits:2})}</div>
-        <div className="text-cyan-100 text-center mb-2">Stock: {producto.stock > 0 ? producto.stock : <span className='text-red-400 font-bold'>Sin stock</span>}</div>
+        <h2 className="text-2xl font-bold text-slate-800 text-center mb-2">{producto.nombre}</h2>
+        <div className="text-indigo-600 font-semibold text-xl text-center mb-2">${parseFloat(producto.precio_venta).toLocaleString('es-UY', {minimumFractionDigits:2})}</div>
+        <div className="text-slate-600 text-center mb-2">Stock: {producto.stock > 0 ? producto.stock : <span className='text-red-500 font-bold'>Sin stock</span>}</div>
       </div>
     </div>
   );
@@ -287,27 +346,46 @@ function Tienda() {
   }, []);
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-cyan-900 via-cyan-950 to-black font-sans pt-32 flex flex-col items-center px-2">
-      <h1 className="text-4xl md:text-5xl font-extrabold text-cyan-200 mb-8 mt-8 drop-shadow-xl text-center tracking-tight animate-fade-in break-words max-w-full">Tienda</h1>
-      <p className="text-lg text-cyan-100 mb-8 text-center max-w-xl animate-fade-in">Productos oficiales y seleccionados de The Badgers. ¡Elegí el tuyo!</p>
-      {loading && <p className="text-cyan-200 animate-pulse">Cargando productos...</p>}
-      {error && <p className="text-red-400">{error}</p>}
-      <ProductoModal producto={productoSeleccionado} onClose={() => setProductoSeleccionado(null)} />
-      <div className="w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 mb-16">
-        {productos
-          .filter(prod => !["Agua Salus", "Alfa Way", "Way Bar", "Power Ade"].includes(prod.nombre))
-          .map(prod => (
-            <div key={prod.id} className="bg-black/80 rounded-2xl shadow-xl border border-cyan-900 flex flex-col items-center p-5 transition-transform hover:scale-105 hover:border-cyan-400 cursor-pointer" onClick={() => setProductoSeleccionado(prod)}>
-              {prod.foto_url ? (
-                <img src={prod.foto_url} alt={prod.nombre} className="w-32 h-32 object-contain rounded-xl mb-3 bg-black" />
-              ) : (
-                <div className="w-32 h-32 flex items-center justify-center rounded-xl mb-3 bg-cyan-950 text-cyan-300 text-2xl">Sin foto</div>
-              )}
-              <h2 className="text-lg font-bold text-cyan-200 text-center mb-1">{prod.nombre}</h2>
-              <div className="text-cyan-400 font-semibold text-base mb-1">${parseFloat(prod.precio_venta).toLocaleString('es-UY', {minimumFractionDigits:2})}</div>
-              <div className="text-cyan-100 text-sm mb-2">Stock: {prod.stock > 0 ? prod.stock : <span className='text-red-400 font-bold'>Sin stock</span>}</div>
-            </div>
-          ))}
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 font-sans pt-32 flex flex-col items-center px-2 relative overflow-hidden">
+      {/* Elementos decorativos de fondo */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200 to-indigo-300 rounded-full opacity-20 blur-3xl"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-cyan-200 to-blue-300 rounded-full opacity-20 blur-3xl"></div>
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-indigo-200 to-purple-200 rounded-full opacity-10 blur-3xl"></div>
+      </div>
+      
+      {/* Patrón de puntos decorativo */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute top-20 left-10 w-2 h-2 bg-indigo-600 rounded-full"></div>
+        <div className="absolute top-40 right-20 w-1 h-1 bg-blue-600 rounded-full"></div>
+        <div className="absolute top-60 left-1/4 w-1.5 h-1.5 bg-cyan-600 rounded-full"></div>
+        <div className="absolute top-80 right-1/3 w-1 h-1 bg-indigo-600 rounded-full"></div>
+        <div className="absolute top-96 left-1/2 w-2 h-2 bg-blue-600 rounded-full"></div>
+        <div className="absolute top-32 right-1/4 w-1.5 h-1.5 bg-cyan-600 rounded-full"></div>
+      </div>
+
+      <div className="relative z-10 w-full flex flex-col items-center">
+        <h1 className="text-4xl md:text-5xl font-extrabold text-slate-800 mb-8 mt-8 drop-shadow-lg text-center tracking-tight animate-fade-in break-words max-w-full">Tienda</h1>
+        <p className="text-lg text-slate-600 mb-8 text-center max-w-xl animate-fade-in">Productos oficiales y seleccionados de The Badgers. ¡Elegí el tuyo!</p>
+        {loading && <p className="text-slate-700 animate-pulse">Cargando productos...</p>}
+        {error && <p className="text-red-500">{error}</p>}
+        <ProductoModal producto={productoSeleccionado} onClose={() => setProductoSeleccionado(null)} />
+        <div className="w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 mb-16">
+          {productos
+            .filter(prod => !["Agua Salus", "Alfa Way", "Way Bar", "Power Ade"].includes(prod.nombre))
+            .map(prod => (
+              <div key={prod.id} className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-slate-200 flex flex-col items-center p-5 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:border-indigo-300 cursor-pointer" onClick={() => setProductoSeleccionado(prod)}>
+                {prod.foto_url ? (
+                  <img src={prod.foto_url} alt={prod.nombre} className="w-32 h-32 object-contain rounded-xl mb-3 bg-slate-50" />
+                ) : (
+                  <div className="w-32 h-32 flex items-center justify-center rounded-xl mb-3 bg-slate-100 text-slate-500 text-2xl">Sin foto</div>
+                )}
+                <h2 className="text-lg font-bold text-slate-800 text-center mb-1">{prod.nombre}</h2>
+                <div className="text-indigo-600 font-semibold text-base mb-1">${parseFloat(prod.precio_venta).toLocaleString('es-UY', {minimumFractionDigits:2})}</div>
+                <div className="text-slate-600 text-sm mb-2">Stock: {prod.stock > 0 ? prod.stock : <span className='text-red-500 font-bold'>Sin stock</span>}</div>
+              </div>
+            ))}
+        </div>
       </div>
     </div>
   );
@@ -362,15 +440,76 @@ function Galeria() {
 
   // --- API real ---
   const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://thebadgerspage.onrender.com';
+  
+  // Imágenes de ejemplo para ambiente local
+  const imagenesEjemplo = [
+    {
+      id: 'ejemplo-1',
+      nombre: 'Entrenamiento Jiu Jitsu',
+      url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
+      fecha: '2025-01-15',
+      usuario: 'Admin',
+      tipo: 'imagen'
+    },
+    {
+      id: 'ejemplo-2',
+      nombre: 'Clase de Muay Thai',
+      url: 'https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=800&q=80',
+      fecha: '2025-01-14',
+      usuario: 'Admin',
+      tipo: 'imagen'
+    },
+    {
+      id: 'ejemplo-3',
+      nombre: 'Competencia Local',
+      url: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80',
+      fecha: '2025-01-13',
+      usuario: 'Admin',
+      tipo: 'imagen'
+    },
+    {
+      id: 'ejemplo-4',
+      nombre: 'Entrenamiento No GI',
+      url: 'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=800&q=80',
+      fecha: '2025-01-12',
+      usuario: 'Admin',
+      tipo: 'imagen'
+    },
+    {
+      id: 'ejemplo-5',
+      nombre: 'Academia The Badgers',
+      url: 'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=800&q=80',
+      fecha: '2025-01-11',
+      usuario: 'Admin',
+      tipo: 'imagen'
+    }
+  ];
+
   useEffect(() => {
     setLoadingGallery(true);
     fetch(`${API_BASE}/api/galeria/`)
       .then(res => res.json())
       .then(data => {
-        setGallery(data);
-        setSelectedIdx(data.length - 1);
+        // Si estamos en local y no hay imágenes, usar ejemplos
+        if (window.location.hostname === 'localhost' && (!data || data.length === 0)) {
+          console.log('Ambiente local detectado - mostrando imágenes de ejemplo');
+          setGallery(imagenesEjemplo);
+          setSelectedIdx(imagenesEjemplo.length - 1);
+        } else {
+          setGallery(data);
+          setSelectedIdx(data.length - 1);
+        }
       })
-      .catch(() => setGallery([]))
+      .catch(() => {
+        // Si hay error y estamos en local, usar ejemplos
+        if (window.location.hostname === 'localhost') {
+          console.log('Error en API - mostrando imágenes de ejemplo en local');
+          setGallery(imagenesEjemplo);
+          setSelectedIdx(imagenesEjemplo.length - 1);
+        } else {
+          setGallery([]);
+        }
+      })
       .finally(() => setLoadingGallery(false));
   }, []);
 
@@ -521,127 +660,182 @@ function Galeria() {
   }
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-cyan-900 via-cyan-950 to-black font-sans pt-32 flex flex-col items-center">
-      <h1 className="text-4xl md:text-5xl font-extrabold text-cyan-200 mb-8 mt-8 drop-shadow-xl text-center tracking-tight animate-fade-in break-words max-w-full">Galería</h1>
-      {/* Galería */}
-      {loadingGallery ? (
-        <div className="text-cyan-200 animate-pulse">Cargando galería...</div>
-      ) : (
-        <>
-          {/* Previsualización grande */}
-          {gallery[selectedIdx] && (
-            <div className="mb-8 flex flex-col items-center">
-              <button
-                className="rounded-2xl shadow-2xl border-4 border-cyan-700 bg-black overflow-hidden max-w-2xl w-full flex flex-col items-center focus:outline-none"
-                style={{ cursor: 'zoom-in' }}
-                onClick={() => setModalImg(gallery[selectedIdx].url)}
-                aria-label="Ver en pantalla completa"
-              >
-                {gallery[selectedIdx].tipo === 'video' ? (
-                  <video src={gallery[selectedIdx].url} controls className="w-full max-h-[400px] object-contain bg-black" />
-                ) : (
-                  <img src={gallery[selectedIdx].url} alt={gallery[selectedIdx].nombre} className="w-full max-h-[400px] object-contain" />
-                )}
-                <div className="w-full px-4 py-2 bg-black/80 text-cyan-100 text-base flex flex-col items-start">
-                  <span className="font-bold truncate w-full" title={gallery[selectedIdx].nombre}>{gallery[selectedIdx].nombre}</span>
-                  <div className="flex justify-between items-center w-full">
-                    <span className="text-cyan-400">{gallery[selectedIdx].fecha}</span>
-                    <span className="text-cyan-300 text-sm">por {gallery[selectedIdx].usuario || 'Anónimo'}</span>
-                  </div>
-                </div>
-              </button>
-            </div>
-          )}
-          {/* Miniaturas */}
-          <div className="flex flex-wrap justify-center gap-6 max-w-6xl mb-8">
-            {gallery.map((item, idx) => (
-              <button
-                key={idx}
-                onClick={() => setSelectedIdx(idx)}
-                className={`border-4 ${selectedIdx === idx ? 'border-cyan-400 scale-105 shadow-2xl' : 'border-cyan-900'} rounded-xl overflow-hidden focus:outline-none transition-all duration-200 hover:scale-110 hover:shadow-xl bg-black relative`}
-                style={{ width: 200, height: 150 }}
-                aria-label={`Ver elemento ${idx+1}`}
-              >
-                <div className="relative w-full h-full">
-                  {item.tipo === 'video' ? (
-                    <>
-                      <video src={item.url} className="w-full h-full object-cover bg-black" />
-                      <span className="absolute top-2 right-2 bg-black/70 rounded-full p-1.5">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-6 h-6 text-cyan-300">
-                          <path d="M4.5 3.75A2.25 2.25 0 0 0 2.25 6v8A2.25 2.25 0 0 0 4.5 16.25h11A2.25 2.25 0 0 0 17.75 14V6A2.25 2.25 0 0 0 15.5 3.75h-11zm3.75 3.5a.75.75 0 0 1 1.13-.65l4.5 2.75a.75.75 0 0 1 0 1.3l-4.5 2.75A.75.75 0 0 1 8.25 12V6.75z" />
-                        </svg>
-                      </span>
-                    </>
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 font-sans pt-32 flex flex-col items-center relative overflow-hidden">
+      {/* Elementos decorativos de fondo */}
+      <div className="absolute inset-0 overflow-hidden">
+        {/* Círculos decorativos grandes */}
+        <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200 to-indigo-300 rounded-full opacity-20 blur-3xl animate-pulse"></div>
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-cyan-200 to-blue-300 rounded-full opacity-20 blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-indigo-200 to-purple-200 rounded-full opacity-15 blur-3xl animate-pulse" style={{animationDelay: '4s'}}></div>
+        
+        {/* Elementos geométricos sutiles */}
+        <div className="absolute top-20 right-1/4 w-32 h-32 bg-gradient-to-br from-blue-300 to-indigo-400 rounded-full opacity-10 blur-2xl"></div>
+        <div className="absolute bottom-20 left-1/3 w-24 h-24 bg-gradient-to-tl from-cyan-300 to-blue-400 rounded-full opacity-15 blur-2xl"></div>
+        
+        {/* Nuevos elementos impactantes */}
+        <div className="absolute top-1/3 right-1/3 w-40 h-40 bg-gradient-to-br from-purple-300 to-pink-300 rounded-full opacity-15 blur-3xl animate-bounce" style={{animationDuration: '6s'}}></div>
+        <div className="absolute bottom-1/3 left-1/4 w-32 h-32 bg-gradient-to-tr from-cyan-400 to-blue-400 rounded-full opacity-20 blur-2xl animate-pulse" style={{animationDelay: '3s'}}></div>
+      </div>
+      
+
+
+      <div className="relative z-10 w-full flex flex-col items-center">
+        <h1 className="text-5xl md:text-7xl font-black text-slate-800 mb-12 mt-4 drop-shadow-2xl text-center tracking-tight animate-fade-in break-words max-w-full leading-tight">
+          Galería
+        </h1>
+        
+        {/* Galería */}
+        {loadingGallery ? (
+          <div className="text-slate-700 animate-pulse text-lg">Cargando galería...</div>
+        ) : (
+          <>
+            {/* Previsualización grande */}
+            {gallery[selectedIdx] && (
+              <div className="mb-12 flex flex-col items-center">
+                <button
+                  className="rounded-3xl shadow-2xl border-4 border-white bg-white overflow-hidden max-w-4xl w-full flex flex-col items-center focus:outline-none transform hover:scale-105 transition-all duration-500 hover:shadow-3xl relative"
+                  style={{ cursor: 'zoom-in' }}
+                  onClick={() => setModalImg(gallery[selectedIdx].url)}
+                  aria-label="Ver en pantalla completa"
+                >
+                  {gallery[selectedIdx].tipo === 'video' ? (
+                    <video src={gallery[selectedIdx].url} controls className="w-full max-h-[600px] object-contain bg-slate-50" />
                   ) : (
-                    <img src={item.url} alt={`Miniatura ${idx+1}`} className="w-full h-full object-cover" />
+                    <img src={gallery[selectedIdx].url} alt={gallery[selectedIdx].nombre} className="w-full max-h-[600px] object-contain" />
                   )}
-                  {/* Nombre, fecha y usuario */}
-                  <div className="absolute bottom-0 left-0 w-full bg-black/70 text-cyan-100 text-sm px-3 py-2 flex flex-col items-start">
-                    <span className="font-bold truncate w-full" title={item.nombre}>{item.nombre}</span>
-                    <div className="flex justify-between items-center w-full">
-                      <span className="text-cyan-400 text-xs">{item.fecha}</span>
-                      <span className="text-cyan-300 text-xs">por {item.usuario || 'Anónimo'}</span>
+                  <div className="absolute bottom-0 left-0 w-full px-8 py-6 text-white text-base flex flex-col items-start">
+                    <span className="font-bold truncate w-full text-xl drop-shadow-lg" title={gallery[selectedIdx].nombre}>{gallery[selectedIdx].nombre}</span>
+                    <div className="flex justify-between items-center w-full mt-3">
+                      <span className="text-blue-200 font-medium text-lg drop-shadow-lg">{gallery[selectedIdx].fecha}</span>
+                      <span className="text-slate-200 text-base drop-shadow-lg">por {gallery[selectedIdx].usuario || 'Anónimo'}</span>
                     </div>
                   </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-      {/* Texto y botón debajo de la galería */}
-      <div className="flex flex-col items-center gap-4 mb-6">
-        <p className="text-lg text-cyan-100 text-center max-w-xl animate-fade-in">Fotos y videos de The Badgers. Solo usuarios pueden subir contenido.</p>
-        <div className="flex gap-4">
-          {isLoggedIn ? (
-            <>
-              <button onClick={() => setShowUpload(true)} className="bg-cyan-700 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-xl shadow">Subir foto/video</button>
-              <button onClick={() => setShowChangePass(true)} className="bg-cyan-800 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-xl shadow">Cambiar contraseña</button>
-              <button onClick={handleLogout} className="bg-black/60 hover:bg-cyan-950 text-cyan-200 font-bold py-2 px-4 rounded-xl shadow border border-cyan-900">Cerrar sesión</button>
-            </>
-          ) : (
-            <button onClick={() => setShowLogin(true)} className="bg-cyan-700 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-xl shadow">Login</button>
+                </button>
+              </div>
+            )}
+            
+            {/* Miniaturas */}
+            <div className="flex flex-wrap justify-center gap-8 max-w-7xl mb-12 px-4">
+              {gallery.map((item, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedIdx(idx)}
+                  className={`border-4 ${selectedIdx === idx ? 'border-indigo-500 scale-110 shadow-2xl ring-4 ring-indigo-200' : 'border-slate-300'} rounded-2xl overflow-hidden focus:outline-none transition-all duration-500 hover:scale-110 hover:shadow-2xl bg-white relative transform hover:rotate-2 hover:border-indigo-400`}
+                  style={{ width: 240, height: 170 }}
+                  aria-label={`Ver elemento ${idx+1}`}
+                >
+                  <div className="relative w-full h-full">
+                    {item.tipo === 'video' ? (
+                      <>
+                        <video src={item.url} className="w-full h-full object-cover bg-slate-50" />
+                        <span className="absolute top-3 right-3 bg-black/80 rounded-full p-2 backdrop-blur-sm">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-white">
+                            <path d="M4.5 3.75A2.25 2.25 0 0 0 2.25 6v8A2.25 2.25 0 0 0 4.5 16.25h11A2.25 2.25 0 0 0 17.75 14V6A2.25 2.25 0 0 0 15.5 3.75h-11zm3.75 3.5a.75.75 0 0 1 1.13-.65l4.5 2.75a.75.75 0 0 1 0 1.3l-4.5 2.75A.75.75 0 0 1 8.25 12V6.75z" />
+                          </svg>
+                        </span>
+                      </>
+                    ) : (
+                      <img src={item.url} alt={`Miniatura ${idx+1}`} className="w-full h-full object-cover" />
+                    )}
+                    {/* Nombre, fecha y usuario */}
+                    <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/80 via-black/60 to-transparent text-white text-sm px-4 py-3 flex flex-col items-start">
+                      <span className="font-bold truncate w-full" title={item.nombre}>{item.nombre}</span>
+                      <div className="flex justify-between items-center w-full mt-1">
+                        <span className="text-blue-300 text-xs font-medium">{item.fecha}</span>
+                        <span className="text-slate-300 text-xs">por {item.usuario || 'Anónimo'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+        
+        {/* Texto y botones debajo de la galería */}
+        <div className="flex flex-col items-center gap-6 mb-8">
+          <p className="text-lg text-slate-600 text-center max-w-xl animate-fade-in">Fotos y videos de The Badgers. Solo usuarios pueden subir contenido.</p>
+          {window.location.hostname === 'localhost' && gallery.length > 0 && gallery[0]?.id?.startsWith('ejemplo-') && (
+            <div className="bg-gradient-to-r from-blue-100 to-indigo-100 border-2 border-blue-400 text-blue-900 px-6 py-3 rounded-xl text-base font-bold animate-pulse shadow-lg">
+              🖼️ Mostrando imágenes de ejemplo (ambiente local)
+            </div>
           )}
+          <div className="flex gap-4 flex-wrap justify-center">
+            {isLoggedIn ? (
+              <>
+                <button onClick={() => setShowUpload(true)} className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 inline mr-2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5" />
+                  </svg>
+                  Subir foto/video
+                </button>
+                <button onClick={() => setShowChangePass(true)} className="bg-gradient-to-r from-slate-600 to-slate-700 hover:from-slate-700 hover:to-slate-800 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 inline mr-2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                  </svg>
+                  Cambiar contraseña
+                </button>
+                <button onClick={handleLogout} className="bg-white/80 hover:bg-white text-slate-700 font-bold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105 border border-slate-300">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 inline mr-2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0 0 13.5 3h-6a2.25 2.25 0 0 0-2.25 2.25v13.5A2.25 2.25 0 0 0 7.5 21h6a2.25 2.25 0 0 0 2.25-2.25V15m3 0 3-3m0 0-3-3m3 3H9" />
+                  </svg>
+                  Cerrar sesión
+                </button>
+              </>
+            ) : (
+              <button onClick={() => setShowLogin(true)} className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 inline mr-2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                </svg>
+                Login
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Modales modernizados */}
       {showLogin && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowLogin(false)}>
-          <form onSubmit={handleLogin} className="bg-black rounded-2xl shadow-2xl border-2 border-cyan-900 max-w-xs w-full p-6 relative animate-fade-in" onClick={e => e.stopPropagation()}>
-            <button type="button" onClick={() => setShowLogin(false)} className="absolute top-3 right-3 text-cyan-300 text-2xl font-bold hover:text-cyan-400">×</button>
-            <h2 className="text-2xl font-bold text-cyan-200 text-center mb-4">Login</h2>
-            <input name="user" type="text" placeholder="Usuario" className="w-full mb-3 px-3 py-2 rounded bg-cyan-950 text-cyan-100" autoFocus />
-            <input name="pass" type="password" placeholder="Contraseña" className="w-full mb-3 px-3 py-2 rounded bg-cyan-950 text-cyan-100" />
-            {loginError && <div className="text-red-400 text-sm mb-2">{loginError}</div>}
-            <button type="submit" className="w-full bg-cyan-700 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-xl">Entrar</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm" onClick={() => setShowLogin(false)}>
+          <form onSubmit={handleLogin} className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-xs w-full p-6 relative animate-fade-in" onClick={e => e.stopPropagation()}>
+            <button type="button" onClick={() => setShowLogin(false)} className="absolute top-3 right-3 text-slate-500 text-2xl font-bold hover:text-slate-700">×</button>
+            <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">Login</h2>
+            <input name="user" type="text" placeholder="Usuario" className="w-full mb-3 px-3 py-2 rounded-lg bg-slate-50 text-slate-800 border border-slate-200 focus:border-indigo-500 focus:outline-none" autoFocus />
+            <input name="pass" type="password" placeholder="Contraseña" className="w-full mb-3 px-3 py-2 rounded-lg bg-slate-50 text-slate-800 border border-slate-200 focus:border-indigo-500 focus:outline-none" />
+            {loginError && <div className="text-red-500 text-sm mb-2">{loginError}</div>}
+            <button type="submit" className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300">Entrar</button>
           </form>
         </div>
       )}
+      
       {showUpload && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowUpload(false)}>
-          <form onSubmit={handleUpload} className="bg-black rounded-2xl shadow-2xl border-2 border-cyan-900 max-w-xs w-full p-6 relative animate-fade-in" onClick={e => e.stopPropagation()}>
-            <button type="button" onClick={() => setShowUpload(false)} className="absolute top-3 right-3 text-cyan-300 text-2xl font-bold hover:text-cyan-400">×</button>
-            <h2 className="text-2xl font-bold text-cyan-200 text-center mb-4">Subir foto/video</h2>
-            <input name="nombre" type="text" placeholder="Nombre" className="w-full mb-3 px-3 py-2 rounded bg-cyan-950 text-cyan-100" />
-            <input name="file" type="file" accept="image/*,video/mp4" className="w-full mb-3 px-3 py-2 rounded bg-cyan-950 text-cyan-100" />
-            {uploadError && <div className="text-red-400 text-sm mb-2">{uploadError}</div>}
-            <button type="submit" disabled={uploading} className="w-full bg-cyan-700 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-xl">{uploading ? 'Subiendo...' : 'Subir'}</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm" onClick={() => setShowUpload(false)}>
+          <form onSubmit={handleUpload} className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-xs w-full p-6 relative animate-fade-in" onClick={e => e.stopPropagation()}>
+            <button type="button" onClick={() => setShowUpload(false)} className="absolute top-3 right-3 text-slate-500 text-2xl font-bold hover:text-slate-700">×</button>
+            <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">Subir foto/video</h2>
+            <input name="nombre" type="text" placeholder="Nombre" className="w-full mb-3 px-3 py-2 rounded-lg bg-slate-50 text-slate-800 border border-slate-200 focus:border-indigo-500 focus:outline-none" />
+            <input name="file" type="file" accept="image/*,video/mp4" className="w-full mb-3 px-3 py-2 rounded-lg bg-slate-50 text-slate-800 border border-slate-200 focus:border-indigo-500 focus:outline-none" />
+            {uploadError && <div className="text-red-500 text-sm mb-2">{uploadError}</div>}
+            <button type="submit" disabled={uploading} className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 disabled:opacity-50">{uploading ? 'Subiendo...' : 'Subir'}</button>
           </form>
         </div>
       )}
+      
       {showChangePass && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setShowChangePass(false)}>
-          <form onSubmit={handleChangePassword} className="bg-black rounded-2xl shadow-2xl border-2 border-cyan-900 max-w-xs w-full p-6 relative animate-fade-in" onClick={e => e.stopPropagation()}>
-            <button type="button" onClick={() => setShowChangePass(false)} className="absolute top-3 right-3 text-cyan-300 text-2xl font-bold hover:text-cyan-400">×</button>
-            <h2 className="text-2xl font-bold text-cyan-200 text-center mb-4">Cambiar contraseña</h2>
-            <input name="oldpass" type="password" placeholder="Contraseña actual" className="w-full mb-3 px-3 py-2 rounded bg-cyan-950 text-cyan-100" required />
-            <input name="newpass" type="password" placeholder="Nueva contraseña" className="w-full mb-3 px-3 py-2 rounded bg-cyan-950 text-cyan-100" required />
-            <input name="confirmpass" type="password" placeholder="Confirmar nueva contraseña" className="w-full mb-3 px-3 py-2 rounded bg-cyan-950 text-cyan-100" required />
-            {changePassError && <div className="text-red-400 text-sm mb-2">{changePassError}</div>}
-            {changePassSuccess && <div className="text-green-400 text-sm mb-2">{changePassSuccess}</div>}
-            <button type="submit" className="w-full bg-cyan-700 hover:bg-cyan-600 text-white font-bold py-2 px-4 rounded-xl">Cambiar</button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm" onClick={() => setShowChangePass(false)}>
+          <form onSubmit={handleChangePassword} className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-xs w-full p-6 relative animate-fade-in" onClick={e => e.stopPropagation()}>
+            <button type="button" onClick={() => setShowChangePass(false)} className="absolute top-3 right-3 text-slate-500 text-2xl font-bold hover:text-slate-700">×</button>
+            <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">Cambiar contraseña</h2>
+            <input name="oldpass" type="password" placeholder="Contraseña actual" className="w-full mb-3 px-3 py-2 rounded-lg bg-slate-50 text-slate-800 border border-slate-200 focus:border-indigo-500 focus:outline-none" required />
+            <input name="newpass" type="password" placeholder="Nueva contraseña" className="w-full mb-3 px-3 py-2 rounded-lg bg-slate-50 text-slate-800 border border-slate-200 focus:border-indigo-500 focus:outline-none" required />
+            <input name="confirmpass" type="password" placeholder="Confirmar nueva contraseña" className="w-full mb-3 px-3 py-2 rounded-lg bg-slate-50 text-slate-800 border border-slate-200 focus:border-indigo-500 focus:outline-none" required />
+            {changePassError && <div className="text-red-500 text-sm mb-2">{changePassError}</div>}
+            {changePassSuccess && <div className="text-green-500 text-sm mb-2">{changePassSuccess}</div>}
+            <button type="submit" className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300">Cambiar</button>
           </form>
         </div>
       )}
+      
       <GaleriaModal img={modalImg} onClose={() => setModalImg(null)} />
     </div>
   );

@@ -18,6 +18,9 @@ class GaleriaItem(models.Model):
                 self.tipo = 'video'
             else:
                 self.tipo = 'img'
+        else:
+            # Valor por defecto si no hay archivo
+            self.tipo = 'img'
         super().save(*args, **kwargs)
 
     def __str__(self):

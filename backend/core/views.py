@@ -96,7 +96,26 @@ def galeria_upload(request):
         return JsonResponse({'error': 'El archivo es demasiado grande (máximo 10MB)'}, status=400)
     
     try:
+        print(f"DEBUG: Intentando crear GaleriaItem con nombre: {nombre}")
+        print(f"DEBUG: Archivo: {archivo.name}, tamaño: {archivo.size}")
+        print(f"DEBUG: Usuario: {user.username}")
+        
+        # Verificar que el directorio media existe
+        import os
+        media_dir = os.path.join(settings.MEDIA_ROOT, 'galeria')
+        if not os.path.exists(media_dir):
+            os.makedirs(media_dir, exist_ok=True)
+            print(f"DEBUG: Creado directorio: {media_dir}")
+        
         item = GaleriaItem.objects.create(nombre=nombre, archivo=archivo, usuario=user)
+        print(f"DEBUG: GaleriaItem creado exitosamente con ID: {item.id}")
+        
+        # Verificar que el archivo se guardó correctamente
+        if item.archivo:
+            print(f"DEBUG: Archivo guardado en: {item.archivo.path}")
+            print(f"DEBUG: URL del archivo: {item.archivo.url}")
+        else:
+            print(f"DEBUG: ADVERTENCIA: El archivo no se guardó correctamente")
         
         # Mantener solo los últimos 8 elementos
         items = GaleriaItem.objects.order_by('-fecha_subida')
@@ -104,14 +123,18 @@ def galeria_upload(request):
             for old in items[8:]:
                 old.delete()
         
-        return JsonResponse({
+        response_data = {
             'ok': True,
             'message': 'Archivo subido exitosamente',
             'id': item.id,
             'url': request.build_absolute_uri(item.archivo.url)
-        })
+        }
+        print(f"DEBUG: Respuesta exitosa: {response_data}")
+        return JsonResponse(response_data)
     except Exception as e:
+        import traceback
         print(f"DEBUG: Error al guardar el archivo: {e}")
+        print(f"DEBUG: Traceback completo: {traceback.format_exc()}")
         return JsonResponse({'error': f'Error al guardar el archivo: {str(e)}'}, status=500)
 
 @csrf_exempt
