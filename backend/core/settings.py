@@ -88,7 +88,8 @@ if os.environ.get('USE_SQLITE', 'false').lower() == 'true':
         }
     }
 
-DEBUG = True
+# Configuración de DEBUG basada en entorno
+DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
@@ -131,18 +132,26 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 
 # Configuración de Cloudinary para almacenamiento de archivos
-import os
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME', 'your-cloud-name'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY', 'your-api-key'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET', 'your-api-secret'),
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
 }
 
-# Usar Cloudinary para archivos media en producción
-if not DEBUG:
+# Verificar si las variables de Cloudinary están configuradas
+CLOUDINARY_CONFIGURED = all([
+    os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    os.environ.get('CLOUDINARY_API_KEY'),
+    os.environ.get('CLOUDINARY_API_SECRET')
+])
+
+# Usar Cloudinary para archivos media si está configurado y no estamos en DEBUG
+if CLOUDINARY_CONFIGURED and not DEBUG:
+    print("DEBUG: Usando Cloudinary para almacenamiento de archivos")
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     MEDIA_URL = '/media/'
 else:
-    # En desarrollo, usar almacenamiento local
+    print(f"DEBUG: Usando almacenamiento local. DEBUG={DEBUG}, CLOUDINARY_CONFIGURED={CLOUDINARY_CONFIGURED}")
+    # En desarrollo o si Cloudinary no está configurado, usar almacenamiento local
     MEDIA_URL = '/media/'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 
