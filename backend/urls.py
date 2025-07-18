@@ -11,6 +11,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', views.api_root),
     path('api/galeria/', views.galeria_list),
+    path('api/galeria/temp/', views.galeria_list_temp),
     path('api/galeria/upload/', views.galeria_upload),
     path('api/migrate-to-cloudinary/', views.migrate_to_cloudinary_endpoint),
     path('api/migrate-existing-images/', views.migrate_existing_images_endpoint),

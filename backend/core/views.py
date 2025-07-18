@@ -61,6 +61,46 @@ def galeria_list(request):
     print(f"DEBUG galeria_list: Respuesta final: {data}")
     return JsonResponse(data, safe=False)
 
+def galeria_list_temp(request):
+    """Endpoint temporal que devuelve URLs de Unsplash directamente"""
+    # URLs de ejemplo de Unsplash (imágenes de artes marciales)
+    unsplash_urls = [
+        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80',
+        'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80'
+    ]
+    
+    # Nombres de ejemplo
+    nombres = [
+        'Academia The Badgers',
+        'Clase de Muay Thai',
+        'Tatami de entrenamiento',
+        'Academia vista general',
+        'Academia',
+        'Test Cloudinary',
+        'Tatami',
+        'BJJ Gi'
+    ]
+    
+    data = []
+    for i in range(8):
+        data.append({
+            'id': 76 + i,  # IDs secuenciales
+            'url': unsplash_urls[i],
+            'nombre': nombres[i],
+            'fecha': '2025-07-18',
+            'tipo': 'img',
+            'usuario': 'federico_soriano',
+        })
+    
+    print(f"DEBUG galeria_list_temp: Respuesta con URLs de Unsplash: {data}")
+    return JsonResponse(data, safe=False)
+
 @csrf_exempt
 def galeria_upload(request):
     print(f"DEBUG: Método de la petición: {request.method}")
