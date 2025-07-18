@@ -39,6 +39,14 @@ def galeria_upload(request):
     print(f"DEBUG: Claves en FILES: {list(request.FILES.keys())}")
     print(f"DEBUG: Headers completos: {dict(request.META)}")
     
+    # Debug de configuración de Cloudinary
+    print(f"DEBUG: DEBUG setting: {settings.DEBUG}")
+    print(f"DEBUG: CLOUDINARY_CONFIGURED: {getattr(settings, 'CLOUDINARY_CONFIGURED', 'No definido')}")
+    print(f"DEBUG: DEFAULT_FILE_STORAGE: {getattr(settings, 'DEFAULT_FILE_STORAGE', 'No definido')}")
+    print(f"DEBUG: CLOUDINARY_CLOUD_NAME: {os.environ.get('CLOUDINARY_CLOUD_NAME', 'No configurado')}")
+    print(f"DEBUG: CLOUDINARY_API_KEY: {os.environ.get('CLOUDINARY_API_KEY', 'No configurado')}")
+    print(f"DEBUG: CLOUDINARY_API_SECRET: {'Configurado' if os.environ.get('CLOUDINARY_API_SECRET') else 'No configurado'}")
+    
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
     
@@ -116,7 +124,6 @@ def galeria_upload(request):
         print(f"DEBUG: Usuario: {user.username}")
         
         # Verificar que el directorio media existe
-        import os
         media_dir = os.path.join(settings.MEDIA_ROOT, 'galeria')
         if not os.path.exists(media_dir):
             os.makedirs(media_dir, exist_ok=True)
