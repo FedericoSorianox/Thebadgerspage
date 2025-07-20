@@ -253,7 +253,7 @@ function SobreNosotrosYClases() {
                     <td className="py-2 px-2"></td>
                     <td className="py-2 px-2">Jiu Jitsu GI</td>
                     <td className="py-2 px-2"></td>
-                    <td className="py-2 px-2">JJ GI</td>
+                    <td className="py-2 px-2">Jiu Jitsu GI</td>
                     <td className="py-2 px-2"></td>
                   </tr>
                   <tr className="border-b border-cyan-900/40">
