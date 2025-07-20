@@ -23,6 +23,7 @@ const NAV_ITEMS = [
 function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleNavigation = (href) => {
     if (href.startsWith('/#')) {
@@ -44,6 +45,12 @@ function Navbar() {
         }
       }
     }
+    // Cerrar el menú móvil después de la navegación
+    setIsMenuOpen(false);
+  };
+
+  const handleLinkClick = () => {
+    setIsMenuOpen(false);
   };
 
   return (
@@ -53,7 +60,9 @@ function Navbar() {
           <img src={badgersLogo} alt="Logo The Badgers" className="h-12 w-auto max-w-[56px] object-contain drop-shadow-2xl" />
           <span className="text-2xl font-extrabold text-cyan-300 tracking-wide drop-shadow">The Badgers</span>
         </div>
-        <ul className="flex gap-6">
+        
+        {/* Menú de escritorio */}
+        <ul className="hidden md:flex gap-6">
           {NAV_ITEMS.map((item) => (
             <li key={item.label}>
               {item.href.startsWith('/tienda') ? (
@@ -81,6 +90,53 @@ function Navbar() {
             </li>
           ))}
         </ul>
+
+        {/* Botón hamburguesa para móvil */}
+        <button
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className="md:hidden flex flex-col justify-center items-center w-8 h-8 space-y-1"
+          aria-label="Toggle menu"
+        >
+          <span className={`block w-6 h-0.5 bg-cyan-300 transition-all duration-300 ${isMenuOpen ? 'rotate-45 translate-y-1.5' : ''}`}></span>
+          <span className={`block w-6 h-0.5 bg-cyan-300 transition-all duration-300 ${isMenuOpen ? 'opacity-0' : ''}`}></span>
+          <span className={`block w-6 h-0.5 bg-cyan-300 transition-all duration-300 ${isMenuOpen ? '-rotate-45 -translate-y-1.5' : ''}`}></span>
+        </button>
+      </div>
+
+      {/* Menú móvil */}
+      <div className={`md:hidden transition-all duration-300 ease-in-out ${isMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
+        <div className="bg-black/95 backdrop-blur-md border-t border-cyan-500/60">
+          <ul className="flex flex-col space-y-2 px-4 py-4">
+            {NAV_ITEMS.map((item) => (
+              <li key={item.label} className="border-b border-cyan-500/20 last:border-b-0">
+                {item.href.startsWith('/tienda') ? (
+                  <Link
+                    to={item.href}
+                    onClick={() => handleLinkClick(item.href)}
+                    className={`block py-3 text-cyan-100 font-semibold hover:text-cyan-400 transition-colors duration-200 drop-shadow ${location.pathname === '/tienda' ? 'text-cyan-400' : ''}`}
+                  >
+                    {item.label}
+                  </Link>
+                ) : item.href.startsWith('/galeria') ? (
+                  <Link
+                    to={item.href}
+                    onClick={() => handleLinkClick(item.href)}
+                    className={`block py-3 text-cyan-100 font-semibold hover:text-cyan-400 transition-colors duration-200 drop-shadow ${location.pathname === '/galeria' ? 'text-cyan-400' : ''}`}
+                  >
+                    {item.label}
+                  </Link>
+                ) : (
+                  <button
+                    onClick={() => handleNavigation(item.href)}
+                    className="block w-full text-left py-3 text-cyan-100 font-semibold hover:text-cyan-400 transition-colors duration-200 drop-shadow"
+                  >
+                    {item.label}
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
       </div>
     </nav>
   );

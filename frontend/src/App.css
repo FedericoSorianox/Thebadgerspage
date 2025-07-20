@@ -103,3 +103,10 @@
   box-shadow: 0 4px 24px 0 #0e749055, 0 1.5px 0 #22d3ee44;
   backdrop-filter: blur(8px);
 }
+
+/* Mejoras para el menú móvil */
+@media (max-width: 768px) {
+  .navbar-badgers {
+    backdrop-filter: blur(12px);
+  }
+}
