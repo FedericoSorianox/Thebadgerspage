@@ -19,18 +19,6 @@ def galeria_list(request):
     items = GaleriaItem.objects.order_by('-fecha_subida')[:8]
     data = []
     
-    # URLs de ejemplo de Cloudinary para reemplazar URLs locales
-    cloudinary_urls = [
-        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80'
-    ]
-    
     for i, item in enumerate(items):
         print(f"DEBUG galeria_list: Procesando item {item.id} - {item.nombre}")
         
@@ -42,23 +30,14 @@ def galeria_list(request):
             # Es una URL directa de Cloudinary, usarla sin procesar
             file_url = archivo_value
             print(f"DEBUG galeria_list: URL directa de Cloudinary encontrada: {file_url}")
-        elif item.archivo.url.startswith('http'):
-            # Si ya es una URL completa (otro servicio), usarla directamente
-            file_url = item.archivo.url
-            print(f"DEBUG galeria_list: URL completa encontrada: {file_url}")
         elif 'cloudinary.com' in item.archivo.url:
             # Si la URL contiene cloudinary.com, usarla directamente
             file_url = item.archivo.url
             print(f"DEBUG galeria_list: URL de Cloudinary encontrada: {file_url}")
         else:
-            # Si es una URL local, usar URL de ejemplo de Cloudinary
-            if i < len(cloudinary_urls):
-                file_url = cloudinary_urls[i]
-                print(f"DEBUG galeria_list: URL local reemplazada con Cloudinary: {file_url}")
-            else:
-                # Si no hay URL de ejemplo disponible, usar una genérica
-                file_url = 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80'
-                print(f"DEBUG galeria_list: URL local reemplazada con URL genérica: {file_url}")
+            # Si no es Cloudinary, saltar este item (no mostrar URLs de prueba)
+            print(f"DEBUG galeria_list: Item {item.id} no tiene URL de Cloudinary válida, saltando...")
+            continue
         
         data.append({
             'id': item.id,
@@ -612,4 +591,4 @@ class FrontendAppView(View):
         
         # Si no se encuentra, devolver un error 404
         from django.http import HttpResponse
-        return HttpResponse("Frontend build not found. Please run 'npm run build' in the frontend directory.", status=404) 
+        return HttpResponse("Frontend build not found. Please run 'npm run build' in the frontend directory.", status=404)
