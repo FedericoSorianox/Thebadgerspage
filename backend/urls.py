@@ -13,12 +13,15 @@ urlpatterns = [
     path('api/galeria/', views.galeria_list),
     path('api/galeria/temp/', views.galeria_list_temp),
     path('api/galeria/upload/', views.galeria_upload),
+    path('api/productos/', views.productos_list),  # Agregar esta línea
     path('api/migrate-to-cloudinary/', views.migrate_to_cloudinary_endpoint),
     path('api/migrate-existing-images/', views.migrate_existing_images_endpoint),
     path('api/update-item-cloudinary/', views.update_item_cloudinary_url),
     path('api/usuarios/crear/', views.crear_usuario),
     path('api/usuarios/cambiar-password/', views.cambiar_password),
     path('api/usuarios/setup/', views.setup_usuarios),
+    path('api/test-cloudinary/', views.test_cloudinary, name='test_cloudinary'),
+    path('api/cleanup-unsplash/', views.cleanup_unsplash_images, name='cleanup_unsplash'),
     
     # Servir archivos estáticos con MIME types correctos
     re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),
@@ -34,4 +37,4 @@ urlpatterns = [
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT) 
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

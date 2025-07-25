@@ -26,17 +26,28 @@ def galeria_list(request):
         archivo_value = str(item.archivo)
         print(f"DEBUG galeria_list: Valor real del campo archivo: {archivo_value}")
         
+        # FILTRAR IMÁGENES DE UNSPLASH - NO MOSTRARLAS
+        if 'unsplash.com' in archivo_value:
+            print(f"DEBUG galeria_list: Saltando imagen de Unsplash: {archivo_value}")
+            continue
+        
         if archivo_value.startswith('http') and 'cloudinary.com' in archivo_value:
             # Es una URL directa de Cloudinary, usarla sin procesar
             file_url = archivo_value
             print(f"DEBUG galeria_list: URL directa de Cloudinary encontrada: {file_url}")
-        elif 'cloudinary.com' in item.archivo.url:
-            # Si la URL contiene cloudinary.com, usarla directamente
+        elif hasattr(item.archivo, 'url') and 'cloudinary.com' in item.archivo.url:
+            # Si la URL contiene cloudinary.com a través del storage, usarla directamente
             file_url = item.archivo.url
-            print(f"DEBUG galeria_list: URL de Cloudinary encontrada: {file_url}")
+            print(f"DEBUG galeria_list: URL de Cloudinary desde storage encontrada: {file_url}")
+        elif hasattr(item.archivo, 'url'):
+            # Para otros tipos de storage, construir URL absoluta
+            file_url = item.archivo.url
+            if not file_url.startswith('http'):
+                file_url = f"https://thebadgerspage.onrender.com{file_url}"
+            print(f"DEBUG galeria_list: URL construida: {file_url}")
         else:
-            # Si no es Cloudinary, saltar este item (no mostrar URLs de prueba)
-            print(f"DEBUG galeria_list: Item {item.id} no tiene URL de Cloudinary válida, saltando...")
+            # Si no hay URL válida, saltar este item
+            print(f"DEBUG galeria_list: Item {item.id} no tiene URL válida, saltando...")
             continue
         
         data.append({
@@ -592,3 +603,99 @@ class FrontendAppView(View):
         # Si no se encuentra, devolver un error 404
         from django.http import HttpResponse
         return HttpResponse("Frontend build not found. Please run 'npm run build' in the frontend directory.", status=404)
+
+# Agregar este endpoint temporal para probar Cloudinary
+@csrf_exempt
+def test_cloudinary(request):
+    """Endpoint para probar la configuración de Cloudinary"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    try:
+        # Configurar Cloudinary
+        cloudinary.config(
+            cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
+            api_key=os.environ.get('CLOUDINARY_API_KEY'),
+            api_secret=os.environ.get('CLOUDINARY_API_SECRET')
+        )
+        
+        # Verificar configuración
+        config_status = {
+            'cloud_name': bool(os.environ.get('CLOUDINARY_CLOUD_NAME')),
+            'api_key': bool(os.environ.get('CLOUDINARY_API_KEY')),
+            'api_secret': bool(os.environ.get('CLOUDINARY_API_SECRET'))
+        }
+        
+        if not all(config_status.values()):
+            return JsonResponse({
+                'success': False,
+                'error': 'Cloudinary no está configurado correctamente',
+                'config_status': config_status
+            }, status=500)
+        
+        # Test básico de API
+        result = cloudinary.api.ping()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Cloudinary configurado correctamente',
+            'config_status': config_status,
+            'api_test': result
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error probando Cloudinary: {str(e)}',
+            'config_status': config_status if 'config_status' in locals() else None
+        }, status=500)
+
+@csrf_exempt 
+def cleanup_unsplash_images(request):
+    """Eliminar imágenes con URLs de Unsplash de la base de datos"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+    
+    # Verificar autenticación básica
+    if not request.META.get('HTTP_AUTHORIZATION'):
+        return JsonResponse({'error': 'No autenticado'}, status=401)
+    
+    auth = request.META['HTTP_AUTHORIZATION']
+    if not auth.startswith('Basic '):
+        return JsonResponse({'error': 'Tipo de autenticación no soportado'}, status=401)
+    
+    try:
+        userpass = base64.b64decode(auth.split(' ')[1]).decode('utf-8')
+        username, password = userpass.split(':', 1)
+        user = authenticate(username=username, password=password)
+        if not user:
+            return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
+    except Exception as e:
+        return JsonResponse({'error': 'Error en autenticación'}, status=401)
+    
+    try:
+        # Eliminar items que tengan URLs de Unsplash en el campo archivo
+        deleted_items = []
+        items_to_delete = GaleriaItem.objects.filter(archivo__icontains='unsplash.com')
+        
+        for item in items_to_delete:
+            deleted_items.append({
+                'id': item.id,
+                'nombre': item.nombre,
+                'url': str(item.archivo)
+            })
+        
+        deleted_count = items_to_delete.delete()[0]
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Se eliminaron {deleted_count} imágenes de Unsplash',
+            'deleted_count': deleted_count,
+            'deleted_items': deleted_items
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error eliminando imágenes: {str(e)}'
+        }, status=500)
