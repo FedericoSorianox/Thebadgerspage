@@ -451,50 +451,6 @@ function isVideo(url) {
   return url.match(/\.mp4($|\?)/i);
 }
 
-// Imágenes de ejemplo para ambiente local
-const imagenesEjemplo = [
-  {
-    id: 'ejemplo-1',
-    nombre: 'Entrenamiento Jiu Jitsu',
-    url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
-    fecha: '2025-01-15',
-    usuario: 'Admin',
-    tipo: 'imagen'
-  },
-  {
-    id: 'ejemplo-2',
-    nombre: 'Clase de Muay Thai',
-    url: 'https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=800&q=80',
-    fecha: '2025-01-14',
-    usuario: 'Admin',
-    tipo: 'imagen'
-  },
-  {
-    id: 'ejemplo-3',
-    nombre: 'Competencia Local',
-    url: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80',
-    fecha: '2025-01-13',
-    usuario: 'Admin',
-    tipo: 'imagen'
-  },
-  {
-    id: 'ejemplo-4',
-    nombre: 'Entrenamiento No GI',
-    url: 'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=800&q=80',
-    fecha: '2025-01-12',
-    usuario: 'Admin',
-    tipo: 'imagen'
-  },
-  {
-    id: 'ejemplo-5',
-    nombre: 'Academia The Badgers',
-    url: 'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=800&q=80',
-    fecha: '2025-01-11',
-    usuario: 'Admin',
-    tipo: 'imagen'
-  }
-];
-
 function GaleriaModal({ img, onClose }) {
   if (!img) return null;
   return (
@@ -529,33 +485,31 @@ function Galeria() {
   const [changePassSuccess, setChangePassSuccess] = useState('');
 
   // --- API real ---
-  const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://thebadgerspage.onrender.com';
+  const API_BASE = window.location.hostname === 'localhost' 
+    ? 'http://localhost:8000' 
+    : 'https://thebadgersadmin.onrender.com';
   
   useEffect(() => {
     setLoadingGallery(true);
+    console.log('Cargando galería desde:', `${API_BASE}/api/galeria/`);
     fetch(`${API_BASE}/api/galeria/`)
-      .then(res => res.json())
+      .then(res => {
+        console.log('Respuesta de la API:', res.status, res.statusText);
+        return res.json();
+      })
       .then(data => {
-        // Si estamos en local y no hay imágenes, usar ejemplos
-        if (window.location.hostname === 'localhost' && (!data || data.length === 0)) {
-          console.log('Ambiente local detectado - mostrando imágenes de ejemplo');
-          setGallery(imagenesEjemplo);
-          setSelectedIdx(imagenesEjemplo.length - 1);
-        } else {
-          // Usar las imágenes reales desde la API sin reemplazarlas
-          setGallery(data);
+        console.log('Datos recibidos de la API:', data);
+        console.log('Número de imágenes:', data?.length || 0);
+        // Siempre usar las imágenes reales desde la API
+        setGallery(data || []);
+        if (data && data.length > 0) {
           setSelectedIdx(data.length - 1);
+          console.log('Imagen seleccionada:', data[data.length - 1]);
         }
       })
-      .catch(() => {
-        // Si hay error y estamos en local, usar ejemplos
-        if (window.location.hostname === 'localhost') {
-          console.log('Error en API - mostrando imágenes de ejemplo en local');
-          setGallery(imagenesEjemplo);
-          setSelectedIdx(imagenesEjemplo.length - 1);
-        } else {
-          setGallery([]);
-        }
+      .catch(err => {
+        console.error('Error al cargar galería:', err);
+        setGallery([]);
       })
       .finally(() => setLoadingGallery(false));
   }, [API_BASE]);
@@ -819,11 +773,6 @@ function Galeria() {
         {/* Texto y botones debajo de la galería */}
         <div className="flex flex-col items-center gap-6 mb-8">
           <p className="text-lg text-slate-600 text-center max-w-xl animate-fade-in">Fotos y videos de The Badgers. Solo usuarios pueden subir contenido.</p>
-          {window.location.hostname === 'localhost' && gallery.length > 0 && gallery[0]?.id?.startsWith('ejemplo-') && (
-            <div className="bg-gradient-to-r from-blue-100 to-indigo-100 border-2 border-blue-400 text-blue-900 px-6 py-3 rounded-xl text-base font-bold animate-pulse shadow-lg">
-              🖼️ Mostrando imágenes de ejemplo (ambiente local)
-            </div>
-          )}
           <div className="flex gap-4 flex-wrap justify-center">
             {isLoggedIn ? (
               <>
