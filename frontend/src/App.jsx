@@ -447,19 +447,53 @@ function Tienda() {
   );
 }
 
-const GALERIA_IMGS = [
-  'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=800&q=80',
-  'https://www.w3schools.com/html/mov_bbb.mp4', // ejemplo video
-  'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80',
-  'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=800&q=80',
-  'https://www.w3schools.com/html/movie.mp4', // otro video
-  'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=800&q=80',
-];
-
 function isVideo(url) {
   return url.match(/\.mp4($|\?)/i);
 }
+
+// Imágenes de ejemplo para ambiente local
+const imagenesEjemplo = [
+  {
+    id: 'ejemplo-1',
+    nombre: 'Entrenamiento Jiu Jitsu',
+    url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
+    fecha: '2025-01-15',
+    usuario: 'Admin',
+    tipo: 'imagen'
+  },
+  {
+    id: 'ejemplo-2',
+    nombre: 'Clase de Muay Thai',
+    url: 'https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=800&q=80',
+    fecha: '2025-01-14',
+    usuario: 'Admin',
+    tipo: 'imagen'
+  },
+  {
+    id: 'ejemplo-3',
+    nombre: 'Competencia Local',
+    url: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80',
+    fecha: '2025-01-13',
+    usuario: 'Admin',
+    tipo: 'imagen'
+  },
+  {
+    id: 'ejemplo-4',
+    nombre: 'Entrenamiento No GI',
+    url: 'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=800&q=80',
+    fecha: '2025-01-12',
+    usuario: 'Admin',
+    tipo: 'imagen'
+  },
+  {
+    id: 'ejemplo-5',
+    nombre: 'Academia The Badgers',
+    url: 'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=800&q=80',
+    fecha: '2025-01-11',
+    usuario: 'Admin',
+    tipo: 'imagen'
+  }
+];
 
 function GaleriaModal({ img, onClose }) {
   if (!img) return null;
@@ -497,62 +531,6 @@ function Galeria() {
   // --- API real ---
   const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:8000' : 'https://thebadgerspage.onrender.com';
   
-  // URLs de ejemplo de Unsplash para reemplazar URLs locales que no funcionen
-  const unsplashUrls = [
-    'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80'
-  ];
-  
-  // Imágenes de ejemplo para ambiente local
-  const imagenesEjemplo = [
-    {
-      id: 'ejemplo-1',
-      nombre: 'Entrenamiento Jiu Jitsu',
-      url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
-      fecha: '2025-01-15',
-      usuario: 'Admin',
-      tipo: 'imagen'
-    },
-    {
-      id: 'ejemplo-2',
-      nombre: 'Clase de Muay Thai',
-      url: 'https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=800&q=80',
-      fecha: '2025-01-14',
-      usuario: 'Admin',
-      tipo: 'imagen'
-    },
-    {
-      id: 'ejemplo-3',
-      nombre: 'Competencia Local',
-      url: 'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80',
-      fecha: '2025-01-13',
-      usuario: 'Admin',
-      tipo: 'imagen'
-    },
-    {
-      id: 'ejemplo-4',
-      nombre: 'Entrenamiento No GI',
-      url: 'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=800&q=80',
-      fecha: '2025-01-12',
-      usuario: 'Admin',
-      tipo: 'imagen'
-    },
-    {
-      id: 'ejemplo-5',
-      nombre: 'Academia The Badgers',
-      url: 'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=800&q=80',
-      fecha: '2025-01-11',
-      usuario: 'Admin',
-      tipo: 'imagen'
-    }
-  ];
-
   useEffect(() => {
     setLoadingGallery(true);
     fetch(`${API_BASE}/api/galeria/`)
@@ -564,22 +542,9 @@ function Galeria() {
           setGallery(imagenesEjemplo);
           setSelectedIdx(imagenesEjemplo.length - 1);
         } else {
-          // Procesar las URLs para reemplazar URLs locales con URLs de Unsplash
-          const processedData = data.map((item, index) => {
-            // Si la URL es local (contiene thebadgerspage.onrender.com), reemplazarla con Unsplash
-            if (item.url && item.url.includes('thebadgerspage.onrender.com')) {
-              const unsplashUrl = unsplashUrls[index % unsplashUrls.length];
-              console.log(`Reemplazando URL local con Unsplash: ${item.url} -> ${unsplashUrl}`);
-              return {
-                ...item,
-                url: unsplashUrl
-              };
-            }
-            return item;
-          });
-          
-          setGallery(processedData);
-          setSelectedIdx(processedData.length - 1);
+          // Usar las imágenes reales desde la API sin reemplazarlas
+          setGallery(data);
+          setSelectedIdx(data.length - 1);
         }
       })
       .catch(() => {
@@ -593,7 +558,7 @@ function Galeria() {
         }
       })
       .finally(() => setLoadingGallery(false));
-  }, []);
+  }, [API_BASE]);
 
   // Cuando se sube una nueva imagen, seleccionarla automáticamente
   useEffect(() => {
