@@ -487,7 +487,7 @@ function Galeria() {
   // --- API real ---
   const API_BASE = window.location.hostname === 'localhost' 
     ? 'http://localhost:8000' 
-    : 'https://thebadgersadmin.onrender.com';
+    : 'https://thebadgerspage.onrender.com'; // Cambiar de thebadgersadmin a thebadgerspage
   
   useEffect(() => {
     setLoadingGallery(true);
@@ -748,7 +748,7 @@ function Galeria() {
                         <video src={item.url} className="w-full h-full object-cover bg-slate-50" />
                         <span className="absolute top-3 right-3 bg-black/80 rounded-full p-2 backdrop-blur-sm">
                           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-white">
-                            <path d="M4.5 3.75A2.25 2.25 0 0 0 2.25 6v8A2.25 2.25 0 0 0 4.5 16.25h11A2.25 2.25 0 0 0 20.5 14V6A2.25 2.25 0 0 0 18.25 3.75h-11zm3.75 3.5a.75.75 0 0 1 1.13-.65l4.5 2.75a.75.75 0 0 1 0 1.3l-4.5 2.75A.75.75 0 0 1 8.25 12V6.75z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 3.75A2.25 2.25 0 0 0 2.25 6v8A2.25 2.25 0 0 0 4.5 16.25h11A2.25 2.25 0 0 0 20.5 14V6A2.25 2.25 0 0 0 18.25 3.75h-11zm3.75 3.5a.75.75 0 0 1 1.13-.65l4.5 2.75a.75.75 0 0 1 0 1.3l-4.5 2.75A.75.75 0 0 1 8.25 12V6.75z" />
                           </svg>
                         </span>
                       </>
