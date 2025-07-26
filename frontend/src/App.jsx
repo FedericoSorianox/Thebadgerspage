@@ -391,7 +391,8 @@ function Tienda() {
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
 
   useEffect(() => {
-    fetch('https://thebadgersadmin.onrender.com/api/productos/') // ✅ CORRECTO - mantener para productos
+    // Mantener la URL actual que ya funciona
+    fetch('https://thebadgersadmin.onrender.com/api/productos/')
       .then(res => {
         if (!res.ok) throw new Error('Error al cargar productos');
         return res.json();
