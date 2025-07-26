@@ -13,7 +13,7 @@ urlpatterns = [
     path('api/galeria/', views.galeria_list),
     path('api/galeria/temp/', views.galeria_list_temp),
     path('api/galeria/upload/', views.galeria_upload),
-    path('api/productos/', views.productos_list),  # Agregar esta línea
+   
     path('api/migrate-to-cloudinary/', views.migrate_to_cloudinary_endpoint),
     path('api/migrate-existing-images/', views.migrate_existing_images_endpoint),
     path('api/update-item-cloudinary/', views.update_item_cloudinary_url),
