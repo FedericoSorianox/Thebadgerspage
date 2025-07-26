@@ -428,7 +428,7 @@ function Tienda() {
         <ProductoModal producto={productoSeleccionado} onClose={() => setProductoSeleccionado(null)} />
         <div className="w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 mb-16">
           {productos
-            .filter(prod => !["Agua Salus", "Alfa Way", "Way Bar", "Power Ade"].includes(prod.nombre))
+            .filter(prod => !["Agua Salus", "Alfa Way", "Way Bar", "Power Ade", "Cuota"].includes(prod.nombre))
             .map(prod => (
               <div key={prod.id} className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-slate-200 flex flex-col items-center p-5 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:border-indigo-300 cursor-pointer" onClick={() => setProductoSeleccionado(prod)}>
                 {prod.foto_url ? (
@@ -835,4 +835,52 @@ function Galeria() {
               required
               onChange={(e) => {
                 const file = e.target.files[0];
-                if
+                if (file) {
+                  console.log('Archivo seleccionado:', file.name, file.size, file.type);
+                }
+              }}
+            />
+            {uploadError && <div className="text-red-500 text-sm mb-2">{uploadError}</div>}
+            <button 
+              type="submit" 
+              className={`w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={uploading}
+            >
+              {uploading ? 'Subiendo...' : 'Subir'}
+            </button>
+          </form>
+        </div>
+      )}
+      
+      {showChangePass && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm" onClick={() => setShowChangePass(false)}>
+          <form onSubmit={handleChangePassword} className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-xs w-full p-6 relative animate-fade-in" onClick={e => e.stopPropagation()}>
+            <button type="button" onClick={() => setShowChangePass(false)} className="absolute top-3 right-3 text-slate-500 text-2xl font-bold hover:text-slate-700">×</button>
+            <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">Cambiar contraseña</h2>
+            <input name="oldpass" type="password" placeholder="Contraseña antigua" className="w-full mb-3 px-3 py-2 rounded-lg bg-slate-50 text-slate-800 border border-slate-200 focus:border-indigo-500 focus:outline-none" />
+            <input name="newpass" type="password" placeholder="Nueva contraseña" className="w-full mb-3 px-3 py-2 rounded-lg bg-slate-50 text-slate-800 border border-slate-200 focus:border-indigo-500 focus:outline-none" />
+            <input name="confirmpass" type="password" placeholder="Confirmar nueva contraseña" className="w-full mb-3 px-3 py-2 rounded-lg bg-slate-50 text-slate-800 border border-slate-200 focus:border-indigo-500 focus:outline-none" />
+            {changePassError && <div className="text-red-500 text-sm mb-2">{changePassError}</div>}
+            {changePassSuccess && <div className="text-green-500 text-sm mb-2">{changePassSuccess}</div>}
+            <button type="submit" className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300">
+              Cambiar contraseña
+            </button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function App() {
+  return (
+    <div className="App">
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<><Hero /><SobreNosotrosYClases /><Contacto /></>} />
+        <Route path="/tienda" element={<Tienda />} />
+        <Route path="/galeria" element={<Galeria />} />
+      </Routes>
+    </div>
+  );
+}
