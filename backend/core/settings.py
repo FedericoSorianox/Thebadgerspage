@@ -39,19 +39,21 @@ TEMPLATES = [
     },
 ]
 
-CORS_ALLOW_ALL_ORIGINS = True
+# Configuración CORS - simplificar para evitar conflictos
+CORS_ALLOW_ALL_ORIGINS = False  # Cambiar a False para usar la lista específica
 CORS_ALLOW_CREDENTIALS = True
-# Comentar temporalmente CORS_ALLOWED_ORIGINS para debugging
-# CORS_ALLOWED_ORIGINS = [
-#     "http://localhost:5173",
-#     "http://localhost:5174",
-#     "https://thebadgerspage.onrender.com",
-#     "https://the-badgers.com",
-#     "https://www.the-badgers.com",
-#     "https://thebadgersadmin.onrender.com",  # Agregar este si necesitas comunicación entre servicios
-# ]
 
-# Agregar estos headers adicionales para CORS
+# Descomentar y actualizar CORS_ALLOWED_ORIGINS
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "https://thebadgerspage.onrender.com",
+    "https://the-badgers.com",
+    "https://www.the-badgers.com",
+    "https://thebadgersadmin.onrender.com",
+]
+
+# Agregar CORS_ALLOW_HEADERS específicos para la API
 CORS_ALLOWED_HEADERS = [
     'accept',
     'accept-encoding',
@@ -75,6 +77,13 @@ CORS_ALLOWED_METHODS = [
     'PATCH',
     'POST',
     'PUT',
+]
+
+# Agregar configuración adicional para CORS
+CORS_PREFLIGHT_MAX_AGE = 86400
+CORS_EXPOSE_HEADERS = [
+    'Content-Length',
+    'Content-Range',
 ]
 
 import os
