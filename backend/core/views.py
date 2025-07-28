@@ -11,6 +11,7 @@ from django.conf import settings
 import os
 import cloudinary
 import cloudinary.uploader
+import requests
 
 def api_root(request):
     return JsonResponse({"mensaje": "¡API funcionando correctamente!"})
@@ -699,3 +700,39 @@ def cleanup_unsplash_images(request):
             'success': False,
             'error': f'Error eliminando imágenes: {str(e)}'
         }, status=500)
+
+@csrf_exempt
+def productos_proxy(request):
+    """
+    Proxy para el endpoint de productos externo para evitar errores de CORS
+    """
+    if request.method == 'GET':
+        try:
+            # URL del sistema externo de productos
+            external_url = 'https://thebadgersadmin.onrender.com/api/productos/'
+            
+            # Hacer la petición al sistema externo
+            response = requests.get(external_url, timeout=30)
+            
+            # Verificar que la respuesta sea exitosa
+            if response.status_code == 200:
+                # Devolver los datos con headers CORS apropiados
+                return JsonResponse(response.json(), safe=False)
+            else:
+                return JsonResponse(
+                    {'error': f'Error del servidor externo: {response.status_code}'}, 
+                    status=response.status_code
+                )
+                
+        except requests.RequestException as e:
+            return JsonResponse(
+                {'error': f'Error conectando con el servidor de productos: {str(e)}'}, 
+                status=503
+            )
+        except Exception as e:
+            return JsonResponse(
+                {'error': f'Error interno: {str(e)}'}, 
+                status=500
+            )
+    else:
+        return JsonResponse({'error': 'Método no permitido'}, status=405)

@@ -152,11 +152,17 @@ FILE_UPLOAD_TEMP_DIR = None
 
 SECRET_KEY = 'dev-secret-key-1234567890abcdef'
 
-# Configuración para forzar HTTPS en producción
+# Configuración para forzar HTTPS solo en producción
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
+# Solo activar SSL redirect en producción
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+else:
+    SECURE_SSL_REDIRECT = False
+    SESSION_COOKIE_SECURE = False
+    CSRF_COOKIE_SECURE = False
 
 # Configuración de Cloudinary para almacenamiento de archivos
 CLOUDINARY_STORAGE = {

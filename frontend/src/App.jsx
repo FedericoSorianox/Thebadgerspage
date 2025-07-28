@@ -60,7 +60,7 @@ function Navbar() {
           <img src={badgersLogo} alt="Logo The Badgers" className="h-12 w-auto max-w-[56px] object-contain drop-shadow-2xl" />
           <span className="text-2xl font-extrabold text-cyan-300 tracking-wide drop-shadow">The Badgers</span>
         </div>
-        
+
         {/* Menú de escritorio */}
         <ul className="hidden md:flex gap-6">
           {NAV_ITEMS.map((item) => (
@@ -298,19 +298,19 @@ function Contacto() {
     <section id="contacto" className="flex items-center justify-center min-h-screen w-full py-24 relative overflow-hidden">
       {/* Fondo moderno con gradientes y elementos decorativos */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100"></div>
-      
+
       {/* Elementos decorativos de fondo */}
       <div className="absolute inset-0 overflow-hidden">
         {/* Círculos decorativos grandes */}
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200 to-indigo-300 rounded-full opacity-30 blur-3xl"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-cyan-200 to-blue-300 rounded-full opacity-30 blur-3xl"></div>
         <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-indigo-200 to-purple-200 rounded-full opacity-20 blur-3xl"></div>
-        
+
         {/* Elementos geométricos sutiles */}
         <div className="absolute top-20 right-1/4 w-32 h-32 bg-gradient-to-br from-blue-300 to-indigo-400 rounded-full opacity-10 blur-2xl"></div>
         <div className="absolute bottom-20 left-1/3 w-24 h-24 bg-gradient-to-tl from-cyan-300 to-blue-400 rounded-full opacity-15 blur-2xl"></div>
       </div>
-      
+
       {/* Patrón de puntos decorativo */}
       <div className="absolute inset-0 opacity-10">
         <div className="absolute top-32 left-20 w-2 h-2 bg-indigo-600 rounded-full"></div>
@@ -336,7 +336,7 @@ function Contacto() {
         <div className="text-slate-700 font-bold text-lg mb-2">Cel: <span className="text-indigo-600">092 627 480</span></div>
         <a href="https://www.instagram.com/thebadgers.uy/" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-indigo-600 font-bold underline mb-2 hover:text-indigo-700 transition-colors text-lg">
           <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" className="w-6 h-6">
-            <path d="M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2zm0 1.5A4.25 4.25 0 0 0 3.5 7.75v8.5A4.25 4.25 0 0 0 7.75 20.5h8.5A4.25 4.25 0 0 0 20.5 16.25v-8.5A4.25 4.25 0 0 0 16.25 3.5zm4.25 3.25a5.25 5.25 0 1 1 0 10.5a5.25 5.25 0 0 1 0-10.5zm0 1.5a3.75 3.75 0 1 0 0 7.5a3.75 3.75 0 0 0 0-7.5zm5.13.62a1.13 1.13 0 1 1 0 2.25a1.13 1.13 0 0 1 0-2.25z"/>
+            <path d="M7.75 2h8.5A5.75 5.75 0 0 1 22 7.75v8.5A5.75 5.75 0 0 1 16.25 22h-8.5A5.75 5.75 0 0 1 2 16.25v-8.5A5.75 5.75 0 0 1 7.75 2zm0 1.5A4.25 4.25 0 0 0 3.5 7.75v8.5A4.25 4.25 0 0 0 7.75 20.5h8.5A4.25 4.25 0 0 0 20.5 16.25v-8.5A4.25 4.25 0 0 0 16.25 3.5zm4.25 3.25a5.25 5.25 0 1 1 0 10.5a5.25 5.25 0 0 1 0-10.5zm0 1.5a3.75 3.75 0 1 0 0 7.5a3.75 3.75 0 0 0 0-7.5zm5.13.62a1.13 1.13 0 1 1 0 2.25a1.13 1.13 0 0 1 0-2.25z" />
           </svg>
           Instagram
         </a>
@@ -377,7 +377,7 @@ function ProductoModal({ producto, onClose }) {
           <div className="w-48 h-48 flex items-center justify-center rounded-xl mx-auto mb-4 bg-slate-100 text-slate-500 text-2xl">Sin foto</div>
         )}
         <h2 className="text-2xl font-bold text-slate-800 text-center mb-2">{producto.nombre}</h2>
-        <div className="text-indigo-600 font-semibold text-xl text-center mb-2">${parseFloat(producto.precio_venta).toLocaleString('es-UY', {minimumFractionDigits:2})}</div>
+        <div className="text-indigo-600 font-semibold text-xl text-center mb-2">${parseFloat(producto.precio_venta).toLocaleString('es-UY', { minimumFractionDigits: 2 })}</div>
         <div className="text-slate-600 text-center mb-2">Stock: {producto.stock > 0 ? producto.stock : <span className='text-red-500 font-bold'>Sin stock</span>}</div>
       </div>
     </div>
@@ -391,8 +391,8 @@ function Tienda() {
   const [productoSeleccionado, setProductoSeleccionado] = useState(null);
 
   useEffect(() => {
-    // Mantener la URL actual que ya funciona
-    fetch('https://thebadgersadmin.onrender.com/api/productos/')
+    // Usar el proxy local para evitar errores de CORS
+    fetch('/api/productos/')
       .then(res => {
         if (!res.ok) throw new Error('Error al cargar productos');
         return res.json();
@@ -410,7 +410,7 @@ function Tienda() {
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-cyan-200 to-blue-300 rounded-full opacity-20 blur-3xl"></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-indigo-200 to-purple-200 rounded-full opacity-10 blur-3xl"></div>
       </div>
-      
+
       {/* Patrón de puntos decorativo */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute top-20 left-10 w-2 h-2 bg-indigo-600 rounded-full"></div>
@@ -438,7 +438,7 @@ function Tienda() {
                   <div className="w-32 h-32 flex items-center justify-center rounded-xl mb-3 bg-slate-100 text-slate-500 text-2xl">Sin foto</div>
                 )}
                 <h2 className="text-lg font-bold text-slate-800 text-center mb-1">{prod.nombre}</h2>
-                <div className="text-indigo-600 font-semibold text-base mb-1">${parseFloat(prod.precio_venta).toLocaleString('es-UY', {minimumFractionDigits:2})}</div>
+                <div className="text-indigo-600 font-semibold text-base mb-1">${parseFloat(prod.precio_venta).toLocaleString('es-UY', { minimumFractionDigits: 2 })}</div>
                 <div className="text-slate-600 text-sm mb-2">Stock: {prod.stock > 0 ? prod.stock : <span className='text-red-500 font-bold'>Sin stock</span>}</div>
               </div>
             ))}
@@ -486,10 +486,10 @@ function Galeria() {
   const [changePassSuccess, setChangePassSuccess] = useState('');
 
   // --- API real ---
-  const API_BASE = window.location.hostname === 'localhost' 
-    ? 'http://localhost:8000' 
+  const API_BASE = window.location.hostname === 'localhost'
+    ? 'http://localhost:8000'
     : 'https://thebadgerspage.onrender.com'; // Cambiar de thebadgersadmin a thebadgerspage
-  
+
   useEffect(() => {
     setLoadingGallery(true);
     console.log('Cargando galería desde:', `${API_BASE}/api/galeria/`);
@@ -559,23 +559,23 @@ function Galeria() {
     setUploading(true);
     const nombre = e.target.nombre.value;
     const file = e.target.file.files[0];
-    
+
     console.log('DEBUG: Archivo seleccionado:', file);
     console.log('DEBUG: Nombre:', nombre);
-    
+
     if (!nombre || !file) {
       setUploadError('Completa todos los campos');
       setUploading(false);
       return;
     }
-    
+
     // Verificar que el archivo no esté vacío
     if (file.size === 0) {
       setUploadError('El archivo está vacío');
       setUploading(false);
       return;
     }
-    
+
     const isImg = file.type.startsWith('image/');
     const isVid = file.type === 'video/mp4';
     if (!isImg && !isVid) {
@@ -583,16 +583,16 @@ function Galeria() {
       setUploading(false);
       return;
     }
-    
+
     console.log('DEBUG: Tipo de archivo:', file.type);
     console.log('DEBUG: Tamaño del archivo:', file.size);
     console.log('DEBUG: Nombre del archivo:', file.name);
-    
+
     // Subir a la API
     const formData = new FormData();
     formData.append('nombre', nombre);
     formData.append('archivo', file, file.name); // Agregar el nombre del archivo explícitamente
-    
+
     // Verificar que el FormData se creó correctamente
     console.log('DEBUG: FormData creado');
     for (let [key, value] of formData.entries()) {
@@ -601,7 +601,7 @@ function Galeria() {
         console.log('DEBUG: File en FormData:', value.name, value.size, value.type);
       }
     }
-    
+
     // Verificar que el archivo esté en el FormData
     const archivoEnFormData = formData.get('archivo');
     console.log('DEBUG: Archivo en FormData:', archivoEnFormData);
@@ -613,7 +613,7 @@ function Galeria() {
       setUploading(false);
       return;
     }
-    
+
     fetch(`${API_BASE}/api/galeria/upload/`, {
       method: 'POST',
       headers: {
@@ -684,25 +684,25 @@ function Galeria() {
       <div className="absolute inset-0 overflow-hidden">
         {/* Círculos decorativos grandes */}
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200 to-indigo-300 rounded-full opacity-20 blur-3xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-cyan-200 to-blue-300 rounded-full opacity-20 blur-3xl animate-pulse" style={{animationDelay: '2s'}}></div>
-        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-indigo-200 to-purple-200 rounded-full opacity-15 blur-3xl animate-pulse" style={{animationDelay: '4s'}}></div>
-        
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-cyan-200 to-blue-300 rounded-full opacity-20 blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gradient-to-r from-indigo-200 to-purple-200 rounded-full opacity-15 blur-3xl animate-pulse" style={{ animationDelay: '4s' }}></div>
+
         {/* Elementos geométricos sutiles */}
         <div className="absolute top-20 right-1/4 w-32 h-32 bg-gradient-to-br from-blue-300 to-indigo-400 rounded-full opacity-10 blur-2xl"></div>
         <div className="absolute bottom-20 left-1/3 w-24 h-24 bg-gradient-to-tl from-cyan-300 to-blue-400 rounded-full opacity-15 blur-2xl"></div>
-        
+
         {/* Nuevos elementos impactantes */}
-        <div className="absolute top-1/3 right-1/3 w-40 h-40 bg-gradient-to-br from-purple-300 to-pink-300 rounded-full opacity-15 blur-3xl animate-bounce" style={{animationDuration: '6s'}}></div>
-        <div className="absolute bottom-1/3 left-1/4 w-32 h-32 bg-gradient-to-tr from-cyan-400 to-blue-400 rounded-full opacity-20 blur-2xl animate-pulse" style={{animationDelay: '3s'}}></div>
+        <div className="absolute top-1/3 right-1/3 w-40 h-40 bg-gradient-to-br from-purple-300 to-pink-300 rounded-full opacity-15 blur-3xl animate-bounce" style={{ animationDuration: '6s' }}></div>
+        <div className="absolute bottom-1/3 left-1/4 w-32 h-32 bg-gradient-to-tr from-cyan-400 to-blue-400 rounded-full opacity-20 blur-2xl animate-pulse" style={{ animationDelay: '3s' }}></div>
       </div>
-      
+
 
 
       <div className="relative z-10 w-full flex flex-col items-center">
         <h1 className="text-5xl md:text-7xl font-black text-slate-800 mb-12 mt-4 drop-shadow-2xl text-center tracking-tight animate-fade-in break-words max-w-full leading-tight">
           Galería
         </h1>
-        
+
         {/* Galería */}
         {loadingGallery ? (
           <div className="text-slate-700 animate-pulse text-lg">Cargando galería...</div>
@@ -732,7 +732,7 @@ function Galeria() {
                 </button>
               </div>
             )}
-            
+
             {/* Miniaturas */}
             <div className="flex flex-wrap justify-center gap-8 max-w-7xl mb-12 px-4">
               {gallery.map((item, idx) => (
@@ -741,7 +741,7 @@ function Galeria() {
                   onClick={() => setSelectedIdx(idx)}
                   className={`border-4 ${selectedIdx === idx ? 'border-indigo-500 scale-110 shadow-2xl ring-4 ring-indigo-200' : 'border-slate-300'} rounded-2xl overflow-hidden focus:outline-none transition-all duration-500 hover:scale-110 hover:shadow-2xl bg-white relative transform hover:rotate-2 hover:border-indigo-400`}
                   style={{ width: 240, height: 170 }}
-                  aria-label={`Ver elemento ${idx+1}`}
+                  aria-label={`Ver elemento ${idx + 1}`}
                 >
                   <div className="relative w-full h-full">
                     {item.tipo === 'video' ? (
@@ -754,7 +754,7 @@ function Galeria() {
                         </span>
                       </>
                     ) : (
-                      <img src={item.url} alt={`Miniatura ${idx+1}`} className="w-full h-full object-cover" />
+                      <img src={item.url} alt={`Miniatura ${idx + 1}`} className="w-full h-full object-cover" />
                     )}
                     {/* Nombre, fecha y usuario */}
                     <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/80 via-black/60 to-transparent text-white text-sm px-4 py-3 flex flex-col items-start">
@@ -770,7 +770,7 @@ function Galeria() {
             </div>
           </>
         )}
-        
+
         {/* Texto y botones debajo de la galería */}
         <div className="flex flex-col items-center gap-6 mb-8">
           <p className="text-lg text-slate-600 text-center max-w-xl animate-fade-in">Fotos y videos de The Badgers. Solo usuarios pueden subir contenido.</p>
@@ -821,18 +821,18 @@ function Galeria() {
           </form>
         </div>
       )}
-      
+
       {showUpload && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm" onClick={() => setShowUpload(false)}>
           <form onSubmit={handleUpload} className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-xs w-full p-6 relative animate-fade-in" onClick={e => e.stopPropagation()}>
             <button type="button" onClick={() => setShowUpload(false)} className="absolute top-3 right-3 text-slate-500 text-2xl font-bold hover:text-slate-700">×</button>
             <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">Subir foto/video</h2>
             <input name="nombre" type="text" placeholder="Nombre" className="w-full mb-3 px-3 py-2 rounded-lg bg-slate-50 text-slate-800 border border-slate-200 focus:border-indigo-500 focus:outline-none" />
-            <input 
-              name="file" 
-              type="file" 
-              accept="image/*,video/mp4" 
-              className="w-full mb-3 px-3 py-2 rounded-lg bg-slate-50 text-slate-800 border border-slate-200 focus:border-indigo-500 focus:outline-none" 
+            <input
+              name="file"
+              type="file"
+              accept="image/*,video/mp4"
+              className="w-full mb-3 px-3 py-2 rounded-lg bg-slate-50 text-slate-800 border border-slate-200 focus:border-indigo-500 focus:outline-none"
               required
               onChange={(e) => {
                 const file = e.target.files[0];
@@ -842,8 +842,8 @@ function Galeria() {
               }}
             />
             {uploadError && <div className="text-red-500 text-sm mb-2">{uploadError}</div>}
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               className={`w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300 ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
               disabled={uploading}
             >
@@ -852,7 +852,7 @@ function Galeria() {
           </form>
         </div>
       )}
-      
+
       {showChangePass && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm" onClick={() => setShowChangePass(false)}>
           <form onSubmit={handleChangePassword} className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-xs w-full p-6 relative animate-fade-in" onClick={e => e.stopPropagation()}>
