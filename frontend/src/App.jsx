@@ -453,16 +453,65 @@ function isVideo(url) {
 }
 
 function GaleriaModal({ img, onClose }) {
+  // Manejar navegación por teclado
+  const handleKeyDown = React.useCallback((e) => {
+    if (e.key === 'Escape') {
+      onClose();
+    }
+  }, [onClose]);
+
+  // Agregar listener de teclado cuando el modal se abre
+  React.useEffect(() => {
+    if (!img) return;
+    
+    document.addEventListener('keydown', handleKeyDown);
+    // Prevenir scroll del body cuando el modal está abierto
+    document.body.style.overflow = 'hidden';
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'auto';
+    };
+  }, [img, handleKeyDown]);
+
   if (!img) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={onClose}>
-      <div className="relative max-w-3xl w-full p-4" onClick={e => e.stopPropagation()}>
-        <button onClick={onClose} className="absolute top-2 right-2 text-cyan-200 text-3xl font-bold hover:text-cyan-400">×</button>
-        {isVideo(img) ? (
-          <video src={img} controls className="w-full max-h-[80vh] rounded-2xl shadow-2xl mx-auto bg-black" />
-        ) : (
-          <img src={img} alt="Imagen ampliada" className="w-full max-h-[80vh] object-contain rounded-2xl shadow-2xl mx-auto" />
-        )}
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm fullscreen-modal" onClick={onClose}>
+      <div className="relative w-full h-full flex items-center justify-center p-4 fullscreen-modal-content" onClick={e => e.stopPropagation()}>
+        {/* Botón de cerrar */}
+        <button 
+          onClick={onClose} 
+          className="absolute top-4 right-4 z-60 text-white text-4xl font-bold hover:text-cyan-400 transition-colors duration-200 bg-black/50 rounded-full w-12 h-12 flex items-center justify-center hover:bg-black/70"
+          aria-label="Cerrar pantalla completa (ESC)"
+        >
+          ×
+        </button>
+        
+        {/* Contenido del modal */}
+        <div className="max-w-[95vw] max-h-[95vh] flex items-center justify-center">
+          {isVideo(img) ? (
+            <video 
+              src={img} 
+              controls 
+              autoPlay
+              className="max-w-full max-h-full rounded-lg shadow-2xl" 
+              style={{ maxWidth: '95vw', maxHeight: '95vh' }}
+            />
+          ) : (
+            <img 
+              src={img} 
+              alt="Imagen en pantalla completa" 
+              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" 
+              style={{ maxWidth: '95vw', maxHeight: '95vh' }}
+            />
+          )}
+        </div>
+        
+        {/* Instrucciones */}
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 text-white text-sm bg-black/50 px-4 py-2 rounded-full backdrop-blur-sm">
+          Presiona ESC o haz click fuera para cerrar
+        </div>
       </div>
     </div>
   );
@@ -712,11 +761,17 @@ function Galeria() {
             {gallery[selectedIdx] && (
               <div className="mb-12 flex flex-col items-center">
                 <button
-                  className="rounded-3xl shadow-2xl border-4 border-white bg-white overflow-hidden max-w-4xl w-full flex flex-col items-center focus:outline-none transform hover:scale-105 transition-all duration-500 hover:shadow-3xl relative"
-                  style={{ cursor: 'zoom-in' }}
+                  className="rounded-3xl shadow-2xl border-4 border-white bg-white overflow-hidden max-w-4xl w-full flex flex-col items-center focus:outline-none transform hover:scale-105 transition-all duration-500 hover:shadow-3xl relative group gallery-image-hover zoom-cursor"
                   onClick={() => setModalImg(gallery[selectedIdx].url)}
                   aria-label="Ver en pantalla completa"
                 >
+                  {/* Icono de pantalla completa */}
+                  <div className="absolute top-4 right-4 z-10 bg-black/60 rounded-full p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-white">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                    </svg>
+                  </div>
+                  
                   {gallery[selectedIdx].tipo === 'video' ? (
                     <video src={gallery[selectedIdx].url} controls className="w-full max-h-[600px] object-contain bg-slate-50" />
                   ) : (
@@ -739,10 +794,17 @@ function Galeria() {
                 <button
                   key={idx}
                   onClick={() => setSelectedIdx(idx)}
-                  className={`border-4 ${selectedIdx === idx ? 'border-indigo-500 scale-110 shadow-2xl ring-4 ring-indigo-200' : 'border-slate-300'} rounded-2xl overflow-hidden focus:outline-none transition-all duration-500 hover:scale-110 hover:shadow-2xl bg-white relative transform hover:rotate-2 hover:border-indigo-400`}
+                  onDoubleClick={() => setModalImg(item.url)}
+                  className={`border-4 ${selectedIdx === idx ? 'border-indigo-500 scale-110 shadow-2xl ring-4 ring-indigo-200' : 'border-slate-300'} rounded-2xl overflow-hidden focus:outline-none transition-all duration-500 hover:scale-110 hover:shadow-2xl bg-white relative transform hover:rotate-2 hover:border-indigo-400 cursor-pointer group`}
                   style={{ width: 240, height: 170 }}
-                  aria-label={`Ver elemento ${idx + 1}`}
+                  aria-label={`Ver elemento ${idx + 1} - Click para seleccionar, doble click para pantalla completa`}
                 >
+                  {/* Icono de pantalla completa para miniaturas */}
+                  <div className="absolute top-2 right-2 z-10 bg-black/60 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-white">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                    </svg>
+                  </div>
                   <div className="relative w-full h-full">
                     {item.tipo === 'video' ? (
                       <>
@@ -773,7 +835,13 @@ function Galeria() {
 
         {/* Texto y botones debajo de la galería */}
         <div className="flex flex-col items-center gap-6 mb-8">
-          <p className="text-lg text-slate-600 text-center max-w-xl animate-fade-in">Fotos y videos de The Badgers. Solo usuarios pueden subir contenido.</p>
+          <p className="text-lg text-slate-600 text-center max-w-xl animate-fade-in">
+            Fotos y videos de The Badgers. Solo usuarios pueden subir contenido.
+            <br />
+            <span className="text-sm text-slate-500 mt-2 block">
+              💡 Haz click en las imágenes grandes para pantalla completa, o doble click en las miniaturas
+            </span>
+          </p>
           <div className="flex gap-4 flex-wrap justify-center">
             {isLoggedIn ? (
               <>
@@ -869,6 +937,9 @@ function Galeria() {
           </form>
         </div>
       )}
+
+      {/* Modal de pantalla completa */}
+      <GaleriaModal img={modalImg} onClose={() => setModalImg(null)} />
     </div>
   );
 }

@@ -110,3 +110,52 @@
     backdrop-filter: blur(12px);
   }
 }
+
+/* Estilos para el modal de pantalla completa */
+.fullscreen-modal {
+  backdrop-filter: blur(4px);
+  animation: fadeInModal 0.3s ease-out;
+}
+
+.fullscreen-modal-content {
+  animation: scaleInModal 0.3s ease-out;
+}
+
+@keyframes fadeInModal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleInModal {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Mejoras para imágenes en hover */
+.gallery-image-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gallery-image-hover:hover {
+  transform: scale(1.02);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Estilos para el cursor de zoom */
+.zoom-cursor {
+  cursor: zoom-in;
+}
+
+.zoom-cursor:active {
+  cursor: zoom-out;
+}
