@@ -41,14 +41,15 @@ TEMPLATES = [
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "https://thebadgerspage.onrender.com",
-    "https://the-badgers.com",
-    "https://www.the-badgers.com",
-    "https://thebadgersadmin.onrender.com",  # Agregar este si necesitas comunicación entre servicios
-]
+# Comentar temporalmente CORS_ALLOWED_ORIGINS para debugging
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:5173",
+#     "http://localhost:5174",
+#     "https://thebadgerspage.onrender.com",
+#     "https://the-badgers.com",
+#     "https://www.the-badgers.com",
+#     "https://thebadgersadmin.onrender.com",  # Agregar este si necesitas comunicación entre servicios
+# ]
 
 # Agregar estos headers adicionales para CORS
 CORS_ALLOWED_HEADERS = [
