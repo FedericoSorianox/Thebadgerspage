@@ -47,7 +47,10 @@ CORS_ALLOWED_ORIGINS = [
     "https://thebadgerspage.onrender.com",
     "https://the-badgers.com",
     "https://www.the-badgers.com",
+    "https://thebadgersadmin.onrender.com",  # Agregar este si necesitas comunicación entre servicios
 ]
+
+# Agregar estos headers adicionales para CORS
 CORS_ALLOWED_HEADERS = [
     'accept',
     'accept-encoding',
@@ -58,6 +61,19 @@ CORS_ALLOWED_HEADERS = [
     'user-agent',
     'x-csrftoken',
     'x-requested-with',
+    'cache-control',
+    'pragma',
+    'expires',
+]
+
+# Permitir métodos HTTP adicionales
+CORS_ALLOWED_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
 ]
 
 import os
@@ -156,4 +172,4 @@ else:
     print(f"DEBUG: Variables de entorno - CLOUD_NAME: {os.environ.get('CLOUDINARY_CLOUD_NAME')}, API_KEY: {os.environ.get('CLOUDINARY_API_KEY')}, API_SECRET: {'Configurado' if os.environ.get('CLOUDINARY_API_SECRET') else 'No configurado'}")
     # En desarrollo o si Cloudinary no está configurado, usar almacenamiento local
     MEDIA_URL = '/media/'
-    MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
