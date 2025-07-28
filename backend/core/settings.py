@@ -112,6 +112,7 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     '0.0.0.0',
     'thebadgerspage.onrender.com',
+    'thebadgersadmin.onrender.com',  # Agregar este
     'the-badgers.com',
     'www.the-badgers.com',
 ]
