@@ -137,6 +137,10 @@ render logs --service=tu-servicio
 
 Si ves el error "Please enter the correct username and password for a staff account":
 
+#### ⚠️ IMPORTANTE: Seguridad de autenticación
+**Problema común:** El sistema permitía login con credenciales falsas en producción.  
+**Solución:** Se agregó autenticación adecuada que valida las credenciales contra la base de datos.
+
 #### Diagnóstico del problema:
 El error indica que las variables de entorno no están configuradas correctamente en Render.
 
@@ -196,6 +200,13 @@ except User.DoesNotExist:
 - URL: `https://thebadgerspage.onrender.com/admin/`
 - Usuario: `admin`
 - Contraseña: `admin123bjj2025`
+
+#### 🔒 Verificar seguridad:
+Ahora el sistema **rechaza credenciales falsas** correctamente. Puedes probarlo:
+```bash
+# Esto debería fallar:
+curl -H "Authorization: Basic $(echo -n 'fake:fake' | base64)" https://thebadgerspage.onrender.com/api/galeria/
+```
 
 ### Error de CORS
 - Verifica que tu dominio esté en `CORS_ALLOWED_ORIGINS`
