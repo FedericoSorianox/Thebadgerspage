@@ -1,36 +1,22 @@
 #!/bin/bash
 
-# Script para resetear admin en producción (Render)
-echo "🔄 Reseteando contraseña del admin en producción..."
+# Script simple para resetear admin en producción (Render)
+echo "🔄 Reseteando contraseña del admin con configuraciones regulares..."
 
 cd backend
 
-# Primero intentar con settings regulares, luego con production
-echo "📋 Verificando configuración de Django..."
+echo "🔧 Usando core.settings (configuración regular)"
 
-# Verificar variables de entorno críticas
-if [ -z "$SECRET_KEY" ]; then
-    echo "⚠️  SECRET_KEY no está configurada. Usando settings regulares..."
-    SETTINGS_MODULE="core.settings"
-else
-    echo "✅ SECRET_KEY encontrada. Usando settings de producción..."
-    SETTINGS_MODULE="core.settings_production"
-fi
-
-echo "🔧 Usando configuración: $SETTINGS_MODULE"
-
-python manage.py shell --settings=$SETTINGS_MODULE << 'EOF'
+python manage.py shell << 'EOF'
 from django.contrib.auth.models import User
-import os
 
-# Usar valores por defecto si las variables de entorno no están disponibles
-username = os.environ.get('ADMIN_USERNAME', 'admin')
-email = os.environ.get('ADMIN_EMAIL', 'admin@thebadgers.uy')
-password = os.environ.get('ADMIN_PASSWORD', 'admin123bjj2025')
+# Usar credenciales fijas
+username = 'admin'
+email = 'admin@thebadgers.uy'
+password = 'admin123bjj2025'
 
 print(f"🔍 Buscando usuario: {username}")
 print(f"📧 Email objetivo: {email}")
-print(f"🔑 Contraseña objetivo: {'*' * len(password)}")
 
 # Mostrar todos los usuarios existentes
 print("\n👥 Usuarios existentes en la base de datos:")

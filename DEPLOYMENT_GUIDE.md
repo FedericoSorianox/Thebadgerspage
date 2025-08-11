@@ -125,35 +125,48 @@ render logs --service=tu-servicio
 
 Si ves el error "Please enter the correct username and password for a staff account":
 
-#### Opción 1: Usar el script automático
+#### Diagnóstico del problema:
+El error indica que las variables de entorno no están configuradas correctamente en Render.
+
+#### Solución PASO A PASO:
+
+**1. Configurar Variables de Entorno en Render:**
+- Ve a tu servicio en Render.com
+- Settings > Environment
+- Agrega/verifica estas variables:
 ```bash
-# En el shell de Render
-./fix_admin_production.sh
+SECRET_KEY=tu_secret_key_super_segura_de_al_menos_50_caracteres
+ADMIN_USERNAME=admin
+ADMIN_EMAIL=admin@thebadgers.uy
+ADMIN_PASSWORD=admin123bjj2025
+DJANGO_SETTINGS_MODULE=core.settings_production
 ```
 
-#### Opción 2: Comandos manuales en Render
-Ve a tu servicio en Render > Shell y ejecuta:
-
+**2. Usar el script simple en Render Shell:**
 ```bash
 cd backend
-python manage.py shell --settings=core.settings_production
+./fix_admin_simple.sh
+```
+
+**3. Si el script simple no funciona, comandos manuales:**
+```bash
+cd backend
+python manage.py shell
 ```
 
 Luego en el shell de Python:
 ```python
 from django.contrib.auth.models import User
-import os
 
-# Verificar variables de entorno
-username = os.environ.get('ADMIN_USERNAME', 'admin')
-password = os.environ.get('ADMIN_PASSWORD', 'admin123bjj2025')
-email = os.environ.get('ADMIN_EMAIL', 'admin@thebadgers.uy')
+# Ver usuarios existentes
+print("Usuarios existentes:")
+for u in User.objects.all():
+    print(f"- {u.username} (staff: {u.is_staff}, superuser: {u.is_superuser})")
 
-print(f"Username: {username}")
-print(f"Email: {email}")
-print(f"Password configurado: {'Sí' if password else 'No'}")
+# Resetear admin
+username = 'admin'
+password = 'admin123bjj2025'
 
-# Resetear el usuario admin
 try:
     user = User.objects.get(username=username)
     user.set_password(password)
@@ -163,12 +176,14 @@ try:
     user.save()
     print("✅ Usuario admin actualizado")
 except User.DoesNotExist:
-    User.objects.create_superuser(username, email, password)
+    User.objects.create_superuser(username, 'admin@thebadgers.uy', password)
     print("✅ Usuario admin creado")
 ```
 
-#### Opción 3: Re-deploy automático
-Haz un nuevo deployment en Render para que se ejecute el script actualizado.
+**4. Verificar el login:**
+- URL: `https://thebadgerspage.onrender.com/admin/`
+- Usuario: `admin`
+- Contraseña: `admin123bjj2025`
 
 ### Error de CORS
 - Verifica que tu dominio esté en `CORS_ALLOWED_ORIGINS`
