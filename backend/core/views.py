@@ -28,27 +28,28 @@ def api_root(request):
     return JsonResponse({"mensaje": "¡API funcionando correctamente!"})
 
 def galeria_list(request):
-    # Verificar autenticación básica
-    auth_header = request.META.get('HTTP_AUTHORIZATION')
-    if not auth_header or not auth_header.startswith('Basic '):
-        return JsonResponse({'error': 'Authorization required'}, status=401)
-    
-    try:
-        # Decodificar credenciales Basic Auth
-        auth_decoded = base64.b64decode(auth_header[6:]).decode('utf-8')
-        username, password = auth_decoded.split(':', 1)
+    # Solo verificar autenticación para métodos que no sean GET (lectura pública)
+    if request.method != 'GET':
+        auth_header = request.META.get('HTTP_AUTHORIZATION')
+        if not auth_header or not auth_header.startswith('Basic '):
+            return JsonResponse({'error': 'Authorization required'}, status=401)
         
-        # Autenticar usuario
-        user = authenticate(request, username=username, password=password)
-        if not user or not user.is_active:
-            return JsonResponse({'error': 'Invalid credentials'}, status=401)
+        try:
+            # Decodificar credenciales Basic Auth
+            auth_decoded = base64.b64decode(auth_header[6:]).decode('utf-8')
+            username, password = auth_decoded.split(':', 1)
             
-        # Verificar que el usuario tiene permisos (is_staff o is_superuser)
-        if not (user.is_staff or user.is_superuser):
-            return JsonResponse({'error': 'Insufficient permissions'}, status=403)
-            
-    except (ValueError, UnicodeDecodeError):
-        return JsonResponse({'error': 'Invalid authorization format'}, status=401)
+            # Autenticar usuario
+            user = authenticate(request, username=username, password=password)
+            if not user or not user.is_active:
+                return JsonResponse({'error': 'Invalid credentials'}, status=401)
+                
+            # Verificar que el usuario tiene permisos (is_staff o is_superuser)
+            if not (user.is_staff or user.is_superuser):
+                return JsonResponse({'error': 'Insufficient permissions'}, status=403)
+                
+        except (ValueError, UnicodeDecodeError):
+            return JsonResponse({'error': 'Invalid authorization format'}, status=401)
     
     items = GaleriaItem.objects.order_by('-fecha_subida')[:8]
     data = []
@@ -155,10 +156,7 @@ def galeria_upload(request):
     print(f"DEBUG: CLOUDINARY_API_KEY: {os.environ.get('CLOUDINARY_API_KEY', 'No configurado')}")
     print(f"DEBUG: CLOUDINARY_API_SECRET: {'Configurado' if os.environ.get('CLOUDINARY_API_SECRET') else 'No configurado'}")
     
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Método no permitido'}, status=405)
-    
-    # Verificar autenticación
+    # Verificar autenticación para todos los métodos
     if not request.META.get('HTTP_AUTHORIZATION'):
         return JsonResponse({'error': 'No autenticado'}, status=401)
     
@@ -178,6 +176,14 @@ def galeria_upload(request):
     except Exception as e:
         print(f"DEBUG: Error en autenticación: {e}")
         return JsonResponse({'error': 'Error en autenticación'}, status=401)
+    
+    # Si es un GET request, solo verificar credenciales y devolver OK
+    if request.method == 'GET':
+        return JsonResponse({'ok': True, 'message': 'Credenciales válidas', 'user': username})
+    
+    # Solo POST está permitido para subir archivos
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
     
     # Verificar campos requeridos
     nombre = request.POST.get('nombre')

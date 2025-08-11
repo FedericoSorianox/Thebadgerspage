@@ -561,33 +561,16 @@ function Galeria({
   const [changePassSuccess, setChangePassSuccess] = useState('');
 
   useEffect(() => {
-    // Solo cargar galería si el usuario está logueado Y tenemos credenciales válidas
-    if (!isLoggedIn || !loginUser || !loginPass) {
-      setLoadingGallery(false);
-      setGallery([]);
-      return;
-    }
-
+    // Cargar galería siempre, sin requerir autenticación para ver las fotos (acceso público)
     setLoadingGallery(true);
     console.log('Cargando galería desde:', `${API_BASE}/api/galeria/`);
     
-    // Incluir autenticación básica en la petición
-    const auth = btoa(`${loginUser}:${loginPass}`);
-    
-    fetch(`${API_BASE}/api/galeria/`, {
-      headers: {
-        'Authorization': `Basic ${auth}`
-      }
-    })
+    // Hacer petición sin autenticación para ver las fotos
+    fetch(`${API_BASE}/api/galeria/`)
       .then(res => {
         console.log('Respuesta de la API:', res.status, res.statusText);
-        if (res.status === 401) {
-          // Si hay error de autenticación, limpiar el login y mostrar el formulario
-          localStorage.removeItem('badgers_user');
-          localStorage.removeItem('badgers_pass');
-          // Note: No podemos llamar handleLogout aquí directamente ya que viene por props
-          // En su lugar, establecemos el estado local para mostrar login
-          throw new Error('No autorizado');
+        if (!res.ok) {
+          throw new Error(`Error ${res.status}: ${res.statusText}`);
         }
         return res.json();
       })
@@ -604,13 +587,9 @@ function Galeria({
       .catch(err => {
         console.error('Error al cargar galería:', err);
         setGallery([]);
-        // Si hay error de autorización, forzar el logout
-        if (err.message === 'No autorizado') {
-          handleLogout();
-        }
       })
       .finally(() => setLoadingGallery(false));
-  }, [API_BASE, isLoggedIn, loginUser, loginPass, handleLogout]);
+  }, [API_BASE]);
 
   // Cuando se sube una nueva imagen, seleccionarla automáticamente
   useEffect(() => {
@@ -769,119 +748,91 @@ function Galeria({
           Galería
         </h1>
 
-        {/* Mostrar login prompt si no está autenticado */}
-        {!isLoggedIn ? (
-          <div className="flex flex-col items-center gap-6 mb-8 max-w-md">
-            <div className="bg-white/90 rounded-2xl shadow-xl border border-slate-200 p-8 text-center">
-              <div className="mb-4">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mx-auto text-indigo-500 mb-4">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
-                </svg>
-              </div>
-              <h2 className="text-2xl font-bold text-slate-800 mb-3">Acceso Requerido</h2>
-              <p className="text-slate-600 mb-6">
-                Para ver la galería de fotos y videos de The Badgers, necesitas iniciar sesión con tus credenciales.
-              </p>
-              <button 
-                onClick={() => setShowLogin(true)} 
-                className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 inline mr-2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-                </svg>
-                Iniciar Sesión
-              </button>
-            </div>
-          </div>
+        {/* Galería - siempre visible para el público */}
+        {loadingGallery ? (
+          <div className="text-slate-700 animate-pulse text-lg">Cargando galería...</div>
         ) : (
           <>
-            {/* Galería - solo mostrar si está autenticado */}
-            {loadingGallery ? (
-              <div className="text-slate-700 animate-pulse text-lg">Cargando galería...</div>
-            ) : (
-              <>
-                {/* Previsualización grande */}
-                {gallery[selectedIdx] && (
-                  <div className="mb-12 flex flex-col items-center">
-                    <button
-                      className="rounded-3xl shadow-2xl border-4 border-white bg-white overflow-hidden max-w-4xl w-full flex flex-col items-center focus:outline-none transform hover:scale-105 transition-all duration-500 hover:shadow-3xl relative group gallery-image-hover zoom-cursor"
-                      onClick={() => setModalImg(gallery[selectedIdx].url)}
-                      aria-label="Ver en pantalla completa"
-                    >
-                      {/* Icono de pantalla completa */}
-                      <div className="absolute top-4 right-4 z-10 bg-black/60 rounded-full p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-white">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-                        </svg>
-                      </div>
-
-                      {gallery[selectedIdx].tipo === 'video' ? (
-                        <video src={gallery[selectedIdx].url} controls className="w-full max-h-[600px] object-contain bg-slate-50" />
-                      ) : (
-                        <img src={gallery[selectedIdx].url} alt={gallery[selectedIdx].nombre} className="w-full max-h-[600px] object-contain" />
-                      )}
-                      <div className="absolute bottom-0 left-0 w-full px-8 py-6 text-white text-base flex flex-col items-start">
-                        <span className="font-bold truncate w-full text-xl drop-shadow-lg" title={gallery[selectedIdx].nombre}>{gallery[selectedIdx].nombre}</span>
-                        <div className="flex justify-between items-center w-full mt-3">
-                          <span className="text-blue-200 font-medium text-lg drop-shadow-lg">{gallery[selectedIdx].fecha}</span>
-                          <span className="text-slate-200 text-base drop-shadow-lg">por {gallery[selectedIdx].usuario || 'Anónimo'}</span>
-                        </div>
-                      </div>
-                    </button>
+            {/* Previsualización grande */}
+            {gallery[selectedIdx] && (
+              <div className="mb-12 flex flex-col items-center">
+                <button
+                  className="rounded-3xl shadow-2xl border-4 border-white bg-white overflow-hidden max-w-4xl w-full flex flex-col items-center focus:outline-none transform hover:scale-105 transition-all duration-500 hover:shadow-3xl relative group gallery-image-hover zoom-cursor"
+                  onClick={() => setModalImg(gallery[selectedIdx].url)}
+                  aria-label="Ver en pantalla completa"
+                >
+                  {/* Icono de pantalla completa */}
+                  <div className="absolute top-4 right-4 z-10 bg-black/60 rounded-full p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-white">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                    </svg>
                   </div>
-                )}
 
-                {/* Miniaturas */}
-                <div className="flex flex-wrap justify-center gap-8 max-w-7xl mb-12 px-4">
-                  {gallery.map((item, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedIdx(idx)}
-                      onDoubleClick={() => setModalImg(item.url)}
-                      className={`border-4 ${selectedIdx === idx ? 'border-indigo-500 scale-110 shadow-2xl ring-4 ring-indigo-200' : 'border-slate-300'} rounded-2xl overflow-hidden focus:outline-none transition-all duration-500 hover:scale-110 hover:shadow-2xl bg-white relative transform hover:rotate-2 hover:border-indigo-400 cursor-pointer group`}
-                      style={{ width: 240, height: 170 }}
-                      aria-label={`Ver elemento ${idx + 1} - Click para seleccionar, doble click para pantalla completa`}
-                    >
-                      {/* Icono de pantalla completa para miniaturas */}
-                      <div className="absolute top-2 right-2 z-10 bg-black/60 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-white">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-                        </svg>
-                      </div>
-                      <div className="relative w-full h-full">
-                        {item.tipo === 'video' ? (
-                          <>
-                            <video src={item.url} className="w-full h-full object-cover bg-slate-50" />
-                            <span className="absolute top-3 right-3 bg-black/80 rounded-full p-2 backdrop-blur-sm">
-                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-white">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 3.75A2.25 2.25 0 0 0 2.25 6v8A2.25 2.25 0 0 0 4.5 16.25h11A2.25 2.25 0 0 0 20.5 14V6A2.25 2.25 0 0 0 18.25 3.75h-11zm0 1.5A4.25 4.25 0 0 0 3.5 7.75v8.5A4.25 4.25 0 0 0 7.75 20.5h8.5A4.25 4.25 0 0 0 20.5 16.25v-8.5A4.25 4.25 0 0 0 16.25 3.5zm4.25 3.25a5.25 5.25 0 1 1 0 10.5a5.25 5.25 0 0 1 0-10.5zm0 1.5a3.75 3.75 0 1 0 0 7.5a3.75 3.75 0 0 0 0-7.5zm5.13.62a1.13 1.13 0 1 1 0 2.25a1.13 1.13 0 0 1 0-2.25z" />
-                              </svg>
-                            </span>
-                          </>
-                        ) : (
-                          <img src={item.url} alt={`Miniatura ${idx + 1}`} className="w-full h-full object-cover" />
-                        )}
-                        {/* Nombre, fecha y usuario */}
-                        <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/80 via-black/60 to-transparent text-white text-sm px-4 py-3 flex flex-col items-start">
-                          <span className="font-bold truncate w-full" title={item.nombre}>{item.nombre}</span>
-                          <div className="flex justify-between items-center w-full mt-1">
-                            <span className="text-blue-300 text-xs font-medium">{item.fecha}</span>
-                            <span className="text-slate-300 text-xs">por {item.usuario || 'Anónimo'}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </>
+                  {gallery[selectedIdx].tipo === 'video' ? (
+                    <video src={gallery[selectedIdx].url} controls className="w-full max-h-[600px] object-contain bg-slate-50" />
+                  ) : (
+                    <img src={gallery[selectedIdx].url} alt={gallery[selectedIdx].nombre} className="w-full max-h-[600px] object-contain" />
+                  )}
+                  <div className="absolute bottom-0 left-0 w-full px-8 py-6 text-white text-base flex flex-col items-start">
+                    <span className="font-bold truncate w-full text-xl drop-shadow-lg" title={gallery[selectedIdx].nombre}>{gallery[selectedIdx].nombre}</span>
+                    <div className="flex justify-between items-center w-full mt-3">
+                      <span className="text-blue-200 font-medium text-lg drop-shadow-lg">{gallery[selectedIdx].fecha}</span>
+                      <span className="text-slate-200 text-base drop-shadow-lg">por {gallery[selectedIdx].usuario || 'Anónimo'}</span>
+                    </div>
+                  </div>
+                </button>
+              </div>
             )}
+
+            {/* Miniaturas */}
+            <div className="flex flex-wrap justify-center gap-8 max-w-7xl mb-12 px-4">
+              {gallery.map((item, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setSelectedIdx(idx)}
+                  onDoubleClick={() => setModalImg(item.url)}
+                  className={`border-4 ${selectedIdx === idx ? 'border-indigo-500 scale-110 shadow-2xl ring-4 ring-indigo-200' : 'border-slate-300'} rounded-2xl overflow-hidden focus:outline-none transition-all duration-500 hover:scale-110 hover:shadow-2xl bg-white relative transform hover:rotate-2 hover:border-indigo-400 cursor-pointer group`}
+                  style={{ width: 240, height: 170 }}
+                  aria-label={`Ver elemento ${idx + 1} - Click para seleccionar, doble click para pantalla completa`}
+                >
+                  {/* Icono de pantalla completa para miniaturas */}
+                  <div className="absolute top-2 right-2 z-10 bg-black/60 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-white">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                    </svg>
+                  </div>
+                  <div className="relative w-full h-full">
+                    {item.tipo === 'video' ? (
+                      <>
+                        <video src={item.url} className="w-full h-full object-cover bg-slate-50" />
+                        <span className="absolute top-3 right-3 bg-black/80 rounded-full p-2 backdrop-blur-sm">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-white">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 3.75A2.25 2.25 0 0 0 2.25 6v8A2.25 2.25 0 0 0 4.5 16.25h11A2.25 2.25 0 0 0 20.5 14V6A2.25 2.25 0 0 0 18.25 3.75h-11zm0 1.5A4.25 4.25 0 0 0 3.5 7.75v8.5A4.25 4.25 0 0 0 7.75 20.5h8.5A4.25 4.25 0 0 0 20.5 16.25v-8.5A4.25 4.25 0 0 0 16.25 3.5zm4.25 3.25a5.25 5.25 0 1 1 0 10.5a5.25 5.25 0 0 1 0-10.5zm0 1.5a3.75 3.75 0 1 0 0 7.5a3.75 3.75 0 0 0 0-7.5zm5.13.62a1.13 1.13 0 1 1 0 2.25a1.13 1.13 0 0 1 0-2.25z" />
+                          </svg>
+                        </span>
+                      </>
+                    ) : (
+                      <img src={item.url} alt={`Miniatura ${idx + 1}`} className="w-full h-full object-cover" />
+                    )}
+                    {/* Nombre, fecha y usuario */}
+                    <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/80 via-black/60 to-transparent text-white text-sm px-4 py-3 flex flex-col items-start">
+                      <span className="font-bold truncate w-full" title={item.nombre}>{item.nombre}</span>
+                      <div className="flex justify-between items-center w-full mt-1">
+                        <span className="text-blue-300 text-xs font-medium">{item.fecha}</span>
+                        <span className="text-slate-300 text-xs">por {item.usuario || 'Anónimo'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
           </>
         )}
 
-        {/* Texto y botones debajo de la galería */}
+        {/* Texto informativo y botones */}
         <div className="flex flex-col items-center gap-6 mb-8">
           <p className="text-lg text-slate-600 text-center max-w-xl animate-fade-in">
-            Fotos y videos de The Badgers. Solo usuarios pueden subir contenido.
+            Fotos y videos de The Badgers. Galería pública para todos los visitantes.
             <br />
             <span className="text-sm text-slate-500 mt-2 block">
               💡 Haz click en las imágenes grandes para pantalla completa, o doble click en las miniaturas
@@ -910,12 +861,17 @@ function Galeria({
                 </button>
               </>
             ) : (
-              <button onClick={() => setShowLogin(true)} className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 inline mr-2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-                </svg>
-                Login
-              </button>
+              <div className="flex flex-col items-center gap-4">
+                <button onClick={() => setShowLogin(true)} className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 inline mr-2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                  </svg>
+                  Iniciar Sesión para Subir Fotos
+                </button>
+                <p className="text-sm text-slate-500 text-center">
+                  ¿Eres miembro de The Badgers? Inicia sesión para subir tus fotos y videos de entrenamientos.
+                </p>
+              </div>
             )}
           </div>
         </div>
@@ -993,8 +949,6 @@ function Galeria({
 function TorneoBJJ({ 
   setIsJudgingFullscreen, 
   isLoggedIn, 
-  loginUser, 
-  loginPass, 
   setShowLogin, 
   handleLogin, 
   handleLogout, 
@@ -1007,8 +961,10 @@ function TorneoBJJ({
   const [participants, setParticipants] = useState([]);
   const [activeTournament, setActiveTournament] = useState(null);
 
-  // Cargar datos de prueba al montar el componente
+  // Cargar datos de prueba al montar el componente - solo si está autenticado
   useEffect(() => {
+    if (!isLoggedIn) return;
+    
     // Torneos de ejemplo
     const sampleTournaments = [
       {
@@ -1026,42 +982,88 @@ function TorneoBJJ({
         location: 'Córdoba',
       }
     ];
+    
+    setTournaments(sampleTournaments);
+    setActiveTournament(sampleTournaments[0]);
+    
     // Categorías de ejemplo
     const sampleCategories = [
-      { id: 1, name: 'Adulto - Azul', weight: '-76kg', tournamentId: 1 },
-      { id: 2, name: 'Adulto - Blanca', weight: '-70kg', tournamentId: 1 },
-      { id: 3, name: 'Juvenil - Azul', weight: '-60kg', tournamentId: 2 }
+      { id: 1, name: 'Blanco/Azul', weight: 'Peso Pluma (-64kg)', type: 'Gi' },
+      { id: 2, name: 'Blanco/Azul', weight: 'Peso Ligero (-70kg)', type: 'Gi' },
+      { id: 3, name: 'Púrpura/Marrón', weight: 'Peso Medio (-76kg)', type: 'No-Gi' },
+      { id: 4, name: 'Negro', weight: 'Peso Pesado (+82kg)', type: 'Gi' }
     ];
+    
+    setCategories(sampleCategories);
+    
     // Participantes de ejemplo
     const sampleParticipants = [
-      { id: 1, name: 'Juan Pérez', categoryId: 1, team: 'Badgers', points: 12 },
-      { id: 2, name: 'Lucas Gómez', categoryId: 1, team: 'Gracie', points: 8 },
-      { id: 3, name: 'Martina López', categoryId: 2, team: 'Badgers', points: 10 },
-      { id: 4, name: 'Sofía Torres', categoryId: 3, team: 'Alliance', points: 15 }
+      { id: 1, name: 'Juan Pérez', team: 'Team Alpha', belt: 'Azul', weight: 68, category: 1 },
+      { id: 2, name: 'María García', team: 'Team Beta', belt: 'Púrpura', weight: 58, category: 1 },
+      { id: 3, name: 'Carlos Rodríguez', team: 'Team Gamma', belt: 'Marrón', weight: 75, category: 3 },
+      { id: 4, name: 'Ana Martínez', team: 'Team Delta', belt: 'Negro', weight: 85, category: 4 }
     ];
-    setTournaments(sampleTournaments);
-    setCategories(sampleCategories);
+    
     setParticipants(sampleParticipants);
-    setActiveTournament(sampleTournaments[0]);
-  }, []);
+  }, [isLoggedIn]);
 
-  // Si no está logueado, mostrar pantalla de login
+  // Si no está autenticado, mostrar prompt de login
   if (!isLoggedIn) {
     return (
-      <div className="h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-900 pt-20 flex items-center justify-center">
-        <div className="bg-white/10 backdrop-blur-md rounded-xl p-8 w-full max-w-md mx-4">
-          <div className="text-center mb-6">
-            <h1 className="text-3xl font-bold text-white mb-2">
-              Sistema de Torneo BJJ
-            </h1>
-            <p className="text-cyan-200">
-              Inicia sesión para acceder al sistema de torneos
-            </p>
+      <div className="min-h-screen w-full bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 font-sans pt-32 flex flex-col items-center relative overflow-hidden">
+        {/* Elementos decorativos de fondo */}
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-200 to-indigo-300 rounded-full opacity-10 blur-3xl animate-pulse"></div>
+          <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-cyan-200 to-blue-300 rounded-full opacity-10 blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        </div>
+
+        <div className="relative z-10 w-full flex flex-col items-center">
+          <h1 className="text-5xl md:text-7xl font-black text-white mb-12 mt-4 drop-shadow-2xl text-center tracking-tight animate-fade-in break-words max-w-full leading-tight">
+            Torneo BJJ
+          </h1>
+
+          <div className="flex flex-col items-center gap-6 mb-8 max-w-md">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-xl border border-white/20 p-8 text-center">
+              <div className="mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mx-auto text-cyan-400 mb-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-3">Acceso Restringido</h2>
+              <p className="text-cyan-100 mb-6">
+                El sistema de torneo BJJ es exclusivo para instructores y organizadores. Necesitas credenciales de acceso para continuar.
+              </p>
+              <button 
+                onClick={() => setShowLogin(true)} 
+                className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 inline mr-2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                </svg>
+                Iniciar Sesión
+              </button>
+            </div>
           </div>
 
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-white text-sm font-medium mb-2">
+          {/* Modal de login */}
+          {showLogin && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-sm" onClick={() => setShowLogin(false)}>
+              <form onSubmit={handleLogin} className="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-xs w-full p-6 relative animate-fade-in" onClick={e => e.stopPropagation()}>
+                <button type="button" onClick={() => setShowLogin(false)} className="absolute top-3 right-3 text-slate-500 text-2xl font-bold hover:text-slate-700">×</button>
+                <h2 className="text-2xl font-bold text-slate-800 text-center mb-4">Login Torneo</h2>
+                <input name="user" type="text" placeholder="Usuario" className="w-full mb-3 px-3 py-2 rounded-lg bg-slate-50 text-slate-800 border border-slate-200 focus:border-indigo-500 focus:outline-none" autoFocus />
+                <input name="pass" type="password" placeholder="Contraseña" className="w-full mb-3 px-3 py-2 rounded-lg bg-slate-50 text-slate-800 border border-slate-200 focus:border-indigo-500 focus:outline-none" />
+                {loginError && <div className="text-red-500 text-sm mb-2">{loginError}</div>}
+                <button type="submit" className="w-full bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold py-2 px-4 rounded-lg transition-all duration-300">Entrar</button>
+              </form>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Sistema de torneo BJJ - contenido principal (solo si está autenticado)
                 Usuario
               </label>
               <input
@@ -2714,15 +2716,16 @@ export default function App() {
     
     // Solo intentar auto-login si tenemos credenciales almacenadas
     if (storedUser && storedPass) {
-      // Verificar si las credenciales siguen siendo válidas
-      fetch(`${API_BASE}/api/galeria/`, {
+      // Verificar credenciales usando un endpoint que requiere autenticación (upload)
+      fetch(`${API_BASE}/api/galeria/upload/`, {
+        method: 'GET', // Solo verificar sin subir nada
         headers: {
           'Authorization': 'Basic ' + btoa(`${storedUser}:${storedPass}`)
         }
       })
       .then(res => {
-        if (res.ok) {
-          // Credenciales válidas, iniciar sesión automáticamente
+        if (res.status !== 401 && res.status !== 403) {
+          // Credenciales válidas (cualquier respuesta que no sea error de auth)
           setLoginUser(storedUser);
           setLoginPass(storedPass);
           setIsLoggedIn(true);
@@ -2746,14 +2749,18 @@ export default function App() {
     setLoginError('');
     const user = e.target.user.value;
     const pass = e.target.pass.value;
-    // Probar login haciendo un request a /api/galeria/ con auth básica
-    fetch(`${API_BASE}/api/galeria/`, {
+    // Probar login haciendo un request a un endpoint que requiere auth
+    fetch(`${API_BASE}/api/galeria/upload/`, {
+      method: 'GET', // Solo verificar credenciales sin subir nada
       headers: {
         'Authorization': 'Basic ' + btoa(`${user}:${pass}`)
       }
     })
       .then(res => {
-        if (res.status === 401) throw new Error('Usuario o contraseña incorrectos');
+        if (res.status === 401 || res.status === 403) {
+          throw new Error('Usuario o contraseña incorrectos');
+        }
+        // Cualquier otra respuesta significa que las credenciales son válidas
         localStorage.setItem('badgers_user', user);
         localStorage.setItem('badgers_pass', pass);
         setLoginUser(user);
