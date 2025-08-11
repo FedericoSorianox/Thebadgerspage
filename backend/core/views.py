@@ -28,6 +28,28 @@ def api_root(request):
     return JsonResponse({"mensaje": "¡API funcionando correctamente!"})
 
 def galeria_list(request):
+    # Verificar autenticación básica
+    auth_header = request.META.get('HTTP_AUTHORIZATION')
+    if not auth_header or not auth_header.startswith('Basic '):
+        return JsonResponse({'error': 'Authorization required'}, status=401)
+    
+    try:
+        # Decodificar credenciales Basic Auth
+        auth_decoded = base64.b64decode(auth_header[6:]).decode('utf-8')
+        username, password = auth_decoded.split(':', 1)
+        
+        # Autenticar usuario
+        user = authenticate(request, username=username, password=password)
+        if not user or not user.is_active:
+            return JsonResponse({'error': 'Invalid credentials'}, status=401)
+            
+        # Verificar que el usuario tiene permisos (is_staff o is_superuser)
+        if not (user.is_staff or user.is_superuser):
+            return JsonResponse({'error': 'Insufficient permissions'}, status=403)
+            
+    except (ValueError, UnicodeDecodeError):
+        return JsonResponse({'error': 'Invalid authorization format'}, status=401)
+    
     items = GaleriaItem.objects.order_by('-fecha_subida')[:8]
     data = []
     
