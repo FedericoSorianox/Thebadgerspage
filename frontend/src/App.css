@@ -50,7 +50,7 @@
   50% { transform: translateY(-16px); }
 }
 
-/* Parallax background para el hero */ 
+/* Parallax background para el hero */
 /*.hero-parallax-bg {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -72,27 +72,46 @@
 
 /* Animación para fade-in */
 @keyframes fade-in {
-  from { opacity: 0; transform: translateY(30px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
+
 .animate-fade-in {
-  animation: fade-in 1s cubic-bezier(0.4,0,0.2,1) both;
+  animation: fade-in 1s cubic-bezier(0.4, 0, 0.2, 1) both;
 }
+
 .animate-fade-in.delay-100 {
   animation-delay: 0.1s;
 }
+
 .animate-fade-in.delay-200 {
   animation-delay: 0.2s;
 }
+
 .animate-fade-in.delay-300 {
   animation-delay: 0.3s;
 }
 
 /* Animación bounce para el logo */
 @keyframes bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-18px); }
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-18px);
+  }
 }
+
 .animate-bounce {
   animation: bounce 4s infinite;
 }
@@ -125,6 +144,7 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -135,6 +155,7 @@
     opacity: 0;
     transform: scale(0.8);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -158,4 +179,356 @@
 
 .zoom-cursor:active {
   cursor: zoom-out;
+}
+
+/* Estilos específicos para el sistema de torneo BJJ */
+.tournament-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.tournament-card {
+  background: rgba(64, 8, 207, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+}
+
+.tournament-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(14, 116, 144, 0.2);
+  border-color: rgba(34, 211, 238, 0.5);
+}
+
+.judging-interface {
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.9) 100%);
+  backdrop-filter: blur(20px);
+}
+
+.score-display {
+  font-size: 4rem;
+  font-weight: 900;
+  text-shadow: 0 0 20px rgba(34, 211, 238, 0.5);
+}
+
+.competitor-card {
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.competitor-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s;
+}
+
+.competitor-card:hover::before {
+  left: 100%;
+}
+
+.bracket-container {
+  overflow-x: auto;
+  padding: 1rem 0;
+}
+
+.bracket-round {
+  min-width: 250px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.bracket-match {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  border-radius: 8px;
+  padding: 1rem;
+  position: relative;
+}
+
+.bracket-match.winner {
+  border-color: rgba(34, 197, 94, 0.5);
+  background: rgba(34, 197, 94, 0.1);
+}
+
+.timer-display {
+  font-family: 'Courier New', monospace;
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #22d3ee;
+  border-radius: 16px;
+  box-shadow: 0 0 30px rgba(34, 211, 238, 0.3);
+}
+
+.point-button {
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.point-button:active {
+  transform: scale(0.95);
+}
+
+.point-button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s;
+}
+
+.point-button:active::after {
+  width: 100%;
+  height: 100%;
+}
+
+/* Animaciones para las transiciones de pantalla */
+.tournament-fade-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.tournament-fade-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.tournament-fade-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tournament-fade-exit-active {
+  opacity: 0;
+  transform: translateY(-20px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+/* Responsive design para el sistema de torneo */
+@media (max-width: 768px) {
+  .tournament-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .score-display {
+    font-size: 3rem;
+  }
+
+  .bracket-container {
+    padding: 0.5rem 0;
+  }
+
+  .bracket-round {
+    min-width: 200px;
+  }
+
+  .timer-display {
+    padding: 1rem;
+  }
+}
+
+/* Efectos especiales para el judging */
+.judging-active {
+  animation: pulse-border 2s infinite;
+}
+
+@keyframes pulse-border {
+
+  0%,
+  100% {
+    border-color: rgba(34, 211, 238, 0.3);
+  }
+
+  50% {
+    border-color: rgba(34, 211, 238, 0.8);
+  }
+}
+
+.victory-celebration {
+  animation: victory-glow 1s ease-in-out;
+}
+
+@keyframes victory-glow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
+  }
+
+  50% {
+    box-shadow: 0 0 40px rgba(34, 197, 94, 0.8);
+  }
+}
+
+/* Indicadores de estado */
+.status-active {
+  background: linear-gradient(45deg, #10b981, #22d3ee);
+  animation: status-pulse 2s infinite;
+}
+
+.status-completed {
+  background: linear-gradient(45deg, #3b82f6, #8b5cf6);
+}
+
+.status-draft {
+  background: linear-gradient(45deg, #f59e0b, #ef4444);
+}
+
+@keyframes status-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Estilos para sistema de luchas en pantalla completa */
+.judging-fullscreen {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 9999 !important;
+  background: linear-gradient(135deg, #0f172a, #1e3a8a, #0e7490) !important;
+  overflow-y: auto !important;
+}
+
+.judging-fullscreen .timer-display {
+  font-size: 3rem !important;
+}
+
+.judging-fullscreen .participant-name {
+  font-size: 1.25rem !important;
+}
+
+.judging-fullscreen .points-display {
+  font-size: 2.5rem !important;
+}
+
+.judging-fullscreen .control-button {
+  padding: 0.5rem 1rem !important;
+  font-size: 0.875rem !important;
+}
+
+/* Estilos para pantalla completa real del navegador */
+:fullscreen {
+  background: linear-gradient(135deg, #0f172a, #1e3a8a, #0e7490) !important;
+}
+
+:-webkit-full-screen {
+  background: linear-gradient(135deg, #0f172a, #1e3a8a, #0e7490) !important;
+}
+
+:-moz-full-screen {
+  background: linear-gradient(135deg, #0f172a, #1e3a8a, #0e7490) !important;
+}
+
+:-ms-fullscreen {
+  background: linear-gradient(135deg, #0f172a, #1e3a8a, #0e7490) !important;
+}
+
+/* Asegurar que el body y html no tengan scroll en pantalla completa */
+:fullscreen body,
+:-webkit-full-screen body,
+:-moz-full-screen body,
+:-ms-fullscreen body {
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+/* Estilos específicos para el contenedor de judging en pantalla completa real */
+.judging-fullscreen-native {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 2147483647 !important;
+  background: linear-gradient(135deg, #0f172a, #1e3a8a, #0e7490) !important;
+  overflow-y: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Asegurar que los colores dinámicos funcionen correctamente */
+.bg-red-500\/20 {
+  background-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+.bg-blue-500\/20 {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+.border-red-400\/30 {
+  border-color: rgba(248, 113, 113, 0.3) !important;
+}
+
+.border-blue-400\/30 {
+  border-color: rgba(96, 165, 250, 0.3) !important;
+}
+
+.text-red-200 {
+  color: rgb(254, 202, 202) !important;
+}
+
+.text-blue-200 {
+  color: rgb(191, 219, 254) !important;
+}
+
+.bg-red-600 {
+  background-color: rgb(220, 38, 38) !important;
+}
+
+.bg-blue-600 {
+  background-color: rgb(37, 99, 235) !important;
+}
+
+.bg-red-700 {
+  background-color: rgb(185, 28, 28) !important;
+}
+
+.bg-blue-700 {
+  background-color: rgb(29, 78, 216) !important;
+}
+
+/* Responsive para pantalla completa en dispositivos pequeños */
+@media (max-width: 768px) {
+  .judging-fullscreen {
+    padding: 0.5rem !important;
+  }
+
+  .judging-fullscreen .timer-display {
+    font-size: 2rem !important;
+  }
+
+  .judging-fullscreen .participant-name {
+    font-size: 1rem !important;
+  }
+
+  .judging-fullscreen .points-display {
+    font-size: 2rem !important;
+  }
 }

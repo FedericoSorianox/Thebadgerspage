@@ -12,6 +12,17 @@ import os
 import cloudinary
 import cloudinary.uploader
 import requests
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django.shortcuts import get_object_or_404
+from .models import Torneo, Categoria, Participante, Llave, Lucha
+from .serializers import (
+    TorneoSerializer, CategoriaSerializer, ParticipanteSerializer,
+    LlaveSerializer, LuchaSerializer, LuchaSimpleSerializer
+)
+from datetime import datetime
 
 def api_root(request):
     return JsonResponse({"mensaje": "¡API funcionando correctamente!"})
@@ -736,3 +747,307 @@ def productos_proxy(request):
             )
     else:
         return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+# ============= API VIEWS PARA SISTEMA DE TORNEO BJJ =============
+
+class TorneoViewSet(viewsets.ModelViewSet):
+    """ViewSet para gestionar torneos"""
+    queryset = Torneo.objects.all()
+    serializer_class = TorneoSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def perform_create(self, serializer):
+        """Asignar el usuario actual como creador del torneo"""
+        serializer.save(usuario_creador=self.request.user)
+    
+    @action(detail=True, methods=['post'])
+    def activar(self, request, pk=None):
+        """Activar un torneo"""
+        torneo = self.get_object()
+        torneo.estado = 'activo'
+        torneo.save()
+        return Response({'status': 'Torneo activado'})
+    
+    @action(detail=True, methods=['post'])
+    def finalizar(self, request, pk=None):
+        """Finalizar un torneo"""
+        torneo = self.get_object()
+        torneo.estado = 'finalizado'
+        torneo.save()
+        return Response({'status': 'Torneo finalizado'})
+
+class CategoriaViewSet(viewsets.ModelViewSet):
+    """ViewSet para gestionar categorías"""
+    queryset = Categoria.objects.all()
+    serializer_class = CategoriaSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Filtrar categorías por torneo si se especifica"""
+        queryset = Categoria.objects.all()
+        torneo_id = self.request.query_params.get('torneo', None)
+        if torneo_id is not None:
+            queryset = queryset.filter(torneo_id=torneo_id)
+        return queryset
+    
+    @action(detail=True, methods=['post'])
+    def cerrar_inscripciones(self, request, pk=None):
+        """Cerrar inscripciones de una categoría"""
+        categoria = self.get_object()
+        categoria.estado = 'cerrada'
+        categoria.save()
+        return Response({'status': 'Inscripciones cerradas'})
+
+class ParticipanteViewSet(viewsets.ModelViewSet):
+    """ViewSet para gestionar participantes"""
+    queryset = Participante.objects.all()
+    serializer_class = ParticipanteSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Filtrar participantes por categoría si se especifica"""
+        queryset = Participante.objects.filter(activo=True)
+        categoria_id = self.request.query_params.get('categoria', None)
+        if categoria_id is not None:
+            queryset = queryset.filter(categoria_id=categoria_id)
+        return queryset
+    
+    @action(detail=True, methods=['post'])
+    def desactivar(self, request, pk=None):
+        """Desactivar un participante"""
+        participante = self.get_object()
+        participante.activo = False
+        participante.save()
+        return Response({'status': 'Participante desactivado'})
+
+class LlaveViewSet(viewsets.ModelViewSet):
+    """ViewSet para gestionar llaves de torneo"""
+    queryset = Llave.objects.all()
+    serializer_class = LlaveSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Filtrar llaves por categoría si se especifica"""
+        queryset = Llave.objects.all()
+        categoria_id = self.request.query_params.get('categoria', None)
+        if categoria_id is not None:
+            queryset = queryset.filter(categoria_id=categoria_id)
+        return queryset
+    
+    @action(detail=True, methods=['post'])
+    def generar_automatica(self, request, pk=None):
+        """Generar llave automáticamente basada en los participantes"""
+        llave = self.get_object()
+        participantes = list(llave.categoria.participantes.filter(activo=True))
+        
+        if len(participantes) < 2:
+            return Response(
+                {'error': 'Se necesitan al menos 2 participantes'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Generar estructura de llave simple
+        import random
+        random.shuffle(participantes)
+        
+        estructura = {
+            'participantes': [
+                {'id': p.id, 'nombre': p.nombre_completo, 'academia': p.academia}
+                for p in participantes
+            ],
+            'rondas': [],
+            'tipo': 'eliminacion_simple'
+        }
+        
+        llave.estructura = estructura
+        llave.save()
+        
+        return Response({'status': 'Llave generada automáticamente'})
+    
+    @action(detail=True, methods=['post'])
+    def bloquear(self, request, pk=None):
+        """Bloquear la edición de la llave"""
+        llave = self.get_object()
+        llave.bloqueada = True
+        llave.save()
+        return Response({'status': 'Llave bloqueada'})
+    
+    @action(detail=True, methods=['post'])
+    def desbloquear(self, request, pk=None):
+        """Desbloquear la edición de la llave"""
+        llave = self.get_object()
+        llave.bloqueada = False
+        llave.save()
+        return Response({'status': 'Llave desbloqueada'})
+
+class LuchaViewSet(viewsets.ModelViewSet):
+    """ViewSet para gestionar luchas"""
+    queryset = Lucha.objects.all()
+    serializer_class = LuchaSerializer
+    permission_classes = [IsAuthenticated]
+    
+    def get_queryset(self):
+        """Filtrar luchas por categoría si se especifica"""
+        queryset = Lucha.objects.all()
+        categoria_id = self.request.query_params.get('categoria', None)
+        if categoria_id is not None:
+            queryset = queryset.filter(categoria_id=categoria_id)
+        return queryset
+    
+    @action(detail=True, methods=['post'])
+    def iniciar(self, request, pk=None):
+        """Iniciar una lucha"""
+        lucha = self.get_object()
+        lucha.estado = 'en_progreso'
+        lucha.fecha_inicio = datetime.now()
+        lucha.save()
+        return Response({'status': 'Lucha iniciada'})
+    
+    @action(detail=True, methods=['post'])
+    def pausar(self, request, pk=None):
+        """Pausar una lucha"""
+        lucha = self.get_object()
+        lucha.estado = 'pausada'
+        lucha.save()
+        return Response({'status': 'Lucha pausada'})
+    
+    @action(detail=True, methods=['post'])
+    def finalizar(self, request, pk=None):
+        """Finalizar una lucha"""
+        lucha = self.get_object()
+        data = request.data
+        
+        lucha.estado = 'finalizada'
+        lucha.fecha_fin = datetime.now()
+        
+        # Actualizar puntuación final
+        lucha.puntos_p1 = data.get('puntos_p1', lucha.puntos_p1)
+        lucha.ventajas_p1 = data.get('ventajas_p1', lucha.ventajas_p1)
+        lucha.penalizaciones_p1 = data.get('penalizaciones_p1', lucha.penalizaciones_p1)
+        
+        lucha.puntos_p2 = data.get('puntos_p2', lucha.puntos_p2)
+        lucha.ventajas_p2 = data.get('ventajas_p2', lucha.ventajas_p2)
+        lucha.penalizaciones_p2 = data.get('penalizaciones_p2', lucha.penalizaciones_p2)
+        
+        lucha.tiempo_transcurrido = data.get('tiempo_transcurrido', lucha.tiempo_transcurrido)
+        
+        # Determinar ganador
+        if lucha.puntos_p1 > lucha.puntos_p2:
+            lucha.ganador = lucha.participante1
+            lucha.resultado = 'Por puntos'
+        elif lucha.puntos_p2 > lucha.puntos_p1:
+            lucha.ganador = lucha.participante2
+            lucha.resultado = 'Por puntos'
+        else:
+            # En caso de empate, revisar ventajas
+            if lucha.ventajas_p1 > lucha.ventajas_p2:
+                lucha.ganador = lucha.participante1
+                lucha.resultado = 'Por ventajas'
+            elif lucha.ventajas_p2 > lucha.ventajas_p1:
+                lucha.ganador = lucha.participante2
+                lucha.resultado = 'Por ventajas'
+            else:
+                lucha.resultado = 'Empate'
+        
+        lucha.save()
+        return Response({'status': 'Lucha finalizada', 'ganador': lucha.ganador.nombre_completo if lucha.ganador else None})
+    
+    @action(detail=True, methods=['post'])
+    def actualizar_puntuacion(self, request, pk=None):
+        """Actualizar puntuación en tiempo real durante la lucha"""
+        lucha = self.get_object()
+        data = request.data
+        
+        # Actualizar puntuación
+        if 'puntos_p1' in data:
+            lucha.puntos_p1 = max(0, data['puntos_p1'])
+        if 'ventajas_p1' in data:
+            lucha.ventajas_p1 = max(0, data['ventajas_p1'])
+        if 'penalizaciones_p1' in data:
+            lucha.penalizaciones_p1 = max(0, data['penalizaciones_p1'])
+            
+        if 'puntos_p2' in data:
+            lucha.puntos_p2 = max(0, data['puntos_p2'])
+        if 'ventajas_p2' in data:
+            lucha.ventajas_p2 = max(0, data['ventajas_p2'])
+        if 'penalizaciones_p2' in data:
+            lucha.penalizaciones_p2 = max(0, data['penalizaciones_p2'])
+        
+        if 'tiempo_transcurrido' in data:
+            lucha.tiempo_transcurrido = data['tiempo_transcurrido']
+        
+        lucha.save()
+        
+        serializer = self.get_serializer(lucha)
+        return Response(serializer.data)
+
+# Vista adicional para obtener luchas disponibles para judging
+@csrf_exempt
+def luchas_disponibles(request):
+    """Obtener luchas disponibles para el sistema de judging"""
+    if request.method == 'GET':
+        categoria_id = request.GET.get('categoria')
+        
+        luchas = Lucha.objects.filter(estado='pendiente')
+        if categoria_id:
+            luchas = luchas.filter(categoria_id=categoria_id)
+        
+        serializer = LuchaSimpleSerializer(luchas, many=True)
+        return JsonResponse(serializer.data, safe=False)
+    
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+# Endpoint para verificar usuario autenticado
+def user_info(request):
+    """Endpoint para verificar autenticación y obtener datos del usuario"""
+    if request.user.is_authenticated:
+        return JsonResponse({
+            'username': request.user.username,
+            'email': request.user.email,
+            'first_name': request.user.first_name,
+            'last_name': request.user.last_name,
+            'is_staff': request.user.is_staff,
+            'is_superuser': request.user.is_superuser,
+        })
+    else:
+        return JsonResponse({'error': 'No autenticado'}, status=401)
+
+# Endpoint para crear usuarios en producción
+@csrf_exempt
+def create_user(request):
+    """Endpoint para crear usuarios (solo para superusuarios)"""
+    if request.method == 'POST' and request.user.is_superuser:
+        try:
+            data = json.loads(request.body)
+            username = data.get('username')
+            password = data.get('password')
+            email = data.get('email', '')
+            first_name = data.get('first_name', '')
+            last_name = data.get('last_name', '')
+            
+            if not username or not password:
+                return JsonResponse({'error': 'Username y password son requeridos'}, status=400)
+            
+            if User.objects.filter(username=username).exists():
+                return JsonResponse({'error': 'El usuario ya existe'}, status=400)
+            
+            user = User.objects.create_user(
+                username=username,
+                password=password,
+                email=email,
+                first_name=first_name,
+                last_name=last_name
+            )
+            
+            return JsonResponse({
+                'message': 'Usuario creado exitosamente',
+                'user_id': user.id,
+                'username': user.username
+            })
+            
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'JSON inválido'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'No autorizado'}, status=403)

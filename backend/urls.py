@@ -1,19 +1,35 @@
 from django.contrib import admin
-from django.urls import path, re_path
+from django.urls import path, re_path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.static import serve
 import os
 from core import views
 from core.views import FrontendAppView
+from rest_framework.routers import DefaultRouter
+
+# Router para las APIs del sistema de torneo
+router = DefaultRouter()
+router.register(r'torneos', views.TorneoViewSet)
+router.register(r'categorias', views.CategoriaViewSet)
+router.register(r'participantes', views.ParticipanteViewSet)
+router.register(r'llaves', views.LlaveViewSet)
+router.register(r'luchas', views.LuchaViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', views.api_root),
+    # Endpoints de autenticación
+    path('api/user/', views.user_info),
+    path('api/create-user/', views.create_user),
     path('api/galeria/', views.galeria_list),
     path('api/galeria/temp/', views.galeria_list_temp),
     path('api/galeria/upload/', views.galeria_upload),
     path('api/productos/', views.productos_proxy),
+   
+    # APIs del sistema de torneo BJJ
+    path('api/torneo/', include(router.urls)),
+    path('api/torneo/luchas-disponibles/', views.luchas_disponibles),
    
     path('api/migrate-to-cloudinary/', views.migrate_to_cloudinary_endpoint),
     path('api/migrate-existing-images/', views.migrate_existing_images_endpoint),
