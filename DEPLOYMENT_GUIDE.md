@@ -52,17 +52,29 @@ Ve a Settings > Environment y agrega todas las variables listadas arriba.
 
 ## 🔐 Sistema de Autenticación
 
-### En Desarrollo
-- Sistema mock con localStorage
-- Un clic para acceder
-- Usuario simulado: `admin_dev`
+### Sistema Unificado (Galería + Torneo)
+- **Una sola autenticación** para Galería y Torneo BJJ
+- Al hacer login en la Galería, automáticamente tienes acceso al Torneo
+- **No necesitas hacer login por separado** en cada sección
 
-### En Producción
-- Autenticación real con Django Admin
-- URL: `https://tu-dominio.com/admin/login/`
-- Credenciales por defecto:
-  - Usuario: `admin`
-  - Contraseña: `admin123bjj2025`
+### Flujo de autenticación:
+1. **Entra a la Galería** (`/galeria`)
+2. **Haz login** con tus credenciales
+3. **Navega al Torneo** (`/torneo`) - ya estarás autenticado
+4. **Logout** desde cualquier sección cierra ambas sesiones
+
+### Credenciales por defecto:
+- **Usuario:** `admin`
+- **Contraseña:** `admin123bjj2025`
+
+### En Desarrollo vs Producción:
+- **Desarrollo:** Sistema local con autenticación básica
+- **Producción:** Mismo sistema, pero conectado a la base de datos PostgreSQL
+
+### URLs:
+- **Galería:** `https://tu-dominio.com/galeria` (login aquí)
+- **Torneo:** `https://tu-dominio.com/torneo` (acceso automático después del login)
+- **Django Admin:** `https://tu-dominio.com/admin/` (solo para administración del backend)
 
 ## 💾 Base de Datos
 

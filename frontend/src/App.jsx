@@ -9,7 +9,6 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import * as API from './services/api.js';
-import { AuthChecker } from './services/auth.jsx';
 import badgersHeroBg from "./assets/the-badgers-academia.jpeg";
 import gymBackground from "./assets/gym-background.jpeg";
 
@@ -538,15 +537,21 @@ function GaleriaModal({ img, onClose }) {
   );
 }
 
-function Galeria() {
+function Galeria({ 
+  isLoggedIn, 
+  loginUser, 
+  loginPass, 
+  setShowLogin, 
+  handleLogin, 
+  handleLogout, 
+  loginError, 
+  showLogin,
+  API_BASE,
+  setLoginPass 
+}) {
   const [modalImg, setModalImg] = useState(null);
   const [selectedIdx, setSelectedIdx] = useState(0);
-  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('badgers_user') && !!localStorage.getItem('badgers_pass'));
-  const [loginUser, setLoginUser] = useState(() => localStorage.getItem('badgers_user') || '');
-  const [loginPass, setLoginPass] = useState(() => localStorage.getItem('badgers_pass') || '');
-  const [showLogin, setShowLogin] = useState(false);
   const [showUpload, setShowUpload] = useState(false);
-  const [loginError, setLoginError] = useState('');
   const [uploadError, setUploadError] = useState('');
   const [uploading, setUploading] = useState(false);
   const [gallery, setGallery] = useState([]);
@@ -554,11 +559,6 @@ function Galeria() {
   const [showChangePass, setShowChangePass] = useState(false);
   const [changePassError, setChangePassError] = useState('');
   const [changePassSuccess, setChangePassSuccess] = useState('');
-
-  // --- API real ---
-  const API_BASE = window.location.hostname === 'localhost'
-    ? 'http://localhost:8000'
-    : 'https://thebadgerspage.onrender.com'; // Cambiar de thebadgersadmin a thebadgerspage
 
   useEffect(() => {
     setLoadingGallery(true);
@@ -591,37 +591,6 @@ function Galeria() {
       setSelectedIdx(gallery.length - 1);
     }
   }, [gallery.length]);
-
-  function handleLogin(e) {
-    e.preventDefault();
-    setLoginError('');
-    const user = e.target.user.value;
-    const pass = e.target.pass.value;
-    // Probar login haciendo un request a /api/galeria/ con auth básica
-    fetch(`${API_BASE}/api/galeria/`, {
-      headers: {
-        'Authorization': 'Basic ' + btoa(`${user}:${pass}`)
-      }
-    })
-      .then(res => {
-        if (res.status === 401) throw new Error('Usuario o contraseña incorrectos');
-        localStorage.setItem('badgers_user', user);
-        localStorage.setItem('badgers_pass', pass);
-        setLoginUser(user);
-        setLoginPass(pass);
-        setIsLoggedIn(true);
-        setShowLogin(false);
-      })
-      .catch(() => setLoginError('Usuario o contraseña incorrectos'));
-  }
-
-  function handleLogout() {
-    localStorage.removeItem('badgers_user');
-    localStorage.removeItem('badgers_pass');
-    setLoginUser('');
-    setLoginPass('');
-    setIsLoggedIn(false);
-  }
 
   function handleUpload(e) {
     e.preventDefault();
@@ -966,7 +935,17 @@ function Galeria() {
 }
 
 // Componente principal del sistema de torneo BJJ
-function TorneoBJJ({ setIsJudgingFullscreen }) {
+function TorneoBJJ({ 
+  setIsJudgingFullscreen, 
+  isLoggedIn, 
+  loginUser, 
+  loginPass, 
+  setShowLogin, 
+  handleLogin, 
+  handleLogout, 
+  loginError, 
+  showLogin 
+}) {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [tournaments, setTournaments] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -1011,18 +990,87 @@ function TorneoBJJ({ setIsJudgingFullscreen }) {
     setActiveTournament(sampleTournaments[0]);
   }, []);
 
-  return (
-    <AuthChecker>
-      <div className="h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-900 pt-20 overflow-hidden">
-        <div className="h-full max-w-7xl mx-auto px-4 py-8 flex flex-col">
+  // Si no está logueado, mostrar pantalla de login
+  if (!isLoggedIn) {
+    return (
+      <div className="h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-900 pt-20 flex items-center justify-center">
+        <div className="bg-white/10 backdrop-blur-md rounded-xl p-8 w-full max-w-md mx-4">
           <div className="text-center mb-6">
+            <h1 className="text-3xl font-bold text-white mb-2">
+              Sistema de Torneo BJJ
+            </h1>
+            <p className="text-cyan-200">
+              Inicia sesión para acceder al sistema de torneos
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-white text-sm font-medium mb-2">
+                Usuario
+              </label>
+              <input
+                type="text"
+                name="user"
+                className="w-full px-4 py-2 bg-white/20 text-white rounded-lg border border-cyan-500/30 focus:border-cyan-400 focus:outline-none placeholder-white/50"
+                placeholder="Ingresa tu usuario"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-white text-sm font-medium mb-2">
+                Contraseña
+              </label>
+              <input
+                type="password"
+                name="pass"
+                className="w-full px-4 py-2 bg-white/20 text-white rounded-lg border border-cyan-500/30 focus:border-cyan-400 focus:outline-none placeholder-white/50"
+                placeholder="Ingresa tu contraseña"
+                required
+              />
+            </div>
+            {loginError && (
+              <div className="text-red-400 text-sm text-center bg-red-500/20 p-3 rounded-lg">
+                {loginError}
+              </div>
+            )}
+            <button
+              type="submit"
+              className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
+            >
+              Iniciar Sesión
+            </button>
+          </form>
+          
+          <div className="text-center mt-4">
+            <p className="text-cyan-200 text-sm">
+              Usa las mismas credenciales de la galería
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-900 pt-20 overflow-hidden">
+      <div className="h-full max-w-7xl mx-auto px-4 py-8 flex flex-col">
+        <div className="text-center mb-6">
+          <div className="flex items-center justify-between">
             <h1 className="text-4xl font-bold text-white mb-3 animate-fade-in">
               Sistema de Torneo BJJ
             </h1>
-            <p className="text-lg text-cyan-200 animate-fade-in delay-100">
-              Gestión completa de torneos de Brazilian Jiu-Jitsu
-            </p>
+            <button
+              onClick={handleLogout}
+              className="bg-red-600/80 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors duration-200"
+            >
+              Cerrar Sesión
+            </button>
           </div>
+          <p className="text-lg text-cyan-200 animate-fade-in delay-100">
+            Gestión completa de torneos de Brazilian Jiu-Jitsu
+          </p>
+        </div>
 
           {/* Navigation Tabs */}
           <div className="bg-white/10 backdrop-blur-md rounded-xl p-2 mb-6 animate-fade-in delay-200">
@@ -1061,7 +1109,6 @@ function TorneoBJJ({ setIsJudgingFullscreen }) {
           </div>
         </div>
       </div>
-    </AuthChecker>
   );
 }
 
@@ -2591,6 +2638,51 @@ function JudgingSystem({ setIsJudgingFullscreen }) {
 
 export default function App() {
   const [isJudgingFullscreen, setIsJudgingFullscreen] = React.useState(false);
+  
+  // Variables de login compartidas entre Galeria y Torneo
+  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('badgers_user') && !!localStorage.getItem('badgers_pass'));
+  const [loginUser, setLoginUser] = useState(() => localStorage.getItem('badgers_user') || '');
+  const [loginPass, setLoginPass] = useState(() => localStorage.getItem('badgers_pass') || '');
+  const [showLogin, setShowLogin] = useState(false);
+  const [loginError, setLoginError] = useState('');
+
+  // API base URL
+  const API_BASE = window.location.hostname === 'localhost'
+    ? 'http://localhost:8000'
+    : 'https://thebadgerspage.onrender.com';
+
+  // Función de login compartida
+  function handleLogin(e) {
+    e.preventDefault();
+    setLoginError('');
+    const user = e.target.user.value;
+    const pass = e.target.pass.value;
+    // Probar login haciendo un request a /api/galeria/ con auth básica
+    fetch(`${API_BASE}/api/galeria/`, {
+      headers: {
+        'Authorization': 'Basic ' + btoa(`${user}:${pass}`)
+      }
+    })
+      .then(res => {
+        if (res.status === 401) throw new Error('Usuario o contraseña incorrectos');
+        localStorage.setItem('badgers_user', user);
+        localStorage.setItem('badgers_pass', pass);
+        setLoginUser(user);
+        setLoginPass(pass);
+        setIsLoggedIn(true);
+        setShowLogin(false);
+      })
+      .catch(() => setLoginError('Usuario o contraseña incorrectos'));
+  }
+
+  // Función de logout compartida
+  function handleLogout() {
+    localStorage.removeItem('badgers_user');
+    localStorage.removeItem('badgers_pass');
+    setLoginUser('');
+    setLoginPass('');
+    setIsLoggedIn(false);
+  }
 
   return (
     <div className="App">
@@ -2598,8 +2690,32 @@ export default function App() {
       <Routes>
         <Route path="/" element={<><Hero /><SobreNosotrosYClases /><Contacto /></>} />
         <Route path="/tienda" element={<Tienda />} />
-        <Route path="/galeria" element={<Galeria />} />
-        <Route path="/torneo" element={<TorneoBJJ setIsJudgingFullscreen={setIsJudgingFullscreen} />} />
+        <Route path="/galeria" element={
+          <Galeria 
+            isLoggedIn={isLoggedIn}
+            loginUser={loginUser}
+            loginPass={loginPass}
+            setShowLogin={setShowLogin}
+            handleLogin={handleLogin}
+            handleLogout={handleLogout}
+            loginError={loginError}
+            showLogin={showLogin}
+            API_BASE={API_BASE}
+            setLoginPass={setLoginPass}
+          />
+        } />
+        <Route path="/torneo" element={
+          <TorneoBJJ 
+            setIsJudgingFullscreen={setIsJudgingFullscreen} 
+            isLoggedIn={isLoggedIn}
+            loginUser={loginUser}
+            loginPass={loginPass}
+            setShowLogin={setShowLogin}
+            handleLogin={handleLogin}
+            handleLogout={handleLogout}
+            loginError={loginError}
+          />
+        } />
       </Routes>
     </div>
   );
