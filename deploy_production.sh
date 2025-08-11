@@ -21,13 +21,21 @@ import os
 
 username = os.environ.get('ADMIN_USERNAME', 'admin')
 email = os.environ.get('ADMIN_EMAIL', 'admin@thebadgers.uy')
-password = os.environ.get('ADMIN_PASSWORD', 'admin123')
+password = os.environ.get('ADMIN_PASSWORD', 'admin123bjj2025')
 
-if not User.objects.filter(username=username).exists():
+# Crear o actualizar el superusuario
+try:
+    user = User.objects.get(username=username)
+    user.email = email
+    user.set_password(password)
+    user.is_staff = True
+    user.is_superuser = True
+    user.is_active = True
+    user.save()
+    print(f"Superusuario {username} actualizado exitosamente")
+except User.DoesNotExist:
     User.objects.create_superuser(username, email, password)
     print(f"Superusuario {username} creado exitosamente")
-else:
-    print(f"Superusuario {username} ya existe")
 EOF
 
 echo "Deployment completado!"

@@ -121,6 +121,55 @@ render logs --service=tu-servicio
 
 ## 🐛 Troubleshooting
 
+### ❌ Error de login en Django Admin (Producción)
+
+Si ves el error "Please enter the correct username and password for a staff account":
+
+#### Opción 1: Usar el script automático
+```bash
+# En el shell de Render
+./fix_admin_production.sh
+```
+
+#### Opción 2: Comandos manuales en Render
+Ve a tu servicio en Render > Shell y ejecuta:
+
+```bash
+cd backend
+python manage.py shell --settings=core.settings_production
+```
+
+Luego en el shell de Python:
+```python
+from django.contrib.auth.models import User
+import os
+
+# Verificar variables de entorno
+username = os.environ.get('ADMIN_USERNAME', 'admin')
+password = os.environ.get('ADMIN_PASSWORD', 'admin123bjj2025')
+email = os.environ.get('ADMIN_EMAIL', 'admin@thebadgers.uy')
+
+print(f"Username: {username}")
+print(f"Email: {email}")
+print(f"Password configurado: {'Sí' if password else 'No'}")
+
+# Resetear el usuario admin
+try:
+    user = User.objects.get(username=username)
+    user.set_password(password)
+    user.is_staff = True
+    user.is_superuser = True
+    user.is_active = True
+    user.save()
+    print("✅ Usuario admin actualizado")
+except User.DoesNotExist:
+    User.objects.create_superuser(username, email, password)
+    print("✅ Usuario admin creado")
+```
+
+#### Opción 3: Re-deploy automático
+Haz un nuevo deployment en Render para que se ejecute el script actualizado.
+
 ### Error de CORS
 - Verifica que tu dominio esté en `CORS_ALLOWED_ORIGINS`
 - En `settings_production.py`
