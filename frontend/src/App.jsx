@@ -561,11 +561,34 @@ function Galeria({
   const [changePassSuccess, setChangePassSuccess] = useState('');
 
   useEffect(() => {
+    // Solo cargar galería si el usuario está logueado Y tenemos credenciales válidas
+    if (!isLoggedIn || !loginUser || !loginPass) {
+      setLoadingGallery(false);
+      setGallery([]);
+      return;
+    }
+
     setLoadingGallery(true);
     console.log('Cargando galería desde:', `${API_BASE}/api/galeria/`);
-    fetch(`${API_BASE}/api/galeria/`)
+    
+    // Incluir autenticación básica en la petición
+    const auth = btoa(`${loginUser}:${loginPass}`);
+    
+    fetch(`${API_BASE}/api/galeria/`, {
+      headers: {
+        'Authorization': `Basic ${auth}`
+      }
+    })
       .then(res => {
         console.log('Respuesta de la API:', res.status, res.statusText);
+        if (res.status === 401) {
+          // Si hay error de autenticación, limpiar el login y mostrar el formulario
+          localStorage.removeItem('badgers_user');
+          localStorage.removeItem('badgers_pass');
+          // Note: No podemos llamar handleLogout aquí directamente ya que viene por props
+          // En su lugar, establecemos el estado local para mostrar login
+          throw new Error('No autorizado');
+        }
         return res.json();
       })
       .then(data => {
@@ -581,9 +604,13 @@ function Galeria({
       .catch(err => {
         console.error('Error al cargar galería:', err);
         setGallery([]);
+        // Si hay error de autorización, forzar el logout
+        if (err.message === 'No autorizado') {
+          handleLogout();
+        }
       })
       .finally(() => setLoadingGallery(false));
-  }, [API_BASE]);
+  }, [API_BASE, isLoggedIn, loginUser, loginPass, handleLogout]);
 
   // Cuando se sube una nueva imagen, seleccionarla automáticamente
   useEffect(() => {
@@ -742,84 +769,112 @@ function Galeria({
           Galería
         </h1>
 
-        {/* Galería */}
-        {loadingGallery ? (
-          <div className="text-slate-700 animate-pulse text-lg">Cargando galería...</div>
+        {/* Mostrar login prompt si no está autenticado */}
+        {!isLoggedIn ? (
+          <div className="flex flex-col items-center gap-6 mb-8 max-w-md">
+            <div className="bg-white/90 rounded-2xl shadow-xl border border-slate-200 p-8 text-center">
+              <div className="mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-16 h-16 mx-auto text-indigo-500 mb-4">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-slate-800 mb-3">Acceso Requerido</h2>
+              <p className="text-slate-600 mb-6">
+                Para ver la galería de fotos y videos de The Badgers, necesitas iniciar sesión con tus credenciales.
+              </p>
+              <button 
+                onClick={() => setShowLogin(true)} 
+                className="bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 inline mr-2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                </svg>
+                Iniciar Sesión
+              </button>
+            </div>
+          </div>
         ) : (
           <>
-            {/* Previsualización grande */}
-            {gallery[selectedIdx] && (
-              <div className="mb-12 flex flex-col items-center">
-                <button
-                  className="rounded-3xl shadow-2xl border-4 border-white bg-white overflow-hidden max-w-4xl w-full flex flex-col items-center focus:outline-none transform hover:scale-105 transition-all duration-500 hover:shadow-3xl relative group gallery-image-hover zoom-cursor"
-                  onClick={() => setModalImg(gallery[selectedIdx].url)}
-                  aria-label="Ver en pantalla completa"
-                >
-                  {/* Icono de pantalla completa */}
-                  <div className="absolute top-4 right-4 z-10 bg-black/60 rounded-full p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-white">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-                    </svg>
-                  </div>
-
-                  {gallery[selectedIdx].tipo === 'video' ? (
-                    <video src={gallery[selectedIdx].url} controls className="w-full max-h-[600px] object-contain bg-slate-50" />
-                  ) : (
-                    <img src={gallery[selectedIdx].url} alt={gallery[selectedIdx].nombre} className="w-full max-h-[600px] object-contain" />
-                  )}
-                  <div className="absolute bottom-0 left-0 w-full px-8 py-6 text-white text-base flex flex-col items-start">
-                    <span className="font-bold truncate w-full text-xl drop-shadow-lg" title={gallery[selectedIdx].nombre}>{gallery[selectedIdx].nombre}</span>
-                    <div className="flex justify-between items-center w-full mt-3">
-                      <span className="text-blue-200 font-medium text-lg drop-shadow-lg">{gallery[selectedIdx].fecha}</span>
-                      <span className="text-slate-200 text-base drop-shadow-lg">por {gallery[selectedIdx].usuario || 'Anónimo'}</span>
-                    </div>
-                  </div>
-                </button>
-              </div>
-            )}
-
-            {/* Miniaturas */}
-            <div className="flex flex-wrap justify-center gap-8 max-w-7xl mb-12 px-4">
-              {gallery.map((item, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedIdx(idx)}
-                  onDoubleClick={() => setModalImg(item.url)}
-                  className={`border-4 ${selectedIdx === idx ? 'border-indigo-500 scale-110 shadow-2xl ring-4 ring-indigo-200' : 'border-slate-300'} rounded-2xl overflow-hidden focus:outline-none transition-all duration-500 hover:scale-110 hover:shadow-2xl bg-white relative transform hover:rotate-2 hover:border-indigo-400 cursor-pointer group`}
-                  style={{ width: 240, height: 170 }}
-                  aria-label={`Ver elemento ${idx + 1} - Click para seleccionar, doble click para pantalla completa`}
-                >
-                  {/* Icono de pantalla completa para miniaturas */}
-                  <div className="absolute top-2 right-2 z-10 bg-black/60 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-white">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
-                    </svg>
-                  </div>
-                  <div className="relative w-full h-full">
-                    {item.tipo === 'video' ? (
-                      <>
-                        <video src={item.url} className="w-full h-full object-cover bg-slate-50" />
-                        <span className="absolute top-3 right-3 bg-black/80 rounded-full p-2 backdrop-blur-sm">
-                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-white">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 3.75A2.25 2.25 0 0 0 2.25 6v8A2.25 2.25 0 0 0 4.5 16.25h11A2.25 2.25 0 0 0 20.5 14V6A2.25 2.25 0 0 0 18.25 3.75h-11zm0 1.5A4.25 4.25 0 0 0 3.5 7.75v8.5A4.25 4.25 0 0 0 7.75 20.5h8.5A4.25 4.25 0 0 0 20.5 16.25v-8.5A4.25 4.25 0 0 0 16.25 3.5zm4.25 3.25a5.25 5.25 0 1 1 0 10.5a5.25 5.25 0 0 1 0-10.5zm0 1.5a3.75 3.75 0 1 0 0 7.5a3.75 3.75 0 0 0 0-7.5zm5.13.62a1.13 1.13 0 1 1 0 2.25a1.13 1.13 0 0 1 0-2.25z" />
-                          </svg>
-                        </span>
-                      </>
-                    ) : (
-                      <img src={item.url} alt={`Miniatura ${idx + 1}`} className="w-full h-full object-cover" />
-                    )}
-                    {/* Nombre, fecha y usuario */}
-                    <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/80 via-black/60 to-transparent text-white text-sm px-4 py-3 flex flex-col items-start">
-                      <span className="font-bold truncate w-full" title={item.nombre}>{item.nombre}</span>
-                      <div className="flex justify-between items-center w-full mt-1">
-                        <span className="text-blue-300 text-xs font-medium">{item.fecha}</span>
-                        <span className="text-slate-300 text-xs">por {item.usuario || 'Anónimo'}</span>
+            {/* Galería - solo mostrar si está autenticado */}
+            {loadingGallery ? (
+              <div className="text-slate-700 animate-pulse text-lg">Cargando galería...</div>
+            ) : (
+              <>
+                {/* Previsualización grande */}
+                {gallery[selectedIdx] && (
+                  <div className="mb-12 flex flex-col items-center">
+                    <button
+                      className="rounded-3xl shadow-2xl border-4 border-white bg-white overflow-hidden max-w-4xl w-full flex flex-col items-center focus:outline-none transform hover:scale-105 transition-all duration-500 hover:shadow-3xl relative group gallery-image-hover zoom-cursor"
+                      onClick={() => setModalImg(gallery[selectedIdx].url)}
+                      aria-label="Ver en pantalla completa"
+                    >
+                      {/* Icono de pantalla completa */}
+                      <div className="absolute top-4 right-4 z-10 bg-black/60 rounded-full p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 text-white">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                        </svg>
                       </div>
-                    </div>
+
+                      {gallery[selectedIdx].tipo === 'video' ? (
+                        <video src={gallery[selectedIdx].url} controls className="w-full max-h-[600px] object-contain bg-slate-50" />
+                      ) : (
+                        <img src={gallery[selectedIdx].url} alt={gallery[selectedIdx].nombre} className="w-full max-h-[600px] object-contain" />
+                      )}
+                      <div className="absolute bottom-0 left-0 w-full px-8 py-6 text-white text-base flex flex-col items-start">
+                        <span className="font-bold truncate w-full text-xl drop-shadow-lg" title={gallery[selectedIdx].nombre}>{gallery[selectedIdx].nombre}</span>
+                        <div className="flex justify-between items-center w-full mt-3">
+                          <span className="text-blue-200 font-medium text-lg drop-shadow-lg">{gallery[selectedIdx].fecha}</span>
+                          <span className="text-slate-200 text-base drop-shadow-lg">por {gallery[selectedIdx].usuario || 'Anónimo'}</span>
+                        </div>
+                      </div>
+                    </button>
                   </div>
-                </button>
-              ))}
-            </div>
+                )}
+
+                {/* Miniaturas */}
+                <div className="flex flex-wrap justify-center gap-8 max-w-7xl mb-12 px-4">
+                  {gallery.map((item, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedIdx(idx)}
+                      onDoubleClick={() => setModalImg(item.url)}
+                      className={`border-4 ${selectedIdx === idx ? 'border-indigo-500 scale-110 shadow-2xl ring-4 ring-indigo-200' : 'border-slate-300'} rounded-2xl overflow-hidden focus:outline-none transition-all duration-500 hover:scale-110 hover:shadow-2xl bg-white relative transform hover:rotate-2 hover:border-indigo-400 cursor-pointer group`}
+                      style={{ width: 240, height: 170 }}
+                      aria-label={`Ver elemento ${idx + 1} - Click para seleccionar, doble click para pantalla completa`}
+                    >
+                      {/* Icono de pantalla completa para miniaturas */}
+                      <div className="absolute top-2 right-2 z-10 bg-black/60 rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 text-white">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
+                        </svg>
+                      </div>
+                      <div className="relative w-full h-full">
+                        {item.tipo === 'video' ? (
+                          <>
+                            <video src={item.url} className="w-full h-full object-cover bg-slate-50" />
+                            <span className="absolute top-3 right-3 bg-black/80 rounded-full p-2 backdrop-blur-sm">
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5 text-white">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 3.75A2.25 2.25 0 0 0 2.25 6v8A2.25 2.25 0 0 0 4.5 16.25h11A2.25 2.25 0 0 0 20.5 14V6A2.25 2.25 0 0 0 18.25 3.75h-11zm0 1.5A4.25 4.25 0 0 0 3.5 7.75v8.5A4.25 4.25 0 0 0 7.75 20.5h8.5A4.25 4.25 0 0 0 20.5 16.25v-8.5A4.25 4.25 0 0 0 16.25 3.5zm4.25 3.25a5.25 5.25 0 1 1 0 10.5a5.25 5.25 0 0 1 0-10.5zm0 1.5a3.75 3.75 0 1 0 0 7.5a3.75 3.75 0 0 0 0-7.5zm5.13.62a1.13 1.13 0 1 1 0 2.25a1.13 1.13 0 0 1 0-2.25z" />
+                              </svg>
+                            </span>
+                          </>
+                        ) : (
+                          <img src={item.url} alt={`Miniatura ${idx + 1}`} className="w-full h-full object-cover" />
+                        )}
+                        {/* Nombre, fecha y usuario */}
+                        <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/80 via-black/60 to-transparent text-white text-sm px-4 py-3 flex flex-col items-start">
+                          <span className="font-bold truncate w-full" title={item.nombre}>{item.nombre}</span>
+                          <div className="flex justify-between items-center w-full mt-1">
+                            <span className="text-blue-300 text-xs font-medium">{item.fecha}</span>
+                            <span className="text-slate-300 text-xs">por {item.usuario || 'Anónimo'}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </>
         )}
 
@@ -2640,9 +2695,10 @@ export default function App() {
   const [isJudgingFullscreen, setIsJudgingFullscreen] = React.useState(false);
   
   // Variables de login compartidas entre Galeria y Torneo
-  const [isLoggedIn, setIsLoggedIn] = useState(() => !!localStorage.getItem('badgers_user') && !!localStorage.getItem('badgers_pass'));
-  const [loginUser, setLoginUser] = useState(() => localStorage.getItem('badgers_user') || '');
-  const [loginPass, setLoginPass] = useState(() => localStorage.getItem('badgers_pass') || '');
+  // No inicializar automáticamente desde localStorage para evitar 401 errors
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loginUser, setLoginUser] = useState('');
+  const [loginPass, setLoginPass] = useState('');
   const [showLogin, setShowLogin] = useState(false);
   const [loginError, setLoginError] = useState('');
 
@@ -2650,6 +2706,39 @@ export default function App() {
   const API_BASE = window.location.hostname === 'localhost'
     ? 'http://localhost:8000'
     : 'https://thebadgerspage.onrender.com';
+
+  // Verificar credenciales almacenadas al cargar la aplicación
+  useEffect(() => {
+    const storedUser = localStorage.getItem('badgers_user');
+    const storedPass = localStorage.getItem('badgers_pass');
+    
+    // Solo intentar auto-login si tenemos credenciales almacenadas
+    if (storedUser && storedPass) {
+      // Verificar si las credenciales siguen siendo válidas
+      fetch(`${API_BASE}/api/galeria/`, {
+        headers: {
+          'Authorization': 'Basic ' + btoa(`${storedUser}:${storedPass}`)
+        }
+      })
+      .then(res => {
+        if (res.ok) {
+          // Credenciales válidas, iniciar sesión automáticamente
+          setLoginUser(storedUser);
+          setLoginPass(storedPass);
+          setIsLoggedIn(true);
+        } else {
+          // Credenciales inválidas, limpiar localStorage
+          localStorage.removeItem('badgers_user');
+          localStorage.removeItem('badgers_pass');
+        }
+      })
+      .catch(() => {
+        // Error de red, limpiar localStorage
+        localStorage.removeItem('badgers_user');
+        localStorage.removeItem('badgers_pass');
+      });
+    }
+  }, [API_BASE]);
 
   // Función de login compartida
   function handleLogin(e) {
