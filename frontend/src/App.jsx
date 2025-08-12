@@ -1063,52 +1063,6 @@ function TorneoBJJ({
     );
   }
 
-  // Sistema de torneo BJJ - contenido principal (solo si está autenticado)
-                Usuario
-              </label>
-              <input
-                type="text"
-                name="user"
-                className="w-full px-4 py-2 bg-white/20 text-white rounded-lg border border-cyan-500/30 focus:border-cyan-400 focus:outline-none placeholder-white/50"
-                placeholder="Ingresa tu usuario"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-white text-sm font-medium mb-2">
-                Contraseña
-              </label>
-              <input
-                type="password"
-                name="pass"
-                className="w-full px-4 py-2 bg-white/20 text-white rounded-lg border border-cyan-500/30 focus:border-cyan-400 focus:outline-none placeholder-white/50"
-                placeholder="Ingresa tu contraseña"
-                required
-              />
-            </div>
-            {loginError && (
-              <div className="text-red-400 text-sm text-center bg-red-500/20 p-3 rounded-lg">
-                {loginError}
-              </div>
-            )}
-            <button
-              type="submit"
-              className="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
-            >
-              Iniciar Sesión
-            </button>
-          </form>
-          
-          <div className="text-center mt-4">
-            <p className="text-cyan-200 text-sm">
-              Usa las mismas credenciales de la galería
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-cyan-900 pt-20 overflow-hidden">
       <div className="h-full max-w-7xl mx-auto px-4 py-8 flex flex-col">
