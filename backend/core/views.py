@@ -13,9 +13,9 @@ import cloudinary
 import cloudinary.uploader
 import requests
 from rest_framework import viewsets, status
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, AllowAny
 from django.shortcuts import get_object_or_404
 from .models import Torneo, Categoria, Participante, Llave, Lucha
 from .serializers import (
@@ -23,6 +23,8 @@ from .serializers import (
     LlaveSerializer, LuchaSerializer, LuchaSimpleSerializer
 )
 from datetime import datetime
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.authtoken.models import Token
 
 def api_root(request):
     return JsonResponse({"mensaje": "¡API funcionando correctamente!"})
@@ -782,7 +784,7 @@ class TorneoViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar torneos"""
     queryset = Torneo.objects.all()
     serializer_class = TorneoSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]  # Permite lectura sin auth, escritura con auth
     
     def perform_create(self, serializer):
         """Asignar el usuario actual como creador del torneo"""
@@ -808,7 +810,7 @@ class CategoriaViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar categorías"""
     queryset = Categoria.objects.all()
     serializer_class = CategoriaSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]  # Permite lectura sin auth, escritura con auth
     
     def get_queryset(self):
         """Filtrar categorías por torneo si se especifica"""
@@ -830,7 +832,7 @@ class ParticipanteViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar participantes"""
     queryset = Participante.objects.all()
     serializer_class = ParticipanteSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]  # Permite lectura sin auth, escritura con auth
     
     def get_queryset(self):
         """Filtrar participantes por categoría si se especifica"""
@@ -852,7 +854,7 @@ class LlaveViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar llaves de torneo"""
     queryset = Llave.objects.all()
     serializer_class = LlaveSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]  # Permite lectura sin auth, escritura con auth
     
     def get_queryset(self):
         """Filtrar llaves por categoría si se especifica"""
@@ -912,7 +914,7 @@ class LuchaViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar luchas"""
     queryset = Lucha.objects.all()
     serializer_class = LuchaSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticatedOrReadOnly]  # Permite lectura sin auth, escritura con auth
     
     def get_queryset(self):
         """Filtrar luchas por categoría si se especifica"""
@@ -1025,20 +1027,88 @@ def luchas_disponibles(request):
     
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
-# Endpoint para verificar usuario autenticado
-def user_info(request):
-    """Endpoint para verificar autenticación y obtener datos del usuario"""
-    if request.user.is_authenticated:
-        return JsonResponse({
-            'username': request.user.username,
-            'email': request.user.email,
-            'first_name': request.user.first_name,
-            'last_name': request.user.last_name,
-            'is_staff': request.user.is_staff,
-            'is_superuser': request.user.is_superuser,
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def login_api(request):
+    """Endpoint para login con token authentication"""
+    username = request.data.get('username')
+    password = request.data.get('password')
+    
+    if not username or not password:
+        return Response(
+            {'error': 'Username and password required'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    user = authenticate(username=username, password=password)
+    if user and user.is_active:
+        token, created = Token.objects.get_or_create(user=user)
+        return Response({
+            'token': token.key,
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'is_staff': user.is_staff,
+                'is_superuser': user.is_superuser,
+            }
         })
     else:
-        return JsonResponse({'error': 'No autenticado'}, status=401)
+        return Response(
+            {'error': 'Invalid credentials'}, 
+            status=status.HTTP_401_UNAUTHORIZED
+        )
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def logout_api(request):
+    """Endpoint para logout"""
+    try:
+        # Eliminar el token del usuario
+        Token.objects.filter(user=request.user).delete()
+        return Response({'message': 'Successfully logged out'})
+    except Exception as e:
+        return Response(
+            {'error': str(e)}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_info(request):
+    """Endpoint para obtener información del usuario autenticado"""
+    user = request.user
+    return Response({
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'first_name': user.first_name,
+        'last_name': user.last_name,
+        'is_staff': user.is_staff,
+        'is_superuser': user.is_superuser,
+    })
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def check_auth_status(request):
+    """Endpoint para verificar el estado de autenticación"""
+    if request.user.is_authenticated:
+        return Response({
+            'authenticated': True,
+            'user': {
+                'id': request.user.id,
+                'username': request.user.username,
+                'email': request.user.email,
+                'first_name': request.user.first_name,
+                'last_name': request.user.last_name,
+                'is_staff': request.user.is_staff,
+                'is_superuser': request.user.is_superuser,
+            }
+        })
+    else:
+        return Response({'authenticated': False})
 
 # Endpoint para crear usuarios en producción
 @csrf_exempt

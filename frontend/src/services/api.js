@@ -1,27 +1,40 @@
 // Servicios API para el sistema de torneo BJJ
+import authService from './authService.js';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
     (import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : 'http://127.0.0.1:8000');
 
 const TORNEO_API_URL = `${API_BASE_URL}/api/torneo`;
 
-// Configuración base para fetch
-const apiConfig = {
-    headers: {
-        'Content-Type': 'application/json',
-        'X-CSRFToken': getCookie('csrftoken'),
-    },
-    credentials: 'include', // Para incluir cookies de sesión
+// Configuración base para fetch con autenticación automática
+const createApiConfig = (method = 'GET', data = null) => {
+    const config = {
+        method,
+        headers: {
+            'Content-Type': 'application/json',
+            ...authService.getAuthHeaders(),
+        },
+        credentials: 'include', // Para incluir cookies de sesión si están disponibles
+    };
+
+    if (data) {
+        config.body = JSON.stringify(data);
+    }
+
+    return config;
 };
 
-// Función para crear configuración con autenticación básica
-const createAuthConfig = (loginUser, loginPass) => {
-    const config = { ...apiConfig };
+// Función para crear configuración con autenticación básica (fallback)
+const createAuthConfig = (loginUser, loginPass, method = 'GET', data = null) => {
+    const config = createApiConfig(method, data);
+    
     if (loginUser && loginPass) {
         config.headers = {
             ...config.headers,
             'Authorization': 'Basic ' + btoa(`${loginUser}:${loginPass}`)
         };
     }
+    
     return config;
 };
 
