@@ -6,7 +6,7 @@
 echo "🧪 PRUEBAS DEL SISTEMA DE AUTENTICACIÓN"
 echo "========================================"
 
-API_BASE="http://localhost:8000"
+API_BASE="https://thebadgerspage.onrender.com"
 
 echo ""
 echo "📸 1. Probando acceso PÚBLICO a galería..."
