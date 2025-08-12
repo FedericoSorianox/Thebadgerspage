@@ -13,6 +13,18 @@ const apiConfig = {
     credentials: 'include', // Para incluir cookies de sesión
 };
 
+// Función para crear configuración con autenticación básica
+const createAuthConfig = (loginUser, loginPass) => {
+    const config = { ...apiConfig };
+    if (loginUser && loginPass) {
+        config.headers = {
+            ...config.headers,
+            'Authorization': 'Basic ' + btoa(`${loginUser}:${loginPass}`)
+        };
+    }
+    return config;
+};
+
 // Función para obtener cookie CSRF
 function getCookie(name) {
     let cookieValue = null;
@@ -60,48 +72,53 @@ export const torneoAPI = {
     },
 
     // Crear nuevo torneo
-    create: async (torneoData) => {
+    create: async (torneoData, loginUser = null, loginPass = null) => {
+        const config = loginUser && loginPass ? createAuthConfig(loginUser, loginPass) : apiConfig;
         const response = await fetch(`${API_BASE_URL}/torneos/`, {
             method: 'POST',
-            ...apiConfig,
+            ...config,
             body: JSON.stringify(torneoData),
         });
         return handleResponse(response);
     },
 
     // Actualizar torneo
-    update: async (id, torneoData) => {
+    update: async (id, torneoData, loginUser = null, loginPass = null) => {
+        const config = loginUser && loginPass ? createAuthConfig(loginUser, loginPass) : apiConfig;
         const response = await fetch(`${API_BASE_URL}/torneos/${id}/`, {
             method: 'PUT',
-            ...apiConfig,
+            ...config,
             body: JSON.stringify(torneoData),
         });
         return handleResponse(response);
     },
 
     // Eliminar torneo
-    delete: async (id) => {
+    delete: async (id, loginUser = null, loginPass = null) => {
+        const config = loginUser && loginPass ? createAuthConfig(loginUser, loginPass) : apiConfig;
         const response = await fetch(`${API_BASE_URL}/torneos/${id}/`, {
             method: 'DELETE',
-            ...apiConfig,
+            ...config,
         });
         return response.ok;
     },
 
     // Activar torneo
-    activar: async (id) => {
+    activar: async (id, loginUser = null, loginPass = null) => {
+        const config = loginUser && loginPass ? createAuthConfig(loginUser, loginPass) : apiConfig;
         const response = await fetch(`${API_BASE_URL}/torneos/${id}/activar/`, {
             method: 'POST',
-            ...apiConfig,
+            ...config,
         });
         return handleResponse(response);
     },
 
     // Finalizar torneo
-    finalizar: async (id) => {
+    finalizar: async (id, loginUser = null, loginPass = null) => {
+        const config = loginUser && loginPass ? createAuthConfig(loginUser, loginPass) : apiConfig;
         const response = await fetch(`${API_BASE_URL}/torneos/${id}/finalizar/`, {
             method: 'POST',
-            ...apiConfig,
+            ...config,
         });
         return handleResponse(response);
     },
@@ -123,30 +140,33 @@ export const categoriaAPI = {
     },
 
     // Crear nueva categoría
-    create: async (categoriaData) => {
+    create: async (categoriaData, loginUser = null, loginPass = null) => {
+        const config = loginUser && loginPass ? createAuthConfig(loginUser, loginPass) : apiConfig;
         const response = await fetch(`${API_BASE_URL}/categorias/`, {
             method: 'POST',
-            ...apiConfig,
+            ...config,
             body: JSON.stringify(categoriaData),
         });
         return handleResponse(response);
     },
 
     // Actualizar categoría
-    update: async (id, categoriaData) => {
+    update: async (id, categoriaData, loginUser = null, loginPass = null) => {
+        const config = loginUser && loginPass ? createAuthConfig(loginUser, loginPass) : apiConfig;
         const response = await fetch(`${API_BASE_URL}/categorias/${id}/`, {
             method: 'PUT',
-            ...apiConfig,
+            ...config,
             body: JSON.stringify(categoriaData),
         });
         return handleResponse(response);
     },
 
     // Eliminar categoría
-    delete: async (id) => {
+    delete: async (id, loginUser = null, loginPass = null) => {
+        const config = loginUser && loginPass ? createAuthConfig(loginUser, loginPass) : apiConfig;
         const response = await fetch(`${API_BASE_URL}/categorias/${id}/`, {
             method: 'DELETE',
-            ...apiConfig,
+            ...config,
         });
         return response.ok;
     },
@@ -197,10 +217,11 @@ export const participanteAPI = {
     },
 
     // Eliminar participante
-    delete: async (id) => {
+    delete: async (id, loginUser = null, loginPass = null) => {
+        const config = loginUser && loginPass ? createAuthConfig(loginUser, loginPass) : apiConfig;
         const response = await fetch(`${API_BASE_URL}/participantes/${id}/`, {
             method: 'DELETE',
-            ...apiConfig,
+            ...config,
         });
         return response.ok;
     },

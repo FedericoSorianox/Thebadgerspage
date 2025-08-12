@@ -949,6 +949,8 @@ function Galeria({
 function TorneoBJJ({ 
   setIsJudgingFullscreen, 
   isLoggedIn, 
+  loginUser,
+  loginPass,
   setShowLogin, 
   handleLogin, 
   handleLogout, 
@@ -1112,8 +1114,8 @@ function TorneoBJJ({
           {/* Content Area */}
           <div className="flex-1 overflow-auto animate-fade-in delay-300">
             {activeTab === 'dashboard' && <TournamentDashboard tournaments={tournaments} activeTournament={activeTournament} />}
-            {activeTab === 'tournaments' && <TournamentManager tournaments={tournaments} setTournaments={setTournaments} setActiveTournament={setActiveTournament} />}
-            {activeTab === 'categories' && <CategoryManager categories={categories} setCategories={setCategories} />}
+            {activeTab === 'tournaments' && <TournamentManager tournaments={tournaments} setTournaments={setTournaments} setActiveTournament={setActiveTournament} loginUser={loginUser} loginPass={loginPass} />}
+            {activeTab === 'categories' && <CategoryManager categories={categories} setCategories={setCategories} loginUser={loginUser} loginPass={loginPass} />}
             {activeTab === 'participants' && <ParticipantManager participants={participants} setParticipants={setParticipants} categories={categories} />}
             {activeTab === 'brackets' && <BracketManager tournaments={tournaments} participants={participants} categories={categories} />}
             {activeTab === 'judging' && <JudgingSystem activeTournament={activeTournament} tournaments={tournaments} setIsJudgingFullscreen={setIsJudgingFullscreen} />}
@@ -1182,7 +1184,7 @@ function TournamentDashboard({ tournaments, activeTournament }) {
 }
 
 // Tournament Manager Component
-function TournamentManager({ tournaments, setTournaments, setActiveTournament }) {
+function TournamentManager({ tournaments, setTournaments, setActiveTournament, loginUser, loginPass }) {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -1215,7 +1217,7 @@ function TournamentManager({ tournaments, setTournaments, setActiveTournament })
     e.preventDefault();
     try {
       setLoading(true);
-      const newTournament = await API.torneoAPI.create(formData);
+      const newTournament = await API.torneoAPI.create(formData, loginUser, loginPass);
       setTournaments([...tournaments, newTournament]);
       setFormData({ nombre: '', fecha_inicio: '', fecha_fin: '', ubicacion: '', descripcion: '' });
       setShowModal(false);
@@ -1229,7 +1231,7 @@ function TournamentManager({ tournaments, setTournaments, setActiveTournament })
 
   const activateTournament = async (tournament) => {
     try {
-      await API.torneoAPI.activar(tournament.id);
+      await API.torneoAPI.activar(tournament.id, loginUser, loginPass);
       setActiveTournament(tournament);
       await loadTournaments(); // Recargar la lista
     } catch (error) {
@@ -1240,7 +1242,7 @@ function TournamentManager({ tournaments, setTournaments, setActiveTournament })
 
   const finalizarTournament = async (tournament) => {
     try {
-      await API.torneoAPI.finalizar(tournament.id);
+      await API.torneoAPI.finalizar(tournament.id, loginUser, loginPass);
       await loadTournaments(); // Recargar la lista
     } catch (error) {
       console.error('Error finalizing tournament:', error);
@@ -1251,7 +1253,7 @@ function TournamentManager({ tournaments, setTournaments, setActiveTournament })
   const deleteTournament = async (tournament) => {
     if (confirm(`¿Estás seguro de eliminar el torneo "${tournament.nombre}"?`)) {
       try {
-        await API.torneoAPI.delete(tournament.id);
+        await API.torneoAPI.delete(tournament.id, loginUser, loginPass);
         await loadTournaments(); // Recargar la lista
       } catch (error) {
         console.error('Error deleting tournament:', error);
@@ -1418,7 +1420,7 @@ function TournamentManager({ tournaments, setTournaments, setActiveTournament })
 }
 
 // Category Manager Component
-function CategoryManager({ categories, setCategories }) {
+function CategoryManager({ categories, setCategories, loginUser, loginPass }) {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -1450,7 +1452,7 @@ function CategoryManager({ categories, setCategories }) {
     e.preventDefault();
     try {
       setLoading(true);
-      const newCategory = await API.categoriaAPI.create(formData);
+      const newCategory = await API.categoriaAPI.create(formData, loginUser, loginPass);
       setCategories([...categories, newCategory]);
       setFormData({ nombre: '', clase_peso: '', cinturon: '', grupo_edad: '', genero: '' });
       setShowModal(false);
@@ -1465,7 +1467,7 @@ function CategoryManager({ categories, setCategories }) {
   const deleteCategory = async (category) => {
     if (confirm(`¿Estás seguro de eliminar la categoría "${category.nombre}"?`)) {
       try {
-        await API.categoriaAPI.delete(category.id);
+        await API.categoriaAPI.delete(category.id, loginUser, loginPass);
         await loadCategories(); // Recargar la lista
       } catch (error) {
         console.error('Error deleting category:', error);
