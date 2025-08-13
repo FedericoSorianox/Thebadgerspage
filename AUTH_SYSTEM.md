@@ -2,151 +2,68 @@
 
 ## 📋 Resumen
 
-Sistema unificado de autenticación para la aplicación web de The Badgers que permite:
-
-- **Acceso público a la galería** (solo visualización)
-- **Autenticación requerida** para subir fotos y acceder al torneo BJJ
-- **Seguridad robusta** con verificación real de usuarios
+Sistema unificado de autenticación que combina:
+- Galería pública para ver fotos; subir requiere autenticación (compatibilidad con Basic actual).
+- Sistema de Torneo BJJ con autenticación por Token para operaciones protegidas; solo admins pueden modificar.
 
 ## 🎯 Funcionalidad
 
 ### Galería
-- ✅ **Pública para ver fotos**: Cualquier persona puede acceder y ver todas las fotos
-- 🔐 **Login requerido para subir**: Solo usuarios autenticados pueden subir fotos/videos
-- 📱 **UI adaptativa**: Muestra botón de login solo cuando se necesita subir contenido
+- Ver fotos: público (GET)
+- Subir/gestionar: requiere autenticación (Basic actual, sin cambios)
 
 ### Torneo BJJ
-- 🔐 **Acceso completamente restringido**: Requiere autenticación para acceder
-- 👨‍🏫 **Solo para instructores**: Diseñado para administradores del gimnasio
-- 🛡️ **Verificación de credenciales**: Validación real contra la base de datos Django
+- Lectura (GET torneos/categorías/llaves/luchas): pública
+- Escritura (POST/PUT/DELETE/acciones): requiere Token y rol admin (is_staff o is_superuser)
 
 ## 🏗️ Arquitectura
 
 ### Frontend (React)
-```
-App.jsx (Estado compartido de login)
-├── Galeria.jsx (Público + login para upload)
-└── TorneoBJJ.jsx (Requiere autenticación)
-```
+- Contexto `AuthProvider` + `ProtectedComponent` para login/logout y protección de rutas.
+- Cliente API con Token en `src/services/api-new.js`.
+- Servicios: `torneoAPI`, `categoriaAPI`, `participanteAPI`, `llaveAPI`, `luchaAPI` (todas las mutaciones envían `Authorization: Token <token>`).
 
-### Backend (Django)
-```
-/api/galeria/          → GET público, otros métodos requieren auth
-/api/galeria/upload/   → Todos los métodos requieren auth
-/api/torneo/*          → Todos los endpoints requieren auth
-```
+### Backend (Django + DRF)
+- DRF con `TokenAuthentication` habilitada y permisos por defecto `IsAuthenticatedOrReadOnly`.
+- Permiso custom `IsAdminOrReadOnly` aplicado a todos los ViewSets de torneo.
+- Endpoints de auth: `/api/auth/login/`, `/api/auth/logout/`, `/api/auth/status/`.
+- CORS expone cabecera `Authorization` y permite credenciales.
 
 ## 🔧 Implementación Técnica
 
-### Verificación de Credenciales
-- **Método**: HTTP Basic Authentication
-- **Endpoint de verificación**: `GET /api/galeria/upload/`
-- **Validación**: Django `authenticate()` + verificación de usuario activo
+### Autenticación para Torneo (DRF Token)
+- Login: `POST /api/auth/login/` → devuelve `{ token, user }`
+- Logout: `POST /api/auth/logout/`
+- Estado: `GET /api/auth/status/`
+- Header requerido en mutaciones: `Authorization: Token <token>`
 
-### Almacenamiento de Sesión
-- **Frontend**: localStorage para persistencia
-- **Seguridad**: Credenciales verificadas en cada carga de página
-- **Cleanup**: Auto-limpieza si credenciales son inválidas
+### Permisos
+- `IsAdminOrReadOnly`: GET público, mutaciones solo si el usuario está autenticado y es admin.
 
-### Control de Acceso
-```python
-# Backend - views.py
-def galeria_list(request):
-    if request.method != 'GET':  # Solo GET es público
-        # Verificar autenticación para POST, PUT, DELETE
-        
-def galeria_upload(request):
-    # Siempre requiere autenticación
-    # GET = verificación de credenciales
-    # POST = subir archivo
-```
+### Almacenamiento
+- Frontend guarda `auth_token` y `user_data` en `localStorage` y los inyecta en headers vía `authService.getAuthHeaders()`.
 
 ## 🚀 Flujo de Usuario
 
-### Usuario Anónimo
-1. Accede a `/galeria` → Ve todas las fotos sin problemas
-2. Intenta subir foto → Se le pide login
-3. Accede a `/torneo` → Se le pide login
-
-### Usuario Autenticado
-1. Hace login → Credenciales se guardan en localStorage
-2. Accede a `/galeria` → Ve fotos + puede subir contenido
-3. Accede a `/torneo` → Acceso completo al sistema de torneos
-
-## 🛡️ Seguridad
-
-### Validaciones Backend
-- ✅ Autenticación con Django `authenticate()`
-- ✅ Verificación de usuario activo
-- ✅ Control de acceso por método HTTP
-- ✅ Validación de credenciales en cada request sensible
-
-### Validaciones Frontend
-- ✅ Verificación automática al cargar página
-- ✅ Limpieza de credenciales inválidas
-- ✅ UI que refleja estado de autenticación real
-- ✅ No exposición de endpoints protegidos
-
-## 🔄 Estados de Autenticación
-
-| Estado | Galería (Ver) | Galería (Subir) | Torneo |
-|--------|---------------|-----------------|--------|
-| No autenticado | ✅ Acceso | ❌ Login required | ❌ Login required |
-| Autenticado | ✅ Acceso | ✅ Acceso | ✅ Acceso |
-
-## 📝 Usuarios de Prueba
-
-Para desarrollo local:
-```bash
-# Usuario admin
-username: admin
-password: password123
-
-# Crear nuevo usuario
-cd backend
-python manage.py createsuperuser
-```
+- Usuario anónimo: ve la galería; al entrar a /torneo se muestra login (UI) y no accede al dashboard hasta autenticarse.
+- Usuario autenticado (no admin): puede navegar y leer datos; no puede modificar (403 en mutaciones).
+- Admin autenticado: puede crear/editar/eliminar torneos/categorías/etc.
 
 ## 🌐 Endpoints
 
 ### Públicos
-- `GET /api/galeria/` - Ver fotos (acceso público)
+- `GET /api/galeria/`
+- `GET /api/torneo/torneos/`, `GET /api/torneo/categorias/`, `GET /api/torneo/llaves/`, `GET /api/torneo/luchas/`
 
-### Protegidos
-- `POST /api/galeria/` - Modificar galería
-- `GET|POST /api/galeria/upload/` - Verificar auth / Subir archivos
-- `ALL /api/torneo/*` - Sistema de torneos completo
+### Protegidos (Token + admin)
+- `POST|PUT|DELETE /api/torneo/torneos/*`
+- `POST|PUT|DELETE /api/torneo/categorias/*`
+- `POST|PUT|DELETE /api/torneo/llaves/*`
+- `POST /api/torneo/llaves/{id}/generar_automatica/`
+- `POST|PUT|DELETE /api/torneo/luchas/*` y acciones (`iniciar`, `finalizar`, etc.)
 
-## 🎨 UI/UX
-
-### Galería
-- **Siempre muestra fotos** sin restricciones
-- **Botón contextual**: "Iniciar Sesión para Subir Fotos" aparece solo cuando no autenticado
-- **Experiencia fluida**: Ver fotos no requiere ningún paso adicional
-
-### Torneo
-- **Pantalla de acceso**: Prompt elegante para login
-- **Información clara**: Explica que es para instructores/organizadores
-- **Login integrado**: Formulario en la misma página
-
-## 🔧 Configuración
-
-### Desarrollo
-```bash
-# Backend
-cd backend
-source venv/bin/activate
-python manage.py runserver
-
-# Frontend  
-cd frontend
-npm run dev
-```
-
-### Producción
-- URL Backend: `https://thebadgerspage.onrender.com`
-- URL Frontend: Servido desde el mismo dominio
-- Variables de entorno configuradas en Render
+### Galería (compatibilidad)
+- `POST /api/galeria/upload/` (requiere Basic)
 
 ## ✅ Validación
 
@@ -160,6 +77,6 @@ npm run dev
 
 ---
 
-**Estado**: ✅ Implementado y funcionando
-**Última actualización**: Agosto 2025
+**Estado**: actualizado a Token Auth para Torneo. Galería mantiene Basic para upload.
+**Última actualización**: Octubre 2023
 **Desarrollador**: Federico Soriano
