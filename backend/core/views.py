@@ -23,8 +23,8 @@ from .serializers import (
     LlaveSerializer, LuchaSerializer, LuchaSimpleSerializer
 )
 from datetime import datetime
-from rest_framework.decorators import api_view, permission_classes
 from rest_framework.authtoken.models import Token
+from .permissions import IsAdminOrReadOnly
 
 def api_root(request):
     return JsonResponse({"mensaje": "¡API funcionando correctamente!"})
@@ -784,7 +784,7 @@ class TorneoViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar torneos"""
     queryset = Torneo.objects.all()
     serializer_class = TorneoSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]  # Permite lectura sin auth, escritura con auth
+    permission_classes = [IsAdminOrReadOnly]  # Solo admins pueden modificar, lectura pública
     
     def perform_create(self, serializer):
         """Asignar el usuario actual como creador del torneo"""
@@ -810,7 +810,7 @@ class CategoriaViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar categorías"""
     queryset = Categoria.objects.all()
     serializer_class = CategoriaSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]  # Permite lectura sin auth, escritura con auth
+    permission_classes = [IsAdminOrReadOnly]  # Solo admins pueden modificar, lectura pública
     
     def get_queryset(self):
         """Filtrar categorías por torneo si se especifica"""
@@ -832,7 +832,7 @@ class ParticipanteViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar participantes"""
     queryset = Participante.objects.all()
     serializer_class = ParticipanteSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]  # Permite lectura sin auth, escritura con auth
+    permission_classes = [IsAdminOrReadOnly]  # Solo admins pueden escribir; lectura pública
     
     def get_queryset(self):
         """Filtrar participantes por categoría si se especifica"""
@@ -854,7 +854,7 @@ class LlaveViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar llaves de torneo"""
     queryset = Llave.objects.all()
     serializer_class = LlaveSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]  # Permite lectura sin auth, escritura con auth
+    permission_classes = [IsAdminOrReadOnly]  # Solo admins pueden escribir; lectura pública
     
     def get_queryset(self):
         """Filtrar llaves por categoría si se especifica"""
@@ -914,7 +914,7 @@ class LuchaViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar luchas"""
     queryset = Lucha.objects.all()
     serializer_class = LuchaSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]  # Permite lectura sin auth, escritura con auth
+    permission_classes = [IsAdminOrReadOnly]  # Solo admins pueden escribir; lectura pública
     
     def get_queryset(self):
         """Filtrar luchas por categoría si se especifica"""

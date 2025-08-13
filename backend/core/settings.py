@@ -85,6 +85,17 @@ CORS_PREFLIGHT_MAX_AGE = 86400
 CORS_EXPOSE_HEADERS = [
     'Content-Length',
     'Content-Range',
+    'Authorization',
+]
+
+# Confianza CSRF para frontends permitidos
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'https://thebadgerspage.onrender.com',
+    'https://the-badgers.com',
+    'https://www.the-badgers.com',
+    'https://thebadgersadmin.onrender.com',
 ]
 
 import os
@@ -165,10 +176,16 @@ if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    # Aceptar cookies cross-site cuando se usa dominio distinto (frontend separado)
+    SESSION_COOKIE_SAMESITE = 'None'
+    CSRF_COOKIE_SAMESITE = 'None'
 else:
     SECURE_SSL_REDIRECT = False
     SESSION_COOKIE_SECURE = False
     CSRF_COOKIE_SECURE = False
+    # En desarrollo usar Lax para facilitar pruebas locales
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    CSRF_COOKIE_SAMESITE = 'Lax'
 
 # Configuración de Cloudinary para almacenamiento de archivos
 CLOUDINARY_STORAGE = {
@@ -201,12 +218,11 @@ else:
 
 REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny',  # Cambiado temporalmente para permitir acceso
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',  # Lectura pública, escritura autenticada
     ],
     'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
         'rest_framework.authentication.SessionAuthentication',
-        'rest_framework.authentication.BasicAuthentication',
-        'rest_framework.authentication.TokenAuthentication',  # Añadido token auth
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
