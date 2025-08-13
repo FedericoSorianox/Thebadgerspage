@@ -37,12 +37,46 @@ else:
 # Configuración CORS para producción
 CORS_ALLOWED_ORIGINS = [
     "https://thebadgerspage.onrender.com",
-    "https://www.thebadgerspage.onrender.com",
+    "https://www.thebadgerspage.onrender.com", 
     "https://the-badgers.com",
     "https://www.the-badgers.com",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+# Permitir métodos HTTP adicionales
+CORS_ALLOWED_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+
+# Headers permitidos para CORS
+CORS_ALLOWED_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+    'cache-control',
+    'pragma',
+    'expires',
+]
+
+# Configuración adicional para CORS
+CORS_PREFLIGHT_MAX_AGE = 86400
+CORS_EXPOSE_HEADERS = [
+    'Content-Length',
+    'Content-Range',
+    'Authorization',
+]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://thebadgerspage.onrender.com",
