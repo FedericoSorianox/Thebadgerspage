@@ -12,6 +12,7 @@ ALLOWED_HOSTS = [
     'www.thebadgerspage.onrender.com',
     '127.0.0.1',
     'localhost',
+    "the-badgers.com",
 ]
 
 # Configuración de base de datos PostgreSQL para producción
@@ -33,14 +34,22 @@ else:
             'PORT': os.environ.get('DATABASE_PORT', '5432'),
         }
     }
-
 # Configuración CORS para producción
 CORS_ALLOWED_ORIGINS = [
     "https://thebadgerspage.onrender.com",
     "https://www.thebadgerspage.onrender.com",
+    "https://the-badgers.com",
+    "https://www.the-badgers.com",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://thebadgerspage.onrender.com",
+    "https://www.thebadgerspage.onrender.com",
+    "https://the-badgers.com",
+    "https://www.the-badgers.com",
+]   
 
 # Configuración de seguridad
 SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'True') == 'True'
