@@ -7,6 +7,36 @@ import os
 from core import views
 from core.views import FrontendAppView
 from rest_framework.routers import DefaultRouter
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
+# Función para manejar OPTIONS requests globalmente
+@csrf_exempt  
+def global_options_handler(request):
+    """Maneja todas las requests OPTIONS para CORS preflight"""
+    response = JsonResponse({})
+    
+    origin = request.META.get('HTTP_ORIGIN', '')
+    allowed_origins = [
+        'https://the-badgers.com',
+        'https://www.the-badgers.com', 
+        'https://thebadgerspage.onrender.com',
+        'https://www.thebadgerspage.onrender.com',
+        'http://localhost:5173',
+        'http://localhost:5174',
+    ]
+    
+    if origin in allowed_origins:
+        response['Access-Control-Allow-Origin'] = origin
+    else:
+        response['Access-Control-Allow-Origin'] = 'https://the-badgers.com'
+        
+    response['Access-Control-Allow-Credentials'] = 'true'
+    response['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, HEAD'
+    response['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin, X-CSRFToken'
+    response['Access-Control-Max-Age'] = '86400'
+    
+    return response
 
 # Router para las APIs del sistema de torneo
 router = DefaultRouter()

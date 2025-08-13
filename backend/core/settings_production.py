@@ -34,15 +34,19 @@ else:
             'PORT': os.environ.get('DATABASE_PORT', '5432'),
         }
     }
-# Configuración CORS para producción
+# Configuración CORS para producción - TEMPORALMENTE PERMISIVA
+CORS_ALLOW_ALL_ORIGINS = True  # TEMPORAL para debug
+CORS_ALLOW_CREDENTIALS = True
+
+# Si queremos ser específicos, usar esta lista en lugar de ALLOW_ALL
 CORS_ALLOWED_ORIGINS = [
     "https://thebadgerspage.onrender.com",
     "https://www.thebadgerspage.onrender.com", 
     "https://the-badgers.com",
     "https://www.the-badgers.com",
+    "http://localhost:5173",
+    "http://localhost:5174",
 ]
-
-CORS_ALLOW_CREDENTIALS = True
 
 # Permitir métodos HTTP adicionales
 CORS_ALLOWED_METHODS = [
@@ -52,9 +56,10 @@ CORS_ALLOWED_METHODS = [
     'PATCH',
     'POST',
     'PUT',
+    'HEAD',
 ]
 
-# Headers permitidos para CORS
+# Headers permitidos para CORS - Lista más completa
 CORS_ALLOWED_HEADERS = [
     'accept',
     'accept-encoding',
@@ -68,6 +73,9 @@ CORS_ALLOWED_HEADERS = [
     'cache-control',
     'pragma',
     'expires',
+    'x-forwarded-for',
+    'x-forwarded-proto',
+    'x-real-ip',
 ]
 
 # Configuración adicional para CORS
@@ -76,7 +84,11 @@ CORS_EXPOSE_HEADERS = [
     'Content-Length',
     'Content-Range',
     'Authorization',
+    'X-Total-Count',
 ]
+
+# Permitir cookies y auth headers
+CORS_ALLOW_CREDENTIALS = True
 
 CSRF_TRUSTED_ORIGINS = [
     "https://thebadgerspage.onrender.com",

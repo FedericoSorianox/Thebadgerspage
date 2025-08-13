@@ -25,11 +25,51 @@ from .serializers import (
 from datetime import datetime
 from rest_framework.authtoken.models import Token
 from .permissions import IsAdminOrReadOnly
+from django.views.decorators.http import require_http_methods
+from django.utils.decorators import method_decorator
+
+# Decorador para añadir headers CORS manualmente
+def add_cors_headers(view_func):
+    def wrapped_view(request, *args, **kwargs):
+        response = view_func(request, *args, **kwargs)
+        
+        # Obtener el origin del request
+        origin = request.META.get('HTTP_ORIGIN', '')
+        
+        # Lista de orígenes permitidos
+        allowed_origins = [
+            'https://the-badgers.com',
+            'https://www.the-badgers.com',
+            'https://thebadgerspage.onrender.com',
+            'https://www.thebadgerspage.onrender.com',
+            'http://localhost:5173',
+            'http://localhost:5174',
+        ]
+        
+        if origin in allowed_origins:
+            response['Access-Control-Allow-Origin'] = origin
+        else:
+            response['Access-Control-Allow-Origin'] = 'https://the-badgers.com'
+            
+        response['Access-Control-Allow-Credentials'] = 'true'
+        response['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, HEAD'
+        response['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-Requested-With, Accept, Origin, X-CSRFToken'
+        response['Access-Control-Max-Age'] = '86400'
+        
+        return response
+    return wrapped_view
 
 def api_root(request):
     return JsonResponse({"mensaje": "¡API funcionando correctamente!"})
 
+@add_cors_headers
+@csrf_exempt
 def galeria_list(request):
+    # Manejar preflight OPTIONS request
+    if request.method == 'OPTIONS':
+        response = JsonResponse({})
+        return response
+        
     # Solo verificar autenticación para métodos que no sean GET (lectura pública)
     if request.method != 'GET':
         auth_header = request.META.get('HTTP_AUTHORIZATION')

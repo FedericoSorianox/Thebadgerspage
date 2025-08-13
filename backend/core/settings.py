@@ -13,7 +13,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
+    'core.middleware.CustomCorsMiddleware',  # Nuestro middleware CORS personalizado
+    'corsheaders.middleware.CorsMiddleware',  # Mantener como backup
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
