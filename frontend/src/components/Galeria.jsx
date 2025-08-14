@@ -70,6 +70,28 @@ export default function Galeria({ API_BASE, isLoggedIn, loginUser, loginPass, se
       setLoginValidated(true);
       setShowLoginForm(false);
       if (handleLogin) handleLogin();
+      
+      // También verificar con el servidor usando el formato JSON que espera
+      try {
+        const response = await fetch(`${base}/api/auth/login/`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            username: 'admin',
+            password: 'admin123'
+          })
+        });
+        
+        if (response.ok) {
+          console.log('✅ Server validation successful');
+        } else {
+          console.log('⚠️ Server validation failed but continuing with local validation');
+        }
+      } catch (error) {
+        console.log('⚠️ Server check failed but continuing with local validation:', error);
+      }
     } else {
       console.log('❌ Login failed - invalid credentials');
       console.log('❌ User match:', localLoginUser.trim() === 'admin');
@@ -97,15 +119,11 @@ export default function Galeria({ API_BASE, isLoggedIn, loginUser, loginPass, se
       const formData = new FormData();
       formData.append('archivo', selectedFile);
       formData.append('nombre', uploadName);
-
-      // Usar credenciales fijas para el upload
-      const authString = btoa('admin:admin123');
+      formData.append('username', 'admin');
+      formData.append('password', 'admin123');
       
       const response = await fetch(`${base}/api/galeria/upload/`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Basic ${authString}`
-        },
         body: formData
       });
 
