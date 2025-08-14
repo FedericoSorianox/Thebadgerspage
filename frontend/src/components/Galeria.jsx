@@ -1,17 +1,26 @@
 import React, { useEffect, useState } from 'react';
 
-// Galería pública con login básico solo para subir (mantiene compatibilidad actual)
-export default function Galeria({ API_BASE }) {
+// Galería completa con login, upload y visualización
+export default function Galeria({ API_BASE, isLoggedIn, loginUser, loginPass, setShowLogin, handleLogin, handleLogout, loginError, showLogin, setLoginPass }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadName, setUploadName] = useState('');
 
-  useEffect(() => {
-    const base = API_BASE || (import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : 'http://127.0.0.1:8000'));
-    
+  // Login state
+  const [localLoginUser, setLocalLoginUser] = useState(loginUser || '');
+  const [localLoginPass, setLocalLoginPass] = useState(loginPass || '');
+  const [showLoginForm, setShowLoginForm] = useState(showLogin || false);
+
+  const base = API_BASE || (import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : 'http://127.0.0.1:8000'));
+
+  const loadGallery = () => {
     console.log('🔍 Galeria DEBUG - API Base:', base);
     console.log('🔍 Galeria DEBUG - Full URL:', `${base}/api/galeria/`);
     
+    setLoading(true);
     fetch(`${base}/api/galeria/`)
       .then(r => {
         console.log('🔍 Galeria DEBUG - Response status:', r.status);
@@ -29,7 +38,7 @@ export default function Galeria({ API_BASE }) {
       .catch(err => {
         console.error('🔍 Galeria DEBUG - Error:', err);
         setError(err.message);
-        // Fallback: mostrar imágenes de placeholder
+        // Fallback: mostrar imágenes de placeholder solo si no hay datos
         setItems([
           { id: 1, nombre: 'Ejemplo 1', url: 'https://picsum.photos/800/600?random=1' },
           { id: 2, nombre: 'Ejemplo 2', url: 'https://picsum.photos/800/600?random=2' },
@@ -38,7 +47,94 @@ export default function Galeria({ API_BASE }) {
         ]);
       })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadGallery();
   }, [API_BASE]);
+
+  const handleLocalLogin = async () => {
+    if (!localLoginUser || !localLoginPass) {
+      alert('Por favor ingresa usuario y contraseña');
+      return;
+    }
+
+    try {
+      const authString = btoa(`${localLoginUser}:${localLoginPass}`);
+      const response = await fetch(`${base}/api/galeria/upload/`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Basic ${authString}`
+        }
+      });
+
+      if (response.ok) {
+        setShowLoginForm(false);
+        if (handleLogin) handleLogin();
+        console.log('✅ Login successful');
+      } else {
+        alert('Credenciales incorrectas');
+      }
+    } catch (error) {
+      console.error('Error en login:', error);
+      alert('Error al conectar con el servidor');
+    }
+  };
+
+  const handleFileUpload = async () => {
+    if (!selectedFile || !uploadName.trim()) {
+      alert('Por favor selecciona un archivo y agrega un nombre');
+      return;
+    }
+
+    if (!localLoginUser || !localLoginPass) {
+      alert('Debes estar logueado para subir imágenes');
+      setShowLoginForm(true);
+      return;
+    }
+
+    setUploading(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('archivo', selectedFile);
+      formData.append('nombre', uploadName);
+
+      const authString = btoa(`${localLoginUser}:${localLoginPass}`);
+      
+      const response = await fetch(`${base}/api/galeria/upload/`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${authString}`
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Upload successful:', result);
+        
+        // Limpiar formulario
+        setSelectedFile(null);
+        setUploadName('');
+        
+        // Recargar galería
+        loadGallery();
+        
+        alert('¡Imagen subida exitosamente!');
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al subir archivo');
+      }
+    } catch (error) {
+      console.error('Error uploading:', error);
+      alert(`Error al subir imagen: ${error.message}`);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const isLoggedInState = localLoginUser && localLoginPass;
 
   return (
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 font-sans pt-32 flex flex-col items-center px-2">
@@ -47,14 +143,117 @@ export default function Galeria({ API_BASE }) {
       {/* Debug info in development */}
       {!import.meta.env.PROD && (
         <div className="mb-4 p-4 bg-yellow-100 border border-yellow-400 rounded text-sm">
-          <p>🔍 DEBUG: API Base: {API_BASE}</p>
+          <p>🔍 DEBUG: API Base: {base}</p>
           <p>🔍 DEBUG: Items count: {items.length}</p>
+          <p>🔍 DEBUG: Logged in: {isLoggedInState ? 'Yes' : 'No'}</p>
           {error && <p>🔍 DEBUG: Error: {error}</p>}
         </div>
       )}
+
+      {/* Login/Upload Section */}
+      <div className="w-full max-w-4xl mb-8">
+        {!isLoggedInState ? (
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <h3 className="text-xl font-semibold text-slate-800 mb-4">Acceso para Administradores</h3>
+            {!showLoginForm ? (
+              <button
+                onClick={() => setShowLoginForm(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+              >
+                Iniciar Sesión para Subir Imágenes
+              </button>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Usuario:</label>
+                  <input
+                    type="text"
+                    value={localLoginUser}
+                    onChange={(e) => setLocalLoginUser(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Ingresa tu usuario"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Contraseña:</label>
+                  <input
+                    type="password"
+                    value={localLoginPass}
+                    onChange={(e) => setLocalLoginPass(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    placeholder="Ingresa tu contraseña"
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleLocalLogin}
+                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg transition-colors"
+                  >
+                    Iniciar Sesión
+                  </button>
+                  <button
+                    onClick={() => setShowLoginForm(false)}
+                    className="bg-slate-500 hover:bg-slate-600 text-white px-6 py-2 rounded-lg transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-slate-800">Subir Nueva Imagen</h3>
+              <div className="text-sm text-slate-600">
+                Conectado como: <span className="font-medium">{localLoginUser}</span>
+                <button
+                  onClick={() => {
+                    setLocalLoginUser('');
+                    setLocalLoginPass('');
+                    setShowLoginForm(false);
+                  }}
+                  className="ml-2 text-red-600 hover:text-red-700"
+                >
+                  Cerrar Sesión
+                </button>
+              </div>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Nombre de la imagen:</label>
+                <input
+                  type="text"
+                  value={uploadName}
+                  onChange={(e) => setUploadName(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Ej: Clase de BJJ - Enero 2025"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Seleccionar archivo:</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setSelectedFile(e.target.files[0])}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <button
+                onClick={handleFileUpload}
+                disabled={uploading || !selectedFile || !uploadName.trim()}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-slate-400 text-white px-6 py-2 rounded-lg transition-colors"
+              >
+                {uploading ? 'Subiendo...' : 'Subir Imagen'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
       
       {loading && <p className="text-lg text-slate-600">Cargando galería...</p>}
-      {error && (
+      {error && !loading && (
         <div className="mb-4 p-4 bg-red-100 border border-red-400 rounded text-sm text-red-700">
           Error cargando imágenes: {error}. Mostrando contenido de ejemplo.
         </div>
@@ -73,6 +272,9 @@ export default function Galeria({ API_BASE }) {
               }}
             />
             <div className="text-sm font-medium text-slate-700">{it.nombre}</div>
+            {it.fecha && (
+              <div className="text-xs text-slate-500 mt-1">{it.fecha}</div>
+            )}
           </div>
         ))}
       </div>
