@@ -27,7 +27,6 @@ const NAV_ITEMS = [
   { label: "Clases", href: "/#clases" },
   { label: "Tienda", href: "/tienda" },
   { label: "Galería", href: "/galeria" },
-  { label: "Torneo BJJ", href: "/torneo" },
   { label: "Contacto", href: "/#contacto" },
 ];
 

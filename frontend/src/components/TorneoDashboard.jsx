@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import API, { torneoAPI, categoriaAPI } from '../services/api-new.js';
-import { useAuth } from '../contexts/AuthContext.jsx';
 
 export default function TorneoDashboard() {
   const [torneos, setTorneos] = useState([]);
@@ -8,7 +7,6 @@ export default function TorneoDashboard() {
   const [activeTorneo, setActiveTorneo] = useState(null);
   const [error, setError] = useState(null);
   const [isWorking, setIsWorking] = useState(false);
-  const { isAdmin } = useAuth();
 
   useEffect(() => {
     loadTorneos();
@@ -44,7 +42,6 @@ export default function TorneoDashboard() {
   }
 
   async function handleDeleteTorneo(id) {
-    if (!isAdmin || !isAdmin()) return;
     if (!confirm('¿Seguro que deseas eliminar este torneo? Esta acción no se puede deshacer.')) return;
     try {
       setIsWorking(true);
@@ -59,7 +56,6 @@ export default function TorneoDashboard() {
   }
 
   async function handleDeleteCategoria(id) {
-    if (!isAdmin || !isAdmin()) return;
     if (!confirm('¿Eliminar esta categoría?')) return;
     try {
       setIsWorking(true);
@@ -77,7 +73,6 @@ export default function TorneoDashboard() {
   }
 
   async function handleCerrarInscripciones(id) {
-    if (!isAdmin || !isAdmin()) return;
     if (!confirm('¿Cerrar inscripciones de esta categoría?')) return;
     try {
       setIsWorking(true);
@@ -98,9 +93,6 @@ export default function TorneoDashboard() {
       {error && <div className="text-red-400 mb-3">{error}</div>}
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-xl font-semibold">Torneos</h2>
-        {isAdmin && isAdmin() && (
-          <span className="text-xs text-cyan-300">Modo admin</span>
-        )}
       </div>
       <ul className="mb-4 list-disc pl-5">
         {torneos.map(t => (
@@ -111,38 +103,36 @@ export default function TorneoDashboard() {
             >
               {t.nombre} {t.estado ? `(${t.estado})` : ''}
             </button>
-            {isAdmin && isAdmin() && (
-              <div className="flex items-center gap-2">
-                {t.estado !== 'activo' && (
-                  <button
-                    disabled={isWorking}
-                    onClick={async ()=>{ try{ setIsWorking(true); await torneoAPI.activar(t.id); await loadTorneos(); } catch(e){ setError(e.message);} finally{ setIsWorking(false);} }}
-                    className="text-green-300 hover:text-green-400 text-sm disabled:opacity-50"
-                    title="Activar torneo"
-                  >
-                    Activar
-                  </button>
-                )}
-                {t.estado !== 'finalizado' && (
-                  <button
-                    disabled={isWorking}
-                    onClick={async ()=>{ if(!confirm('¿Finalizar este torneo?')) return; try{ setIsWorking(true); await torneoAPI.finalizar(t.id); await loadTorneos(); } catch(e){ setError(e.message);} finally{ setIsWorking(false);} }}
-                    className="text-yellow-300 hover:text-yellow-400 text-sm disabled:opacity-50"
-                    title="Finalizar torneo"
-                  >
-                    Finalizar
-                  </button>
-                )}
+            <div className="flex items-center gap-2">
+              {t.estado !== 'activo' && (
                 <button
                   disabled={isWorking}
-                  onClick={() => handleDeleteTorneo(t.id)}
-                  className="text-red-300 hover:text-red-400 text-sm disabled:opacity-50"
-                  title="Eliminar torneo"
+                  onClick={async ()=>{ try{ setIsWorking(true); await torneoAPI.activar(t.id); await loadTorneos(); } catch(e){ setError(e.message);} finally{ setIsWorking(false);} }}
+                  className="text-green-300 hover:text-green-400 text-sm disabled:opacity-50"
+                  title="Activar torneo"
                 >
-                  Eliminar
+                  Activar
                 </button>
-              </div>
-            )}
+              )}
+              {t.estado !== 'finalizado' && (
+                <button
+                  disabled={isWorking}
+                  onClick={async ()=>{ if(!confirm('¿Finalizar este torneo?')) return; try{ setIsWorking(true); await torneoAPI.finalizar(t.id); await loadTorneos(); } catch(e){ setError(e.message);} finally{ setIsWorking(false);} }}
+                  className="text-yellow-300 hover:text-yellow-400 text-sm disabled:opacity-50"
+                  title="Finalizar torneo"
+                >
+                  Finalizar
+                </button>
+              )}
+              <button
+                disabled={isWorking}
+                onClick={() => handleDeleteTorneo(t.id)}
+                className="text-red-300 hover:text-red-400 text-sm disabled:opacity-50"
+                title="Eliminar torneo"
+              >
+                Eliminar
+              </button>
+            </div>
           </li>
         ))}
       </ul>
@@ -157,26 +147,24 @@ export default function TorneoDashboard() {
                   {c.nombre}
                   {` — ${c.grupo_edad} — ${c.genero} — ${c.cinturon} — ${c.peso_minimo}-${c.peso_maximo} kg`}
                 </span>
-                {isAdmin && isAdmin() && (
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={isWorking}
+                    onClick={() => handleDeleteCategoria(c.id)}
+                    className="text-red-300 hover:text-red-400 text-xs disabled:opacity-50"
+                  >
+                    Eliminar
+                  </button>
+                  {c.estado === 'abierta' && (
                     <button
                       disabled={isWorking}
-                      onClick={() => handleDeleteCategoria(c.id)}
-                      className="text-red-300 hover:text-red-400 text-xs disabled:opacity-50"
+                      onClick={() => handleCerrarInscripciones(c.id)}
+                      className="text-yellow-300 hover:text-yellow-400 text-xs disabled:opacity-50"
                     >
-                      Eliminar
+                      Cerrar inscripciones
                     </button>
-                    {c.estado === 'abierta' && (
-                      <button
-                        disabled={isWorking}
-                        onClick={() => handleCerrarInscripciones(c.id)}
-                        className="text-yellow-300 hover:text-yellow-400 text-xs disabled:opacity-50"
-                      >
-                        Cerrar inscripciones
-                      </button>
-                    )}
-                  </div>
-                )}
+                  )}
+                </div>
               </li>
             ))}
           </ul>
