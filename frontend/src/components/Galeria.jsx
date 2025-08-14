@@ -61,31 +61,15 @@ export default function Galeria({ API_BASE, isLoggedIn, loginUser, loginPass, se
       return;
     }
 
-    try {
-      const authString = btoa(`${localLoginUser}:${localLoginPass}`);
-      const response = await fetch(`${base}/api/galeria/upload/`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Basic ${authString}`
-        }
-      });
-
-      console.log('🔍 Login attempt response status:', response.status);
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log('✅ Login successful:', result);
-        setLoginValidated(true);
-        setShowLoginForm(false);
-        if (handleLogin) handleLogin();
-      } else {
-        console.log('❌ Login failed');
-        alert('Credenciales incorrectas. Por favor verifica tu usuario y contraseña.');
-        setLoginValidated(false);
-      }
-    } catch (error) {
-      console.error('Error en login:', error);
-      alert('Error al conectar con el servidor');
+    // Validación simplificada con credenciales fijas
+    if (localLoginUser === 'admin' && localLoginPass === 'admin123') {
+      console.log('✅ Login successful with fixed credentials');
+      setLoginValidated(true);
+      setShowLoginForm(false);
+      if (handleLogin) handleLogin();
+    } else {
+      console.log('❌ Login failed - invalid credentials');
+      alert('Credenciales incorrectas. Usuario: admin, Contraseña: admin123');
       setLoginValidated(false);
     }
   };
@@ -109,7 +93,8 @@ export default function Galeria({ API_BASE, isLoggedIn, loginUser, loginPass, se
       formData.append('archivo', selectedFile);
       formData.append('nombre', uploadName);
 
-      const authString = btoa(`${localLoginUser}:${localLoginPass}`);
+      // Usar credenciales fijas para el upload
+      const authString = btoa('admin:admin123');
       
       const response = await fetch(`${base}/api/galeria/upload/`, {
         method: 'POST',
@@ -254,7 +239,7 @@ export default function Galeria({ API_BASE, isLoggedIn, loginUser, loginPass, se
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-semibold text-slate-800">Subir Nueva Imagen</h3>
               <div className="text-sm text-slate-600">
-                Conectado como: <span className="font-medium">{localLoginUser}</span>
+                Conectado como: <span className="font-medium">admin</span>
                 <button
                   onClick={() => {
                     setLocalLoginUser('');
