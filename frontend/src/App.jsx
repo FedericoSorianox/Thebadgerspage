@@ -27,6 +27,7 @@ const NAV_ITEMS = [
   { label: "Clases", href: "/#clases" },
   { label: "Tienda", href: "/tienda" },
   { label: "Galería", href: "/galeria" },
+  { label: "Torneo BJJ", href: "/torneo" },
   { label: "Contacto", href: "/#contacto" },
 ];
 
@@ -490,12 +491,10 @@ function Home() {
 
 function TorneoPage() {
   return (
-    <ProtectedComponent>
-      <div className="min-h-screen w-full pt-28 text-white px-4">
-        <h1 className="text-3xl font-bold mb-4">Sistema de Torneo BJJ</h1>
-        <TorneoDashboard />
-      </div>
-    </ProtectedComponent>
+    <div className="min-h-screen w-full pt-28 text-white px-4">
+      <h1 className="text-3xl font-bold mb-4">Sistema de Torneo BJJ</h1>
+      <TorneoDashboard />
+    </div>
   );
 }
 
