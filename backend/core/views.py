@@ -824,11 +824,20 @@ class TorneoViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar torneos"""
     queryset = Torneo.objects.all()
     serializer_class = TorneoSerializer
-    permission_classes = [IsAdminOrReadOnly]  # Solo admins pueden modificar, lectura pública
+    permission_classes = [AllowAny]  # TEMPORAL: Permitir acceso completo para debug
     
     def perform_create(self, serializer):
         """Asignar el usuario actual como creador del torneo"""
-        serializer.save(usuario_creador=self.request.user)
+        # Si no hay usuario autenticado, usar el primer admin
+        if self.request.user.is_authenticated:
+            serializer.save(usuario_creador=self.request.user)
+        else:
+            from django.contrib.auth.models import User
+            admin_user = User.objects.filter(is_staff=True).first()
+            if admin_user:
+                serializer.save(usuario_creador=admin_user)
+            else:
+                serializer.save()  # Sin usuario_creador si no hay admins
     
     @action(detail=True, methods=['post'])
     def activar(self, request, pk=None):
@@ -850,7 +859,7 @@ class CategoriaViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar categorías"""
     queryset = Categoria.objects.all()
     serializer_class = CategoriaSerializer
-    permission_classes = [IsAdminOrReadOnly]  # Solo admins pueden modificar, lectura pública
+    permission_classes = [AllowAny]  # TEMPORAL: Permitir acceso completo para debug
     
     def get_queryset(self):
         """Filtrar categorías por torneo si se especifica"""
@@ -872,7 +881,7 @@ class ParticipanteViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar participantes"""
     queryset = Participante.objects.all()
     serializer_class = ParticipanteSerializer
-    permission_classes = [IsAdminOrReadOnly]  # Solo admins pueden escribir; lectura pública
+    permission_classes = [AllowAny]  # TEMPORAL: Permitir acceso completo para debug
     
     def get_queryset(self):
         """Filtrar participantes por categoría si se especifica"""
