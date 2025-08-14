@@ -206,11 +206,6 @@ export default function Galeria({ API_BASE, isLoggedIn, loginUser, loginPass, se
         {!loginValidated ? (
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h3 className="text-xl font-semibold text-slate-800 mb-4">Acceso para Administradores</h3>
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
-              <p><strong>Credenciales de acceso:</strong></p>
-              <p>Usuario: <code className="bg-blue-100 px-1 rounded">admin</code></p>
-              <p>Contraseña: <code className="bg-blue-100 px-1 rounded">admin123</code></p>
-            </div>
             {!showLoginForm ? (
               <button
                 onClick={() => setShowLoginForm(true)}
