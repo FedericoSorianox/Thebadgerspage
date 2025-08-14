@@ -2,6 +2,12 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
     (import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : 'http://127.0.0.1:8000');
 
+// FORCE correct API URL in production to avoid wrong environment variable
+const FORCED_API_BASE_URL = import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : API_BASE_URL;
+
+console.log('DEBUG authService API_BASE_URL:', API_BASE_URL);
+console.log('DEBUG authService FORCED_API_BASE_URL:', FORCED_API_BASE_URL);
+
 const IS_DEVELOPMENT = !import.meta.env.PROD;
 
 class AuthService {
@@ -26,7 +32,7 @@ class AuthService {
     // Login con credenciales
     async login(username, password) {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/login/`, {
+            const response = await fetch(`${FORCED_API_BASE_URL}/api/auth/login/`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -59,7 +65,7 @@ class AuthService {
     async logout() {
         try {
             if (this.token) {
-                await fetch(`${API_BASE_URL}/api/auth/logout/`, {
+                await fetch(`${FORCED_API_BASE_URL}/api/auth/logout/`, {
                     method: 'POST',
                     headers: this.getAuthHeaders(),
                 });
@@ -78,7 +84,7 @@ class AuthService {
     // Verificar estado de autenticación
     async checkAuthStatus() {
         try {
-            const response = await fetch(`${API_BASE_URL}/api/auth/status/`, {
+            const response = await fetch(`${FORCED_API_BASE_URL}/api/auth/status/`, {
                 headers: this.getAuthHeaders(),
             });
 
