@@ -61,14 +61,19 @@ export default function Galeria({ API_BASE, isLoggedIn, loginUser, loginPass, se
       return;
     }
 
+    console.log('🔍 Login attempt:', { user: localLoginUser, pass: localLoginPass });
+    console.log('🔍 Expected:', { user: 'admin', pass: 'admin123' });
+
     // Validación simplificada con credenciales fijas
-    if (localLoginUser === 'admin' && localLoginPass === 'admin123') {
+    if (localLoginUser.trim() === 'admin' && localLoginPass.trim() === 'admin123') {
       console.log('✅ Login successful with fixed credentials');
       setLoginValidated(true);
       setShowLoginForm(false);
       if (handleLogin) handleLogin();
     } else {
       console.log('❌ Login failed - invalid credentials');
+      console.log('❌ User match:', localLoginUser.trim() === 'admin');
+      console.log('❌ Pass match:', localLoginPass.trim() === 'admin123');
       alert('Credenciales incorrectas. Usuario: admin, Contraseña: admin123');
       setLoginValidated(false);
     }
@@ -183,6 +188,11 @@ export default function Galeria({ API_BASE, isLoggedIn, loginUser, loginPass, se
         {!loginValidated ? (
           <div className="bg-white rounded-lg shadow-lg p-6">
             <h3 className="text-xl font-semibold text-slate-800 mb-4">Acceso para Administradores</h3>
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+              <p><strong>Credenciales de acceso:</strong></p>
+              <p>Usuario: <code className="bg-blue-100 px-1 rounded">admin</code></p>
+              <p>Contraseña: <code className="bg-blue-100 px-1 rounded">admin123</code></p>
+            </div>
             {!showLoginForm ? (
               <button
                 onClick={() => setShowLoginForm(true)}
@@ -199,7 +209,7 @@ export default function Galeria({ API_BASE, isLoggedIn, loginUser, loginPass, se
                     value={localLoginUser}
                     onChange={(e) => setLocalLoginUser(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Ingresa tu usuario"
+                    placeholder="admin"
                   />
                 </div>
                 <div>
@@ -209,7 +219,7 @@ export default function Galeria({ API_BASE, isLoggedIn, loginUser, loginPass, se
                     value={localLoginPass}
                     onChange={(e) => setLocalLoginPass(e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    placeholder="Ingresa tu contraseña"
+                    placeholder="admin123"
                     onKeyPress={(e) => {
                       if (e.key === 'Enter') {
                         handleLocalLogin();
