@@ -72,8 +72,38 @@ export const torneoAPI = {
     getAll: async () => {
         const url = `${API_BASE_URL}/api/torneo/torneos/`;
         console.log(`[torneoAPI.getAll] URL: ${url}`);
-        const response = await fetch(url, createApiConfig());
-        return handleResponse(response);
+        console.log(`[torneoAPI.getAll] Headers:`, createApiConfig().headers);
+        
+        try {
+            const response = await fetch(url, createApiConfig());
+            console.log(`[torneoAPI.getAll] Response status: ${response.status}`);
+            console.log(`[torneoAPI.getAll] Response headers:`, Object.fromEntries(response.headers.entries()));
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`[torneoAPI.getAll] Error response:`, errorText);
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+            
+            const data = await response.json();
+            console.log(`[torneoAPI.getAll] Success:`, data);
+            
+            // La API devuelve {count, results}, pero necesitamos solo los resultados
+            if (data && data.results) {
+                console.log(`[torneoAPI.getAll] Devolviendo results:`, data.results);
+                return data.results;
+            } else if (Array.isArray(data)) {
+                console.log(`[torneoAPI.getAll] Data ya es array:`, data);
+                return data;
+            } else {
+                console.log(`[torneoAPI.getAll] Formato inesperado, devolviendo array vacío`);
+                return [];
+            }
+            
+        } catch (error) {
+            console.error(`[torneoAPI.getAll] Fetch error:`, error);
+            throw error;
+        }
     },
 
     // Obtener un torneo específico

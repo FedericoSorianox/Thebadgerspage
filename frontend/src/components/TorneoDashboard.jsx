@@ -13,19 +13,27 @@ export default function TorneoDashboard() {
   }, []);
 
   async function loadTorneos() {
+    console.log('[TorneoDashboard] loadTorneos iniciado');
     try {
       setError(null);
+      console.log('[TorneoDashboard] Llamando torneoAPI.getAll()...');
       const data = await torneoAPI.getAll();
+      console.log('[TorneoDashboard] Datos recibidos:', data);
+      
       setTorneos(data);
       if (data.length) {
+        console.log('[TorneoDashboard] Seleccionando primer torneo:', data[0]);
         setActiveTorneo(data[0]);
         const cats = await categoriaAPI.getAll(data[0].id);
+        console.log('[TorneoDashboard] Categorías cargadas:', cats);
         setCategorias(cats);
       } else {
+        console.log('[TorneoDashboard] No hay torneos disponibles');
         setActiveTorneo(null);
         setCategorias([]);
       }
     } catch (e) {
+      console.error('[TorneoDashboard] Error al cargar torneos:', e);
       setError(e.message);
     }
   }
