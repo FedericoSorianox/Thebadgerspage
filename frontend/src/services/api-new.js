@@ -1,21 +1,27 @@
 // Servicios API para el sistema de torneo BJJ (simplificado sin autenticación)
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
-    (() => {
-        // Si estamos en the-badgers.com, usar SIEMPRE Render
-        if (typeof window !== 'undefined' && window.location.hostname === 'the-badgers.com') {
-            console.log('[API Config] Detectado the-badgers.com - usando Render directamente');
-            return 'https://thebadgerspage.onrender.com';
-        }
-        // Si estamos en producción, usar Render
-        if (import.meta.env.PROD) {
-            console.log('[API Config] Modo producción - usando Render');
-            return 'https://thebadgerspage.onrender.com';
-        }
-        // Desarrollo local
-        console.log('[API Config] Modo desarrollo - usando localhost');
-        return 'http://127.0.0.1:8000';
-    })();
+// FORZAR siempre Render para the-badgers.com
+const API_BASE_URL = (() => {
+    if (typeof window !== 'undefined' && window.location.hostname === 'the-badgers.com') {
+        console.log('[API Config] FORZANDO Render para the-badgers.com');
+        return 'https://thebadgerspage.onrender.com';
+    }
+    
+    // Variable de entorno o fallback
+    if (import.meta.env.VITE_API_BASE_URL) {
+        console.log('[API Config] Usando VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
+        return import.meta.env.VITE_API_BASE_URL;
+    }
+    
+    // Modo producción vs desarrollo
+    if (import.meta.env.PROD) {
+        console.log('[API Config] Modo producción - usando Render');
+        return 'https://thebadgerspage.onrender.com';
+    }
+    
+    console.log('[API Config] Modo desarrollo - usando localhost');
+    return 'http://127.0.0.1:8000';
+})();
 
 const TORNEO_API_URL = `${API_BASE_URL}/api/torneo`;
 
@@ -52,84 +58,70 @@ async function handleResponse(response) {
     return response.json();
 }
 
-// Función para probar múltiples URLs de API
+// COMENTADO: Función de fallback no necesaria por ahora
+/*
 async function fetchWithFallback(endpoint, config) {
-    const primaryUrl = `${API_BASE_URL}${endpoint}`;
-    
-    // Log para debug
-    console.log(`[API] Intentando: ${primaryUrl}`);
-    
-    try {
-        // Intentar URL primaria
-        const response = await fetch(primaryUrl, config);
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-        }
-        console.log(`[API] ✅ Éxito: ${primaryUrl}`);
-        return response.json();
-    } catch (error) {
-        console.error(`[API] ❌ Error con ${primaryUrl}:`, error.message);
-        
-        // Si ya estamos usando Render, no hacer más fallbacks
-        if (primaryUrl.includes('thebadgerspage.onrender.com')) {
-            throw new Error(`API Render no disponible: ${error.message}`);
-        }
-        
-        // Solo hacer fallback si no estamos ya en Render
-        const fallbackUrl = `https://thebadgerspage.onrender.com${endpoint}`;
-        console.log(`[API] 🔄 Intentando fallback: ${fallbackUrl}`);
-        
-        try {
-            const response = await fetch(fallbackUrl, config);
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-            }
-            console.log(`[API] ✅ Éxito con fallback: ${fallbackUrl}`);
-            return response.json();
-        } catch (fallbackError) {
-            console.error(`[API] ❌ Fallback también falló:`, fallbackError.message);
-            throw new Error(`API no disponible. Error: ${fallbackError.message}`);
-        }
-    }
+    // ... función comentada
 }
+*/
 
 // =================== SERVICIOS DE TORNEOS ===================
 
 export const torneoAPI = {
     // Obtener todos los torneos
     getAll: async () => {
-        return fetchWithFallback('/api/torneo/torneos/', createApiConfig());
+        const url = `${API_BASE_URL}/api/torneo/torneos/`;
+        console.log(`[torneoAPI.getAll] URL: ${url}`);
+        const response = await fetch(url, createApiConfig());
+        return handleResponse(response);
     },
 
     // Obtener un torneo específico
     getById: async (id) => {
-        return fetchWithFallback(`/api/torneo/torneos/${id}/`, createApiConfig());
+        const url = `${API_BASE_URL}/api/torneo/torneos/${id}/`;
+        console.log(`[torneoAPI.getById] URL: ${url}`);
+        const response = await fetch(url, createApiConfig());
+        return handleResponse(response);
     },
 
     // Crear nuevo torneo
     create: async (torneoData) => {
-        return fetchWithFallback('/api/torneo/torneos/', createApiConfig('POST', torneoData));
+        const url = `${API_BASE_URL}/api/torneo/torneos/`;
+        console.log(`[torneoAPI.create] URL: ${url}`);
+        const response = await fetch(url, createApiConfig('POST', torneoData));
+        return handleResponse(response);
     },
 
     // Actualizar torneo
     update: async (id, torneoData) => {
-        return fetchWithFallback(`/api/torneo/torneos/${id}/`, createApiConfig('PUT', torneoData));
+        const url = `${API_BASE_URL}/api/torneo/torneos/${id}/`;
+        console.log(`[torneoAPI.update] URL: ${url}`);
+        const response = await fetch(url, createApiConfig('PUT', torneoData));
+        return handleResponse(response);
     },
 
     // Eliminar torneo
     delete: async (id) => {
-        const response = await fetch(`${API_BASE_URL}/api/torneo/torneos/${id}/`, createApiConfig('DELETE'));
+        const url = `${API_BASE_URL}/api/torneo/torneos/${id}/`;
+        console.log(`[torneoAPI.delete] URL: ${url}`);
+        const response = await fetch(url, createApiConfig('DELETE'));
         return response.ok;
     },
 
     // Activar torneo
     activar: async (id) => {
-        return fetchWithFallback(`/api/torneo/torneos/${id}/activar/`, createApiConfig('POST'));
+        const url = `${API_BASE_URL}/api/torneo/torneos/${id}/activar/`;
+        console.log(`[torneoAPI.activar] URL: ${url}`);
+        const response = await fetch(url, createApiConfig('POST'));
+        return handleResponse(response);
     },
 
     // Finalizar torneo
     finalizar: async (id) => {
-        return fetchWithFallback(`/api/torneo/torneos/${id}/finalizar/`, createApiConfig('POST'));
+        const url = `${API_BASE_URL}/api/torneo/torneos/${id}/finalizar/`;
+        console.log(`[torneoAPI.finalizar] URL: ${url}`);
+        const response = await fetch(url, createApiConfig('POST'));
+        return handleResponse(response);
     },
 };
 
