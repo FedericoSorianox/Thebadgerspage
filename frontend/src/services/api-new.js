@@ -1,34 +1,13 @@
 // Servicios API para el sistema de torneo BJJ (simplificado sin autenticación)
 
-// FORZAR siempre Render para the-badgers.com
-const API_BASE_URL = (() => {
-    if (typeof window !== 'undefined' && window.location.hostname === 'the-badgers.com') {
-        console.log('[API Config] FORZANDO Render para the-badgers.com');
-        return 'https://thebadgerspage.onrender.com';
-    }
-    
-    // Variable de entorno o fallback
-    if (import.meta.env.VITE_API_BASE_URL) {
-        console.log('[API Config] Usando VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
-        return import.meta.env.VITE_API_BASE_URL;
-    }
-    
-    // Modo producción vs desarrollo
-    if (import.meta.env.PROD) {
-        console.log('[API Config] Modo producción - usando Render');
-        return 'https://thebadgerspage.onrender.com';
-    }
-    
-    console.log('[API Config] Modo desarrollo - usando localhost');
-    return 'http://127.0.0.1:8000';
-})();
+// FORCE RENDER API - HARDCODED para resolver problema de producción
+const API_BASE_URL = 'https://thebadgerspage.onrender.com';
 
 const TORNEO_API_URL = `${API_BASE_URL}/api/torneo`;
 
 // Log de configuración para debug
-console.log('[API Config]', {
+console.log('[API Config - HARDCODED RENDER]', {
     hostname: typeof window !== 'undefined' ? window.location.hostname : 'SSR',
-    PROD: import.meta.env.PROD,
     API_BASE_URL,
     TORNEO_API_URL
 });
