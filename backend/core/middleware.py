@@ -39,14 +39,9 @@ class CustomCorsMiddleware(MiddlewareMixin):
     def add_cors_headers(self, response, origin):
         """Añade headers CORS a la respuesta"""
         
-        # Permitir origen específico o usar el primero de la lista como fallback
-        if origin in self.allowed_origins:
-            response['Access-Control-Allow-Origin'] = origin
-        else:
-            # Si no está en la lista, permitir todos los orígenes para desarrollo
-            response['Access-Control-Allow-Origin'] = '*'
-            
-        response['Access-Control-Allow-Credentials'] = 'true'
+        # TEMPORAL: Permitir todos los orígenes para debug CORS
+        response['Access-Control-Allow-Origin'] = '*'
+        response['Access-Control-Allow-Credentials'] = 'false'  # No se puede usar credentials con *
         response['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH'
         response['Access-Control-Allow-Headers'] = (
             'Accept, Accept-Encoding, Authorization, Content-Type, '
@@ -57,7 +52,7 @@ class CustomCorsMiddleware(MiddlewareMixin):
         response['Access-Control-Expose-Headers'] = 'Content-Length, Content-Range, Authorization'
         
         # Headers adicionales para debug
-        response['X-Custom-CORS'] = 'enabled'
-        response['X-Allowed-Origin'] = origin if origin in self.allowed_origins else 'wildcard'
+        response['X-Custom-CORS'] = 'enabled-wildcard'
+        response['X-Debug-Origin'] = origin
         
         return response

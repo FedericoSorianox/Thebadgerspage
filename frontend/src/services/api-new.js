@@ -2,11 +2,18 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
     (() => {
-        // Siempre usar el backend de Render para producción
-        if (typeof window !== 'undefined' && 
-            (window.location.hostname === 'the-badgers.com' || import.meta.env.PROD)) {
+        // Si estamos en the-badgers.com, usar SIEMPRE Render
+        if (typeof window !== 'undefined' && window.location.hostname === 'the-badgers.com') {
+            console.log('[API Config] Detectado the-badgers.com - usando Render directamente');
             return 'https://thebadgerspage.onrender.com';
         }
+        // Si estamos en producción, usar Render
+        if (import.meta.env.PROD) {
+            console.log('[API Config] Modo producción - usando Render');
+            return 'https://thebadgerspage.onrender.com';
+        }
+        // Desarrollo local
+        console.log('[API Config] Modo desarrollo - usando localhost');
         return 'http://127.0.0.1:8000';
     })();
 
@@ -48,7 +55,6 @@ async function handleResponse(response) {
 // Función para probar múltiples URLs de API
 async function fetchWithFallback(endpoint, config) {
     const primaryUrl = `${API_BASE_URL}${endpoint}`;
-    const fallbackUrl = `https://thebadgerspage.onrender.com${endpoint}`;
     
     // Log para debug
     console.log(`[API] Intentando: ${primaryUrl}`);
@@ -62,16 +68,17 @@ async function fetchWithFallback(endpoint, config) {
         console.log(`[API] ✅ Éxito: ${primaryUrl}`);
         return response.json();
     } catch (error) {
-        console.warn(`[API] ❌ Falló ${primaryUrl}:`, error.message);
+        console.error(`[API] ❌ Error con ${primaryUrl}:`, error.message);
         
-        // Si es la misma URL, no hacer fallback
-        if (primaryUrl === fallbackUrl) {
-            throw error;
+        // Si ya estamos usando Render, no hacer más fallbacks
+        if (primaryUrl.includes('thebadgerspage.onrender.com')) {
+            throw new Error(`API Render no disponible: ${error.message}`);
         }
         
+        // Solo hacer fallback si no estamos ya en Render
+        const fallbackUrl = `https://thebadgerspage.onrender.com${endpoint}`;
         console.log(`[API] 🔄 Intentando fallback: ${fallbackUrl}`);
         
-        // Si falla, intentar URL de fallback
         try {
             const response = await fetch(fallbackUrl, config);
             if (!response.ok) {
@@ -80,11 +87,8 @@ async function fetchWithFallback(endpoint, config) {
             console.log(`[API] ✅ Éxito con fallback: ${fallbackUrl}`);
             return response.json();
         } catch (fallbackError) {
-            console.error(`[API] ❌ Ambos endpoints fallaron:`, {
-                primary: error.message,
-                fallback: fallbackError.message
-            });
-            throw new Error(`API no disponible. Primary: ${error.message}, Fallback: ${fallbackError.message}`);
+            console.error(`[API] ❌ Fallback también falló:`, fallbackError.message);
+            throw new Error(`API no disponible. Error: ${fallbackError.message}`);
         }
     }
 }

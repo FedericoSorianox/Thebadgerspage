@@ -41,9 +41,9 @@ TEMPLATES = [
     },
 ]
 
-# Configuración CORS - simplificar para evitar conflictos
-CORS_ALLOW_ALL_ORIGINS = False  # Cambiar a False para usar la lista específica
-CORS_ALLOW_CREDENTIALS = True
+# Configuración CORS - temporalmente permisiva para debug
+CORS_ALLOW_ALL_ORIGINS = True  # TEMPORAL: Permitir todos los orígenes
+CORS_ALLOW_CREDENTIALS = False  # Debe ser False cuando se usa CORS_ALLOW_ALL_ORIGINS
 
 # Descomentar y actualizar CORS_ALLOWED_ORIGINS
 CORS_ALLOWED_ORIGINS = [
