@@ -2,14 +2,23 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
     (() => {
-        // Si estamos en the-badgers.com, usar el endpoint de Render como fallback
-        if (typeof window !== 'undefined' && window.location.hostname === 'the-badgers.com') {
+        // Siempre usar el backend de Render para producción
+        if (typeof window !== 'undefined' && 
+            (window.location.hostname === 'the-badgers.com' || import.meta.env.PROD)) {
             return 'https://thebadgerspage.onrender.com';
         }
-        return import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : 'http://127.0.0.1:8000';
+        return 'http://127.0.0.1:8000';
     })();
 
 const TORNEO_API_URL = `${API_BASE_URL}/api/torneo`;
+
+// Log de configuración para debug
+console.log('[API Config]', {
+    hostname: typeof window !== 'undefined' ? window.location.hostname : 'SSR',
+    PROD: import.meta.env.PROD,
+    API_BASE_URL,
+    TORNEO_API_URL
+});
 
 // Configuración base para fetch sin autenticación
 const createApiConfig = (method = 'GET', data = null) => {
@@ -41,19 +50,37 @@ async function fetchWithFallback(endpoint, config) {
     const primaryUrl = `${API_BASE_URL}${endpoint}`;
     const fallbackUrl = `https://thebadgerspage.onrender.com${endpoint}`;
     
+    // Log para debug
+    console.log(`[API] Intentando: ${primaryUrl}`);
+    
     try {
         // Intentar URL primaria
         const response = await fetch(primaryUrl, config);
-        return handleResponse(response);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+        }
+        console.log(`[API] ✅ Éxito: ${primaryUrl}`);
+        return response.json();
     } catch (error) {
-        console.warn(`Primary API failed (${primaryUrl}), trying fallback...`, error.message);
+        console.warn(`[API] ❌ Falló ${primaryUrl}:`, error.message);
+        
+        // Si es la misma URL, no hacer fallback
+        if (primaryUrl === fallbackUrl) {
+            throw error;
+        }
+        
+        console.log(`[API] 🔄 Intentando fallback: ${fallbackUrl}`);
         
         // Si falla, intentar URL de fallback
         try {
             const response = await fetch(fallbackUrl, config);
-            return handleResponse(response);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+            }
+            console.log(`[API] ✅ Éxito con fallback: ${fallbackUrl}`);
+            return response.json();
         } catch (fallbackError) {
-            console.error(`Both API endpoints failed:`, {
+            console.error(`[API] ❌ Ambos endpoints fallaron:`, {
                 primary: error.message,
                 fallback: fallbackError.message
             });
