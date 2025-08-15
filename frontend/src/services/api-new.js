@@ -1,7 +1,12 @@
 // Servicios API para el sistema de torneo BJJ (simplificado sin autenticación)
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 
-    (import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : 'http://127.0.0.1:8000');
+    (() => {
+        if (typeof window !== 'undefined' && window.location.hostname === 'the-badgers.com') {
+            return 'https://the-badgers.com';
+        }
+        return import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : 'http://127.0.0.1:8000';
+    })();
 
 const TORNEO_API_URL = `${API_BASE_URL}/api/torneo`;
 

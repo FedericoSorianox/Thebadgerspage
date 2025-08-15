@@ -15,6 +15,10 @@ class CustomCorsMiddleware(MiddlewareMixin):
             'https://www.thebadgerspage.onrender.com',
             'http://localhost:5173',
             'http://localhost:5174',
+            'http://127.0.0.1:5173',
+            'http://127.0.0.1:5174',
+            'http://localhost:3000',
+            'http://127.0.0.1:3000',
         ]
         super().__init__(get_response)
 
@@ -39,7 +43,8 @@ class CustomCorsMiddleware(MiddlewareMixin):
         if origin in self.allowed_origins:
             response['Access-Control-Allow-Origin'] = origin
         else:
-            response['Access-Control-Allow-Origin'] = self.allowed_origins[0]
+            # Si no está en la lista, permitir todos los orígenes para desarrollo
+            response['Access-Control-Allow-Origin'] = '*'
             
         response['Access-Control-Allow-Credentials'] = 'true'
         response['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH'
@@ -53,6 +58,6 @@ class CustomCorsMiddleware(MiddlewareMixin):
         
         # Headers adicionales para debug
         response['X-Custom-CORS'] = 'enabled'
-        response['X-Allowed-Origin'] = origin if origin in self.allowed_origins else 'fallback'
+        response['X-Allowed-Origin'] = origin if origin in self.allowed_origins else 'wildcard'
         
         return response
