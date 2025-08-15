@@ -98,12 +98,27 @@ export default function TorneoDashboard() {
 
   return (
     <div className="bg-black/20 border border-cyan-400/30 rounded-lg p-4">
+      {/* DEBUG INFO */}
+      <div className="text-xs text-cyan-300 mb-2 border border-cyan-500 p-2 rounded">
+        <div>🔍 DEBUG: Torneos cargados: {torneos.length}</div>
+        <div>🎯 Torneo activo: {activeTorneo ? activeTorneo.nombre : 'ninguno'}</div>
+        <div>📊 Categorías: {categorias.length}</div>
+        {error && <div>❌ Error: {error}</div>}
+      </div>
+      
       {error && <div className="text-red-400 mb-3">{error}</div>}
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-xl font-semibold">Torneos</h2>
       </div>
-      <ul className="mb-4 list-disc pl-5">
-        {torneos.map(t => (
+      
+      {/* Mostrar mensaje si no hay torneos */}
+      {torneos.length === 0 ? (
+        <div className="text-yellow-300 mb-4 p-3 border border-yellow-500 rounded">
+          ⚠️ No se han cargado torneos aún...
+        </div>
+      ) : (
+        <ul className="mb-4 list-disc pl-5">
+          {torneos.map(t => (
           <li key={t.id} className="mb-1 flex items-center gap-3">
             <button
               className={`underline ${activeTorneo?.id===t.id? 'text-cyan-300':'text-white'}`}
@@ -143,7 +158,8 @@ export default function TorneoDashboard() {
             </div>
           </li>
         ))}
-      </ul>
+        </ul>
+      )}
 
       {activeTorneo && (
         <div>
