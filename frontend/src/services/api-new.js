@@ -50,37 +50,46 @@ export const torneoAPI = {
     // Obtener todos los torneos
     getAll: async () => {
         const url = `${API_BASE_URL}/api/torneo/torneos/`;
-        console.log(`[torneoAPI.getAll] URL: ${url}`);
-        console.log(`[torneoAPI.getAll] Headers:`, createApiConfig().headers);
+        console.log(`[torneoAPI.getAll] 🚀 INICIANDO - URL: ${url}`);
+        console.log(`[torneoAPI.getAll] 📋 Headers:`, createApiConfig().headers);
         
         try {
+            console.log(`[torneoAPI.getAll] 📡 Haciendo fetch...`);
             const response = await fetch(url, createApiConfig());
-            console.log(`[torneoAPI.getAll] Response status: ${response.status}`);
-            console.log(`[torneoAPI.getAll] Response headers:`, Object.fromEntries(response.headers.entries()));
+            console.log(`[torneoAPI.getAll] 📨 Response status: ${response.status}`);
+            console.log(`[torneoAPI.getAll] 📋 Response headers:`, Object.fromEntries(response.headers.entries()));
             
             if (!response.ok) {
                 const errorText = await response.text();
-                console.error(`[torneoAPI.getAll] Error response:`, errorText);
+                console.error(`[torneoAPI.getAll] ❌ Error response:`, errorText);
                 throw new Error(`HTTP ${response.status}: ${errorText}`);
             }
             
+            console.log(`[torneoAPI.getAll] 🔄 Parseando JSON...`);
             const data = await response.json();
-            console.log(`[torneoAPI.getAll] Success:`, data);
+            console.log(`[torneoAPI.getAll] 📦 Raw data received:`, data);
+            console.log(`[torneoAPI.getAll] 🔍 Data type:`, typeof data);
+            console.log(`[torneoAPI.getAll] 📊 Data keys:`, Object.keys(data || {}));
             
             // La API devuelve {count, results}, pero necesitamos solo los resultados
             if (data && data.results) {
-                console.log(`[torneoAPI.getAll] Devolviendo results:`, data.results);
+                console.log(`[torneoAPI.getAll] ✅ Found results array:`, data.results);
+                console.log(`[torneoAPI.getAll] 📏 Results length:`, data.results.length);
                 return data.results;
             } else if (Array.isArray(data)) {
-                console.log(`[torneoAPI.getAll] Data ya es array:`, data);
+                console.log(`[torneoAPI.getAll] ✅ Data is already array:`, data);
                 return data;
             } else {
-                console.log(`[torneoAPI.getAll] Formato inesperado, devolviendo array vacío`);
+                console.log(`[torneoAPI.getAll] ⚠️ Unexpected format, returning empty array`);
+                console.log(`[torneoAPI.getAll] 🔍 Actual data structure:`, JSON.stringify(data, null, 2));
                 return [];
             }
             
         } catch (error) {
-            console.error(`[torneoAPI.getAll] Fetch error:`, error);
+            console.error(`[torneoAPI.getAll] 💥 FETCH ERROR:`, error);
+            console.error(`[torneoAPI.getAll] 📍 Error name:`, error.name);
+            console.error(`[torneoAPI.getAll] 📝 Error message:`, error.message);
+            console.error(`[torneoAPI.getAll] 📚 Error stack:`, error.stack);
             throw error;
         }
     },

@@ -13,27 +13,33 @@ export default function TorneoDashboard() {
   }, []);
 
   async function loadTorneos() {
-    console.log('[TorneoDashboard] loadTorneos iniciado');
+    console.log('[TorneoDashboard] 🚀 loadTorneos iniciado');
     try {
       setError(null);
-      console.log('[TorneoDashboard] Llamando torneoAPI.getAll()...');
+      console.log('[TorneoDashboard] 📡 Llamando torneoAPI.getAll()...');
       const data = await torneoAPI.getAll();
-      console.log('[TorneoDashboard] Datos recibidos:', data);
+      console.log('[TorneoDashboard] 📦 Datos recibidos:', data);
+      console.log('[TorneoDashboard] 🔍 Tipo de datos:', typeof data);
+      console.log('[TorneoDashboard] 📏 Longitud:', data?.length);
       
-      setTorneos(data);
-      if (data.length) {
-        console.log('[TorneoDashboard] Seleccionando primer torneo:', data[0]);
-        setActiveTorneo(data[0]);
-        const cats = await categoriaAPI.getAll(data[0].id);
-        console.log('[TorneoDashboard] Categorías cargadas:', cats);
+      // Forzar que sea un array válido
+      const torneosArray = Array.isArray(data) ? data : [];
+      console.log('[TorneoDashboard] 📋 Array final:', torneosArray);
+      
+      setTorneos(torneosArray);
+      if (torneosArray.length) {
+        console.log('[TorneoDashboard] 🎯 Seleccionando primer torneo:', torneosArray[0]);
+        setActiveTorneo(torneosArray[0]);
+        const cats = await categoriaAPI.getAll(torneosArray[0].id);
+        console.log('[TorneoDashboard] 📊 Categorías cargadas:', cats);
         setCategorias(cats);
       } else {
-        console.log('[TorneoDashboard] No hay torneos disponibles');
+        console.log('[TorneoDashboard] ⚠️ No hay torneos disponibles');
         setActiveTorneo(null);
         setCategorias([]);
       }
     } catch (e) {
-      console.error('[TorneoDashboard] Error al cargar torneos:', e);
+      console.error('[TorneoDashboard] 💥 ERROR al cargar torneos:', e);
       setError(e.message);
     }
   }
