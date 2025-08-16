@@ -69,28 +69,40 @@ export default function TorneoDashboard() {
 
   const loadCategorias = useCallback(async (torneoId) => {
     try {
-      const cats = await categoriaAPI.getAll(torneoId);
-      setCategorias(cats);
+      setError(null);
+      const data = await categoriaAPI.getAll(torneoId);
+      const categoriasArray = Array.isArray(data) ? data : [];
+      setCategorias(categoriasArray);
     } catch (e) {
+      console.error('[TorneoDashboard] Error al cargar categorías:', e);
       setError(e.message);
+      setCategorias([]); // Asegurar que siempre sea un array
     }
   }, []);
 
   const loadParticipantes = useCallback(async (categoriaId) => {
     try {
-      const parts = await participanteAPI.getAll(categoriaId);
-      setParticipantes(parts);
+      setError(null);
+      const data = await participanteAPI.getAll(categoriaId);
+      const participantesArray = Array.isArray(data) ? data : [];
+      setParticipantes(participantesArray);
     } catch (e) {
+      console.error('[TorneoDashboard] Error al cargar participantes:', e);
       setError(e.message);
+      setParticipantes([]); // Asegurar que siempre sea un array
     }
   }, []);
 
   const loadLlaves = useCallback(async (categoriaId) => {
     try {
-      const llaves = await llaveAPI.getAll(categoriaId);
-      setLlaves(llaves);
+      setError(null);
+      const data = await llaveAPI.getAll(categoriaId);
+      const llavesArray = Array.isArray(data) ? data : [];
+      setLlaves(llavesArray);
     } catch (e) {
+      console.error('[TorneoDashboard] Error al cargar llaves:', e);
       setError(e.message);
+      setLlaves([]); // Asegurar que siempre sea un array
     }
   }, []);
 
@@ -646,7 +658,7 @@ export default function TorneoDashboard() {
           disabled={!!activeCategoria}
         >
           <option value="">Seleccionar categoría</option>
-          {categorias.map(c => (
+          {Array.isArray(categorias) && categorias.map(c => (
             <option key={c.id} value={c.id}>
               {c.nombre} - {c.cinturon} {c.peso_maximo && `(hasta ${c.peso_maximo}kg)`}
             </option>
@@ -700,7 +712,7 @@ export default function TorneoDashboard() {
                   <p>No hay torneos creados aún</p>
                 </div>
               ) : (
-                torneos.map(t => (
+                Array.isArray(torneos) && torneos.map(t => (
                   <div key={t.id} className={`torneo-item ${activeTorneo?.id === t.id ? 'active' : ''}`}>
                     <div
                       className={`torneo-name ${activeTorneo?.id === t.id ? 'active' : ''}`}
@@ -781,7 +793,7 @@ export default function TorneoDashboard() {
                     <p>No hay categorías creadas para este torneo</p>
                   </div>
                 ) : (
-                  categorias.map(c => (
+                  Array.isArray(categorias) && categorias.map(c => (
                     <div key={c.id} className="categoria-card">
                       <div className="categoria-info">
                         <div 
@@ -847,7 +859,7 @@ export default function TorneoDashboard() {
                     <p>No hay participantes registrados en esta categoría</p>
                   </div>
                 ) : (
-                  participantes.map(p => (
+                  Array.isArray(participantes) && participantes.map(p => (
                     <div key={p.id} className="participant-card">
                       <div className="participant-info">
                         <div>{p.nombre} {p.apellido}</div>
@@ -899,7 +911,7 @@ export default function TorneoDashboard() {
                     <p>No hay llaves generadas para esta categoría</p>
                   </div>
                 ) : (
-                  llaves.map(llave => (
+                  Array.isArray(llaves) && llaves.map(llave => (
                     <div key={llave.id} className="bracket-container">
                       <div className="bracket-header">
                         <h5>Llave - {llave.categoria_nombre}</h5>
@@ -908,13 +920,13 @@ export default function TorneoDashboard() {
                         </div>
                       </div>
                       
-                      {llave.estructura?.rondas && llave.estructura.rondas.length > 0 && (
+                      {llave.estructura?.rondas && Array.isArray(llave.estructura.rondas) && llave.estructura.rondas.length > 0 && (
                         <div className="bracket-rounds">
                           {llave.estructura.rondas.map((ronda, roundIndex) => (
                             <div key={roundIndex} className="round-container">
                               <h6>Ronda {roundIndex + 1}</h6>
                               <div className="fights-container">
-                                {ronda.map((lucha, fightIndex) => (
+                                {Array.isArray(ronda) && ronda.map((lucha, fightIndex) => (
                                   <div key={fightIndex} className="fight-card">
                                     <div className="fight-header">
                                       <span className="fight-round">{lucha.ronda}</span>
