@@ -151,8 +151,32 @@ export const categoriaAPI = {
         const url = torneoId 
             ? `${TORNEO_API_URL}/categorias/?torneo=${torneoId}`
             : `${TORNEO_API_URL}/categorias/`;
+        console.log(`[categoriaAPI.getAll] 📡 URL: ${url}`);
         const response = await fetch(url, createApiConfig());
-        return handleResponse(response);
+        
+        if (!response.ok) {
+            const error = await response.text();
+            throw new Error(`HTTP ${response.status}: ${error}`);
+        }
+        
+        const data = await response.json();
+        console.log(`[categoriaAPI.getAll] 📦 Raw data:`, data);
+        
+        // Manejar formato {results: [...]}
+        if (data && data.results && Array.isArray(data.results)) {
+            console.log(`[categoriaAPI.getAll] ✅ Returning results array:`, data.results);
+            return data.results;
+        }
+        
+        // Si ya es un array, devolverlo tal como está
+        if (Array.isArray(data)) {
+            console.log(`[categoriaAPI.getAll] ✅ Data is already array:`, data);
+            return data;
+        }
+        
+        // Fallback: devolver array vacío
+        console.log(`[categoriaAPI.getAll] ⚠️ Unexpected format, returning empty array`);
+        return [];
     },
 
     // Crear nueva categoría
