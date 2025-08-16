@@ -1,0 +1,396 @@
+/* Estilos para la página de torneo BJJ */
+
+.torneo-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: 'Arial', sans-serif;
+    background-color: #f5f5f5;
+    min-height: calc(100vh - 100px);
+}
+
+.torneo-header {
+    background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+    color: white;
+    padding: 30px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.torneo-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 0;
+    text-align: center;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+}
+
+.torneo-info {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-left: 5px solid #3498db;
+}
+
+.torneo-info h2 {
+    color: #2c3e50;
+    font-size: 1.8rem;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.torneo-info h2:before {
+    content: "🏆";
+    margin-right: 10px;
+    font-size: 1.5em;
+}
+
+.torneo-status {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    margin-left: 15px;
+}
+
+.status-activo {
+    background-color: #27ae60;
+    color: white;
+}
+
+.status-creado {
+    background-color: #f39c12;
+    color: white;
+}
+
+.status-finalizado {
+    background-color: #7f8c8d;
+    color: white;
+}
+
+.categorias-section {
+    background: white;
+    padding: 25px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.categorias-title {
+    color: #2c3e50;
+    font-size: 1.8rem;
+    margin-bottom: 25px;
+    text-align: center;
+    position: relative;
+}
+
+.categorias-title:after {
+    content: "";
+    display: block;
+    width: 60px;
+    height: 3px;
+    background: #3498db;
+    margin: 10px auto;
+    border-radius: 2px;
+}
+
+.categoria-card {
+    background: linear-gradient(135deg, #ecf0f1 0%, #bdc3c7 100%);
+    border: 2px solid #bdc3c7;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.categoria-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    border-color: #3498db;
+}
+
+.categoria-card:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 5px;
+    height: 100%;
+    background: linear-gradient(to bottom, #3498db, #2c3e50);
+}
+
+.categoria-info {
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 15px;
+}
+
+.categoria-details {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #2c3e50;
+    padding-left: 15px;
+}
+
+.categoria-belt {
+    font-weight: bold;
+    text-transform: capitalize;
+}
+
+.categoria-weight {
+    color: #7f8c8d;
+    font-size: 0.95rem;
+}
+
+.categoria-status {
+    padding: 6px 12px;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.inscripciones-abiertas {
+    background-color: #2ecc71;
+    color: white;
+}
+
+.inscripciones-cerradas {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.participantes-count {
+    background: #3498db;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.participantes-count:before {
+    content: "👥";
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 50px;
+    font-size: 1.2rem;
+    color: #7f8c8d;
+}
+
+.error-message {
+    background-color: #e74c3c;
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    text-align: center;
+    margin: 20px 0;
+    font-weight: bold;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #7f8c8d;
+}
+
+.empty-state h3 {
+    font-size: 1.5rem;
+    margin-bottom: 10px;
+}
+
+.empty-state p {
+    font-size: 1.1rem;
+    opacity: 0.8;
+}
+
+.debug-info {
+    background: rgba(0, 0, 0, 0.8);
+    color: #00ffff;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #00ffff;
+    font-family: 'Monaco', 'Menlo', monospace;
+    font-size: 0.8rem;
+}
+
+.torneo-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.btn-action {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 5px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-action:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-activar {
+    background-color: #27ae60;
+    color: white;
+}
+
+.btn-activar:hover:not(:disabled) {
+    background-color: #2ecc71;
+}
+
+.btn-finalizar {
+    background-color: #f39c12;
+    color: white;
+}
+
+.btn-finalizar:hover:not(:disabled) {
+    background-color: #e67e22;
+}
+
+.btn-eliminar {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.btn-eliminar:hover:not(:disabled) {
+    background-color: #c0392b;
+}
+
+.btn-cerrar {
+    background-color: #f39c12;
+    color: white;
+}
+
+.btn-cerrar:hover:not(:disabled) {
+    background-color: #e67e22;
+}
+
+.torneo-list {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.torneo-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #ecf0f1;
+    transition: background-color 0.3s ease;
+}
+
+.torneo-item:last-child {
+    border-bottom: none;
+}
+
+.torneo-item:hover {
+    background-color: #f8f9fa;
+}
+
+.torneo-item.active {
+    background-color: #e3f2fd;
+    border-left: 4px solid #3498db;
+}
+
+.torneo-name {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #2c3e50;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.torneo-name:hover {
+    color: #3498db;
+}
+
+.torneo-name.active {
+    color: #3498db;
+    font-weight: bold;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .torneo-container {
+        padding: 15px;
+    }
+    
+    .torneo-title {
+        font-size: 2rem;
+    }
+    
+    .categoria-info {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+    
+    .participantes-count {
+        justify-self: start;
+    }
+    
+    .torneo-header {
+        padding: 20px;
+    }
+    
+    .torneo-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .torneo-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .torneo-title {
+        font-size: 1.5rem;
+    }
+    
+    .categoria-card {
+        padding: 15px;
+    }
+    
+    .categoria-details {
+        font-size: 1rem;
+    }
+}
+
+/* Ocultar el link de Torneo BJJ en la barra de navegación */
+.navbar a[href="/torneo"],
+.nav-link[href="/torneo"],
+a[href*="torneo"]:contains("Torneo BJJ") {
+    display: none !important;
+}
+
+/* Alternativa más específica */
+.navbar-nav li:has(a[href="/torneo"]) {
+    display: none !important;
+}

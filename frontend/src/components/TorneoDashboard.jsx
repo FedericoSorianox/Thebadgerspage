@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import API, { torneoAPI, categoriaAPI } from '../services/api-new.js';
+import './TorneoDashboard.css';
 
 export default function TorneoDashboard() {
   const [torneos, setTorneos] = useState([]);
@@ -103,101 +104,117 @@ export default function TorneoDashboard() {
   }
 
   return (
-    <div className="bg-black/20 border border-cyan-400/30 rounded-lg p-4">
+    <div className="torneo-container">
+      {/* Header del torneo */}
+      <div className="torneo-header">
+        <h1 className="torneo-title">Sistema de Torneo BJJ</h1>
+      </div>
+
       {/* DEBUG INFO */}
-      <div className="text-xs text-cyan-300 mb-2 border border-cyan-500 p-2 rounded">
+      <div className="debug-info">
         <div>🔍 DEBUG: Torneos cargados: {torneos.length}</div>
         <div>🎯 Torneo activo: {activeTorneo ? activeTorneo.nombre : 'ninguno'}</div>
         <div>📊 Categorías: {categorias.length}</div>
         {error && <div>❌ Error: {error}</div>}
       </div>
       
-      {error && <div className="text-red-400 mb-3">{error}</div>}
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xl font-semibold">Torneos</h2>
-      </div>
+      {error && <div className="error-message">{error}</div>}
       
-      {/* Mostrar mensaje si no hay torneos */}
+      {/* Lista de Torneos */}
       {torneos.length === 0 ? (
-        <div className="text-yellow-300 mb-4 p-3 border border-yellow-500 rounded">
-          ⚠️ No se han cargado torneos aún...
+        <div className="empty-state">
+          <h3>No hay torneos disponibles</h3>
+          <p>⚠️ No se han cargado torneos aún...</p>
         </div>
       ) : (
-        <ul className="mb-4 list-disc pl-5">
+        <div className="torneo-list">
+          <h2 style={{marginBottom: '20px', color: '#2c3e50'}}>Torneos Disponibles</h2>
           {torneos.map(t => (
-          <li key={t.id} className="mb-1 flex items-center gap-3">
-            <button
-              className={`underline ${activeTorneo?.id===t.id? 'text-cyan-300':'text-white'}`}
-              onClick={() => handleSelectTorneo(t)}
-            >
-              {t.nombre} {t.estado ? `(${t.estado})` : ''}
-            </button>
-            <div className="flex items-center gap-2">
-              {t.estado !== 'activo' && (
-                <button
-                  disabled={isWorking}
-                  onClick={async ()=>{ try{ setIsWorking(true); await torneoAPI.activar(t.id); await loadTorneos(); } catch(e){ setError(e.message);} finally{ setIsWorking(false);} }}
-                  className="text-green-300 hover:text-green-400 text-sm disabled:opacity-50"
-                  title="Activar torneo"
-                >
-                  Activar
-                </button>
-              )}
-              {t.estado !== 'finalizado' && (
-                <button
-                  disabled={isWorking}
-                  onClick={async ()=>{ if(!confirm('¿Finalizar este torneo?')) return; try{ setIsWorking(true); await torneoAPI.finalizar(t.id); await loadTorneos(); } catch(e){ setError(e.message);} finally{ setIsWorking(false);} }}
-                  className="text-yellow-300 hover:text-yellow-400 text-sm disabled:opacity-50"
-                  title="Finalizar torneo"
-                >
-                  Finalizar
-                </button>
-              )}
-              <button
-                disabled={isWorking}
-                onClick={() => handleDeleteTorneo(t.id)}
-                className="text-red-300 hover:text-red-400 text-sm disabled:opacity-50"
-                title="Eliminar torneo"
+            <div key={t.id} className={`torneo-item ${activeTorneo?.id === t.id ? 'active' : ''}`}>
+              <div
+                className={`torneo-name ${activeTorneo?.id === t.id ? 'active' : ''}`}
+                onClick={() => handleSelectTorneo(t)}
               >
-                Eliminar
-              </button>
+                {t.nombre} {t.estado ? `(${t.estado})` : ''}
+              </div>
+              <div className="torneo-actions">
+                {t.estado !== 'activo' && (
+                  <button
+                    disabled={isWorking}
+                    onClick={async ()=>{ try{ setIsWorking(true); await torneoAPI.activar(t.id); await loadTorneos(); } catch(e){ setError(e.message);} finally{ setIsWorking(false);} }}
+                    className="btn-action btn-activar"
+                    title="Activar torneo"
+                  >
+                    Activar
+                  </button>
+                )}
+                {t.estado !== 'finalizado' && (
+                  <button
+                    disabled={isWorking}
+                    onClick={async ()=>{ if(!confirm('¿Finalizar este torneo?')) return; try{ setIsWorking(true); await torneoAPI.finalizar(t.id); await loadTorneos(); } catch(e){ setError(e.message);} finally{ setIsWorking(false);} }}
+                    className="btn-action btn-finalizar"
+                    title="Finalizar torneo"
+                  >
+                    Finalizar
+                  </button>
+                )}
+                <button
+                  disabled={isWorking}
+                  onClick={() => handleDeleteTorneo(t.id)}
+                  className="btn-action btn-eliminar"
+                  title="Eliminar torneo"
+                >
+                  Eliminar
+                </button>
+              </div>
             </div>
-          </li>
-        ))}
-        </ul>
+          ))}
+        </div>
       )}
 
       {activeTorneo && (
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Categorías de "{activeTorneo.nombre}"</h3>
-          <ul className="list-disc pl-5">
-            {categorias.map(c => (
-              <li key={c.id} className="mb-1 flex items-center gap-3">
-                <span>
-                  {c.nombre}
-                  {` — ${c.grupo_edad} — ${c.genero} — ${c.cinturon} — ${c.peso_minimo}-${c.peso_maximo} kg`}
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    disabled={isWorking}
-                    onClick={() => handleDeleteCategoria(c.id)}
-                    className="text-red-300 hover:text-red-400 text-xs disabled:opacity-50"
-                  >
-                    Eliminar
-                  </button>
-                  {c.estado === 'abierta' && (
+        <div className="categorias-section">
+          <h2 className="categorias-title">Categorías de "{activeTorneo.nombre}"</h2>
+          {categorias.length === 0 ? (
+            <div className="empty-state">
+              <h3>No hay categorías disponibles</h3>
+              <p>Este torneo aún no tiene categorías registradas.</p>
+            </div>
+          ) : (
+            categorias.map(c => (
+              <div key={c.id} className="categoria-card">
+                <div className="categoria-info">
+                  <div className="categoria-details">
+                    <span className="categoria-belt">{c.nombre}</span>
+                    <span className="categoria-weight">
+                      {` — ${c.grupo_edad} — ${c.genero} — ${c.cinturon} — ${c.peso_minimo}-${c.peso_maximo} kg`}
+                    </span>
+                  </div>
+                  <div className={`categoria-status ${c.estado === 'abierta' ? 'inscripciones-abiertas' : 'inscripciones-cerradas'}`}>
+                    {c.estado === 'abierta' ? 'Abierta' : 'Cerrada'}
+                  </div>
+                  <div className="torneo-actions">
                     <button
                       disabled={isWorking}
-                      onClick={() => handleCerrarInscripciones(c.id)}
-                      className="text-yellow-300 hover:text-yellow-400 text-xs disabled:opacity-50"
+                      onClick={() => handleDeleteCategoria(c.id)}
+                      className="btn-action btn-eliminar"
                     >
-                      Cerrar inscripciones
+                      Eliminar
                     </button>
-                  )}
+                    {c.estado === 'abierta' && (
+                      <button
+                        disabled={isWorking}
+                        onClick={() => handleCerrarInscripciones(c.id)}
+                        className="btn-action btn-cerrar"
+                      >
+                        Cerrar inscripciones
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </li>
-            ))}
-          </ul>
+              </div>
+            ))
+          )}
         </div>
       )}
     </div>
