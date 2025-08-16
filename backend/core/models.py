@@ -52,15 +52,15 @@ class Torneo(models.Model):
 class Categoria(models.Model):
     torneo = models.ForeignKey(Torneo, on_delete=models.CASCADE, related_name='categorias')
     nombre = models.CharField(max_length=200)
-    peso_minimo = models.FloatField(help_text="Peso mínimo en kg")
-    peso_maximo = models.FloatField(help_text="Peso máximo en kg")
+    peso_minimo = models.FloatField(help_text="Peso mínimo en kg", null=True, blank=True)
+    peso_maximo = models.FloatField(help_text="Peso máximo en kg", null=True, blank=True)
     cinturon = models.CharField(max_length=20, choices=[
         ('blanca', 'Blanca'),
         ('azul', 'Azul'),
         ('purpura', 'Púrpura'),
         ('marron', 'Marrón'),
         ('negra', 'Negra')
-    ])
+    ], blank=True)
     grupo_edad = models.CharField(max_length=30, choices=[
         ('juvenil', 'Juvenil (16-17)'),
         ('adulto', 'Adulto (18-29)'),
@@ -69,11 +69,11 @@ class Categoria(models.Model):
         ('master3', 'Master 3 (41-45)'),
         ('master4', 'Master 4 (46-50)'),
         ('master5', 'Master 5 (51+)')
-    ])
+    ], blank=True)
     genero = models.CharField(max_length=10, choices=[
         ('masculino', 'Masculino'),
         ('femenino', 'Femenino')
-    ])
+    ], blank=True)
     estado = models.CharField(max_length=20, choices=[
         ('abierta', 'Abierta'),
         ('cerrada', 'Cerrada'),

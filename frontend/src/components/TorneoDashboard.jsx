@@ -1,219 +1,771 @@
-import React, { useEffect, useState } from 'react';
-import API, { torneoAPI, categoriaAPI } from '../services/api-new.js';
+import React, { useEffect, useState, useCallback } from 'react';
+import { torneoAPI, categoriaAPI, participanteAPI, llaveAPI } from '../services/api-new.js';
 import './TorneoDashboard.css';
 
 export default function TorneoDashboard() {
+  // Estados principales
   const [torneos, setTorneos] = useState([]);
   const [categorias, setCategorias] = useState([]);
+  const [participantes, setParticipantes] = useState([]);
+  const [llaves, setLlaves] = useState([]);
+  
   const [activeTorneo, setActiveTorneo] = useState(null);
+  const [activeCategoria, setActiveCategoria] = useState(null);
+  
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [isWorking, setIsWorking] = useState(false);
+  
+  // Estados para controlar secciones expandidas
+  const [expandedSections, setExpandedSections] = useState({
+    torneos: true,
+    categorias: false,
+    participantes: false,
+    llaves: false
+  });
+  
+  // Estados para formularios
+  const [torneoForm, setTorneoForm] = useState({
+    nombre: '',
+    descripcion: '',
+    fecha_inicio: '',
+    fecha_fin: '',
+    ubicacion: ''
+  });
+  
+  const [categoriaForm, setCategoriaForm] = useState({
+    nombre: '',
+    cinturon: '',
+    peso_maximo: ''
+  });
+  
+  const [participanteForm, setParticipanteForm] = useState({
+    nombre: '',
+    apellido: '',
+    peso: '',
+    edad: '',
+    cinturon: 'blanca',
+    academia: '',
+    categoria: ''
+  });
 
-  useEffect(() => {
-    loadTorneos();
-  }, []);
-
-  async function loadTorneos() {
-    console.log('[TorneoDashboard] 🚀 loadTorneos iniciado');
+  // Funciones de carga con useCallback para evitar warnings
+  const loadTorneos = useCallback(async () => {
     try {
       setError(null);
-      console.log('[TorneoDashboard] 📡 Llamando torneoAPI.getAll()...');
       const data = await torneoAPI.getAll();
-      console.log('[TorneoDashboard] 📦 Datos recibidos:', data);
-      console.log('[TorneoDashboard] 🔍 Tipo de datos:', typeof data);
-      console.log('[TorneoDashboard] 📏 Longitud:', data?.length);
-      
-      // Forzar que sea un array válido
       const torneosArray = Array.isArray(data) ? data : [];
-      console.log('[TorneoDashboard] 📋 Array final:', torneosArray);
-      
       setTorneos(torneosArray);
-      if (torneosArray.length) {
-        console.log('[TorneoDashboard] 🎯 Seleccionando primer torneo:', torneosArray[0]);
+      
+      if (torneosArray.length && !activeTorneo) {
         setActiveTorneo(torneosArray[0]);
-        const cats = await categoriaAPI.getAll(torneosArray[0].id);
-        console.log('[TorneoDashboard] 📊 Categorías cargadas:', cats);
-        setCategorias(cats);
-      } else {
-        console.log('[TorneoDashboard] ⚠️ No hay torneos disponibles');
-        setActiveTorneo(null);
-        setCategorias([]);
       }
     } catch (e) {
-      console.error('[TorneoDashboard] 💥 ERROR al cargar torneos:', e);
+      console.error('[TorneoDashboard] Error al cargar torneos:', e);
       setError(e.message);
     }
-  }
+  }, [activeTorneo]);
 
-  async function handleSelectTorneo(t) {
-    setActiveTorneo(t);
+  const loadCategorias = useCallback(async (torneoId) => {
     try {
-      setError(null);
-      const cats = await categoriaAPI.getAll(t.id);
+      const cats = await categoriaAPI.getAll(torneoId);
       setCategorias(cats);
     } catch (e) {
       setError(e.message);
     }
-  }
+  }, []);
 
-  async function handleDeleteTorneo(id) {
-    if (!confirm('¿Seguro que deseas eliminar este torneo? Esta acción no se puede deshacer.')) return;
+  const loadParticipantes = useCallback(async (categoriaId) => {
+    try {
+      const parts = await participanteAPI.getAll(categoriaId);
+      setParticipantes(parts);
+    } catch (e) {
+      setError(e.message);
+    }
+  }, []);
+
+  const loadLlaves = useCallback(async (categoriaId) => {
+    try {
+      const llaves = await llaveAPI.getAll(categoriaId);
+      setLlaves(llaves);
+    } catch (e) {
+      setError(e.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadTorneos();
+  }, [loadTorneos]);
+
+  useEffect(() => {
+    if (activeTorneo) {
+      loadCategorias(activeTorneo.id);
+    }
+  }, [activeTorneo, loadCategorias]);
+
+  // Handlers de selección
+  const handleSelectTorneo = async (t) => {
+    setActiveTorneo(t);
+    setActiveCategoria(null);
+    clearMessages();
+  };
+
+  const handleSelectCategoria = async (categoria) => {
+    setActiveCategoria(categoria);
+    setParticipanteForm(prev => ({ ...prev, categoria: categoria.id }));
+    await loadParticipantes(categoria.id);
+    await loadLlaves(categoria.id);
+    clearMessages();
+  };
+
+  // Funciones de creación
+  const handleCreateTorneo = async (e) => {
+    e.preventDefault();
+    if (!torneoForm.nombre.trim()) {
+      setError('El nombre del torneo es obligatorio');
+      return;
+    }
+    
     try {
       setIsWorking(true);
-      const ok = await torneoAPI.delete(id);
-      if (!ok) throw new Error('No se pudo eliminar el torneo');
+      setError(null);
+      await torneoAPI.create(torneoForm);
+      setSuccess('¡Torneo creado exitosamente!');
+      setTorneoForm({
+        nombre: '',
+        descripcion: '',
+        fecha_inicio: '',
+        fecha_fin: '',
+        ubicacion: ''
+      });
       await loadTorneos();
     } catch (e) {
       setError(e.message);
     } finally {
       setIsWorking(false);
     }
-  }
+  };
 
-  async function handleDeleteCategoria(id) {
+  const handleCreateCategoria = async (e) => {
+    e.preventDefault();
+    if (!categoriaForm.nombre.trim()) {
+      setError('El nombre de la categoría es obligatorio');
+      return;
+    }
+    
+    try {
+      setIsWorking(true);
+      setError(null);
+      // Crear objeto con solo los campos necesarios
+      const categoriaData = {
+        nombre: categoriaForm.nombre.trim(),
+        torneo: activeTorneo.id
+      };
+      
+      // Agregar campos opcionales solo si tienen valor
+      if (categoriaForm.cinturon && categoriaForm.cinturon.trim()) {
+        categoriaData.cinturon = categoriaForm.cinturon;
+      }
+      if (categoriaForm.peso_maximo && !isNaN(parseFloat(categoriaForm.peso_maximo))) {
+        categoriaData.peso_maximo = parseFloat(categoriaForm.peso_maximo);
+      }
+      
+      await categoriaAPI.create(categoriaData);
+      setSuccess('¡Categoría creada exitosamente!');
+      setCategoriaForm({
+        nombre: '',
+        cinturon: '',
+        peso_maximo: ''
+      });
+      if (activeTorneo) await loadCategorias(activeTorneo.id);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  const handleCreateParticipante = async (e) => {
+    e.preventDefault();
+    if (!participanteForm.nombre.trim() || !participanteForm.apellido.trim() || !participanteForm.categoria) {
+      setError('Nombre, apellido y categoría son obligatorios');
+      return;
+    }
+    
+    try {
+      setIsWorking(true);
+      setError(null);
+      await participanteAPI.create(participanteForm);
+      setSuccess('¡Participante registrado exitosamente!');
+      setParticipanteForm({
+        nombre: '',
+        apellido: '',
+        peso: '',
+        edad: '',
+        cinturon: 'blanco',
+        academia: '',
+        categoria: activeCategoria?.id || ''
+      });
+      if (activeCategoria) await loadParticipantes(activeCategoria.id);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  // Funciones de eliminación
+  const handleDeleteTorneo = async (id) => {
+    if (!confirm('¿Seguro que deseas eliminar este torneo? Esta acción no se puede deshacer.')) return;
+    try {
+      setIsWorking(true);
+      const ok = await torneoAPI.delete(id);
+      if (!ok) throw new Error('No se pudo eliminar el torneo');
+      setSuccess('Torneo eliminado exitosamente');
+      await loadTorneos();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  const handleDeleteCategoria = async (id) => {
     if (!confirm('¿Eliminar esta categoría?')) return;
     try {
       setIsWorking(true);
       const ok = await categoriaAPI.delete(id);
       if (!ok) throw new Error('No se pudo eliminar la categoría');
-      if (activeTorneo) {
-        const cats = await categoriaAPI.getAll(activeTorneo.id);
-        setCategorias(cats);
-      }
+      setSuccess('Categoría eliminada exitosamente');
+      if (activeTorneo) await loadCategorias(activeTorneo.id);
     } catch (e) {
       setError(e.message);
     } finally {
       setIsWorking(false);
     }
-  }
+  };
 
-  async function handleCerrarInscripciones(id) {
+  const handleDeleteParticipante = async (id) => {
+    if (!confirm('¿Eliminar este participante?')) return;
+    try {
+      setIsWorking(true);
+      const ok = await participanteAPI.delete(id);
+      if (!ok) throw new Error('No se pudo eliminar el participante');
+      setSuccess('Participante eliminado exitosamente');
+      if (activeCategoria) await loadParticipantes(activeCategoria.id);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  // Otras funciones
+  const handleCerrarInscripciones = async (id) => {
     if (!confirm('¿Cerrar inscripciones de esta categoría?')) return;
     try {
       setIsWorking(true);
       await categoriaAPI.cerrarInscripciones(id);
-      if (activeTorneo) {
-        const cats = await categoriaAPI.getAll(activeTorneo.id);
-        setCategorias(cats);
-      }
+      setSuccess('Inscripciones cerradas exitosamente');
+      if (activeTorneo) await loadCategorias(activeTorneo.id);
     } catch (e) {
       setError(e.message);
     } finally {
       setIsWorking(false);
     }
-  }
+  };
 
+  const handleGenerarLlave = async (categoriaId) => {
+    if (!confirm('¿Generar llave automáticamente para esta categoría?')) return;
+    try {
+      setIsWorking(true);
+      await llaveAPI.generar(categoriaId);
+      setSuccess('Llave generada exitosamente');
+      await loadLlaves(categoriaId);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  const toggleSection = (section) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }));
+  };
+
+  const clearMessages = () => {
+    setError(null);
+    setSuccess(null);
+  };
+
+  // Componentes de renderizado
+  const renderMessages = () => (
+    <>
+      {error && (
+        <div className="error-message" onClick={clearMessages}>
+          ❌ {error} <small style={{float: 'right', cursor: 'pointer'}}>✕</small>
+        </div>
+      )}
+      {success && (
+        <div className="success-message" onClick={clearMessages}>
+          ✅ {success} <small style={{float: 'right', cursor: 'pointer'}}>✕</small>
+        </div>
+      )}
+    </>
+  );
+
+  const renderSectionHeader = (title, section, icon) => (
+    <div className="section-header" onClick={() => toggleSection(section)}>
+      <h3>{icon} {title}</h3>
+      <span className={`section-toggle ${expandedSections[section] ? 'open' : ''}`}>▼</span>
+    </div>
+  );
+
+  const renderTorneoForm = () => (
+    <form onSubmit={handleCreateTorneo} className="form-container">
+      <div className="form-group">
+        <label className="form-label">Nombre *</label>
+        <input
+          type="text"
+          className="form-input"
+          value={torneoForm.nombre}
+          onChange={(e) => setTorneoForm(prev => ({ ...prev, nombre: e.target.value }))}
+          placeholder="Torneo BJJ 2025"
+          required
+        />
+      </div>
+      
+      <div className="form-group">
+        <label className="form-label">Ubicación</label>
+        <input
+          type="text"
+          className="form-input"
+          value={torneoForm.ubicacion}
+          onChange={(e) => setTorneoForm(prev => ({ ...prev, ubicacion: e.target.value }))}
+          placeholder="Gimnasio The Badgers"
+        />
+      </div>
+      
+      <div className="form-group">
+        <label className="form-label">Fecha Inicio</label>
+        <input
+          type="date"
+          className="form-input"
+          value={torneoForm.fecha_inicio}
+          onChange={(e) => setTorneoForm(prev => ({ ...prev, fecha_inicio: e.target.value }))}
+        />
+      </div>
+      
+      <div className="form-group">
+        <label className="form-label">Fecha Fin</label>
+        <input
+          type="date"
+          className="form-input"
+          value={torneoForm.fecha_fin}
+          onChange={(e) => setTorneoForm(prev => ({ ...prev, fecha_fin: e.target.value }))}
+        />
+      </div>
+      
+      <div className="form-group full-width">
+        <label className="form-label">Descripción</label>
+        <textarea
+          className="form-input"
+          value={torneoForm.descripcion}
+          onChange={(e) => setTorneoForm(prev => ({ ...prev, descripcion: e.target.value }))}
+          placeholder="Descripción del torneo..."
+          rows="3"
+        />
+      </div>
+      
+      <div className="form-group">
+        <button type="submit" disabled={isWorking} className="btn-primary">
+          {isWorking ? '⏳ Creando...' : '✨ Crear Torneo'}
+        </button>
+      </div>
+    </form>
+  );
+
+  const renderCategoriaForm = () => (
+    <form onSubmit={handleCreateCategoria} className="form-container">
+      <div className="form-group">
+        <label className="form-label">Nombre *</label>
+        <input
+          type="text"
+          className="form-input"
+          value={categoriaForm.nombre}
+          onChange={(e) => setCategoriaForm(prev => ({ ...prev, nombre: e.target.value }))}
+          placeholder="Adulto Azul"
+          required
+        />
+      </div>
+      
+      <div className="form-group">
+        <label className="form-label">Cinturón</label>
+        <select
+          className="form-select"
+          value={categoriaForm.cinturon}
+          onChange={(e) => setCategoriaForm(prev => ({ ...prev, cinturon: e.target.value }))}
+        >
+          <option value="">Seleccionar cinturón (opcional)</option>
+          <option value="blanca">Blanca</option>
+          <option value="azul">Azul</option>
+          <option value="purpura">Púrpura</option>
+          <option value="marron">Marrón</option>
+          <option value="negra">Negra</option>
+        </select>
+      </div>
+      
+      <div className="form-group">
+        <label className="form-label">Peso Máximo (kg)</label>
+        <input
+          type="number"
+          className="form-input"
+          value={categoriaForm.peso_maximo}
+          onChange={(e) => setCategoriaForm(prev => ({ ...prev, peso_maximo: e.target.value }))}
+          placeholder="80"
+          min="0"
+          step="0.1"
+        />
+      </div>
+      
+      <div className="form-group">
+        <button type="submit" disabled={isWorking} className="btn-primary">
+          {isWorking ? '⏳ Creando...' : '🏷️ Crear Categoría'}
+        </button>
+      </div>
+    </form>
+  );
+
+  const renderParticipanteForm = () => (
+    <form onSubmit={handleCreateParticipante} className="form-container">
+      <div className="form-group">
+        <label className="form-label">Nombre *</label>
+        <input
+          type="text"
+          className="form-input"
+          value={participanteForm.nombre}
+          onChange={(e) => setParticipanteForm(prev => ({ ...prev, nombre: e.target.value }))}
+          placeholder="Juan"
+          required
+        />
+      </div>
+      
+      <div className="form-group">
+        <label className="form-label">Apellido *</label>
+        <input
+          type="text"
+          className="form-input"
+          value={participanteForm.apellido}
+          onChange={(e) => setParticipanteForm(prev => ({ ...prev, apellido: e.target.value }))}
+          placeholder="Pérez"
+          required
+        />
+      </div>
+      
+      <div className="form-group">
+        <label className="form-label">Peso (kg)</label>
+        <input
+          type="number"
+          className="form-input"
+          value={participanteForm.peso}
+          onChange={(e) => setParticipanteForm(prev => ({ ...prev, peso: e.target.value }))}
+          placeholder="75.5"
+          min="0"
+          step="0.1"
+        />
+      </div>
+      
+      <div className="form-group">
+        <label className="form-label">Edad</label>
+        <input
+          type="number"
+          className="form-input"
+          value={participanteForm.edad}
+          onChange={(e) => setParticipanteForm(prev => ({ ...prev, edad: e.target.value }))}
+          placeholder="25"
+          min="1"
+          max="100"
+        />
+      </div>
+      
+      <div className="form-group">
+        <label className="form-label">Cinturón</label>
+        <select
+          className="form-select"
+          value={participanteForm.cinturon}
+          onChange={(e) => setParticipanteForm(prev => ({ ...prev, cinturon: e.target.value }))}
+        >
+          <option value="blanca">Blanca</option>
+          <option value="azul">Azul</option>
+          <option value="purpura">Púrpura</option>
+          <option value="marron">Marrón</option>
+          <option value="negra">Negra</option>
+        </select>
+      </div>
+      
+      <div className="form-group">
+        <label className="form-label">Academia</label>
+        <input
+          type="text"
+          className="form-input"
+          value={participanteForm.academia}
+          onChange={(e) => setParticipanteForm(prev => ({ ...prev, academia: e.target.value }))}
+          placeholder="The Badgers"
+        />
+      </div>
+      
+      <div className="form-group">
+        <label className="form-label">Categoría</label>
+        <select
+          className="form-select"
+          value={participanteForm.categoria}
+          onChange={(e) => setParticipanteForm(prev => ({ ...prev, categoria: e.target.value }))}
+          disabled={!!activeCategoria}
+        >
+          <option value="">Seleccionar categoría</option>
+          {categorias.map(c => (
+            <option key={c.id} value={c.id}>
+              {c.nombre} - {c.cinturon} {c.peso_maximo && `(hasta ${c.peso_maximo}kg)`}
+            </option>
+          ))}
+        </select>
+      </div>
+      
+      <div className="form-group">
+        <button type="submit" disabled={isWorking} className="btn-primary">
+          {isWorking ? '⏳ Registrando...' : '👤 Registrar Participante'}
+        </button>
+      </div>
+    </form>
+  );
+
+  // Render principal
   return (
     <div className="torneo-container">
-      {/* Header del torneo */}
+      {/* Header */}
       <div className="torneo-header">
-        <h1 className="torneo-title">Sistema de Torneo BJJ</h1>
+        <h1 className="torneo-title">Sistema de Gestión de Torneos BJJ</h1>
       </div>
 
-      {/* DEBUG INFO */}
-      <div className="debug-info">
-        <div>🔍 DEBUG: Torneos cargados: {torneos.length}</div>
-        <div>🎯 Torneo activo: {activeTorneo ? activeTorneo.nombre : 'ninguno'}</div>
-        <div>📊 Categorías: {categorias.length}</div>
-        {error && <div>❌ Error: {error}</div>}
+      {/* Mensajes */}
+      {renderMessages()}
+
+      {/* Sección Torneos */}
+      <div className="management-section">
+        {renderSectionHeader('Gestión de Torneos', 'torneos', '🏆')}
+        {expandedSections.torneos && (
+          <div className="section-content">
+            {renderTorneoForm()}
+            
+            <div className="torneo-list">
+              <h4>Torneos Existentes ({torneos.length})</h4>
+              {torneos.length === 0 ? (
+                <div className="empty-state">
+                  <p>No hay torneos creados aún</p>
+                </div>
+              ) : (
+                torneos.map(t => (
+                  <div key={t.id} className={`torneo-item ${activeTorneo?.id === t.id ? 'active' : ''}`}>
+                    <div
+                      className={`torneo-name ${activeTorneo?.id === t.id ? 'active' : ''}`}
+                      onClick={() => handleSelectTorneo(t)}
+                    >
+                      {t.nombre} {t.estado ? `(${t.estado})` : ''}
+                    </div>
+                    <div className="torneo-actions">
+                      {t.estado !== 'activo' && (
+                        <button
+                          disabled={isWorking}
+                          onClick={async ()=>{ 
+                            try{ 
+                              setIsWorking(true); 
+                              await torneoAPI.activar(t.id); 
+                              await loadTorneos(); 
+                              setSuccess('Torneo activado exitosamente');
+                            } catch(e){ 
+                              setError(e.message);
+                            } finally{ 
+                              setIsWorking(false);
+                            } 
+                          }}
+                          className="btn-action btn-activar"
+                        >
+                          Activar
+                        </button>
+                      )}
+                      {t.estado !== 'finalizado' && (
+                        <button
+                          disabled={isWorking}
+                          onClick={async ()=>{ 
+                            if(!confirm('¿Finalizar este torneo?')) return; 
+                            try{ 
+                              setIsWorking(true); 
+                              await torneoAPI.finalizar(t.id); 
+                              await loadTorneos(); 
+                              setSuccess('Torneo finalizado exitosamente');
+                            } catch(e){ 
+                              setError(e.message);
+                            } finally{ 
+                              setIsWorking(false);
+                            } 
+                          }}
+                          className="btn-action btn-finalizar"
+                        >
+                          Finalizar
+                        </button>
+                      )}
+                      <button
+                        disabled={isWorking}
+                        onClick={() => handleDeleteTorneo(t.id)}
+                        className="btn-action btn-eliminar"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
       </div>
-      
-      {error && <div className="error-message">{error}</div>}
-      
-      {/* Lista de Torneos */}
-      {torneos.length === 0 ? (
-        <div className="empty-state">
-          <h3>No hay torneos disponibles</h3>
-          <p>⚠️ No se han cargado torneos aún...</p>
-        </div>
-      ) : (
-        <div className="torneo-list">
-          <h2 style={{marginBottom: '20px', color: '#2c3e50'}}>Torneos Disponibles</h2>
-          {torneos.map(t => (
-            <div key={t.id} className={`torneo-item ${activeTorneo?.id === t.id ? 'active' : ''}`}>
-              <div
-                className={`torneo-name ${activeTorneo?.id === t.id ? 'active' : ''}`}
-                onClick={() => handleSelectTorneo(t)}
-              >
-                {t.nombre} {t.estado ? `(${t.estado})` : ''}
-              </div>
-              <div className="torneo-actions">
-                {t.estado !== 'activo' && (
-                  <button
-                    disabled={isWorking}
-                    onClick={async ()=>{ try{ setIsWorking(true); await torneoAPI.activar(t.id); await loadTorneos(); } catch(e){ setError(e.message);} finally{ setIsWorking(false);} }}
-                    className="btn-action btn-activar"
-                    title="Activar torneo"
-                  >
-                    Activar
-                  </button>
+
+      {/* Sección Categorías */}
+      {activeTorneo && (
+        <div className="management-section">
+          {renderSectionHeader(`Categorías de "${activeTorneo.nombre}"`, 'categorias', '🏷️')}
+          {expandedSections.categorias && (
+            <div className="section-content">
+              {renderCategoriaForm()}
+              
+              <div className="categoria-list">
+                <h4>Categorías Existentes ({categorias.length})</h4>
+                {categorias.length === 0 ? (
+                  <div className="empty-state">
+                    <p>No hay categorías creadas para este torneo</p>
+                  </div>
+                ) : (
+                  categorias.map(c => (
+                    <div key={c.id} className="categoria-card">
+                      <div className="categoria-info">
+                        <div 
+                          className="categoria-details"
+                          onClick={() => handleSelectCategoria(c)}
+                          style={{cursor: 'pointer'}}
+                        >
+                          <span className="categoria-belt">{c.nombre}</span>
+                          <div className="categoria-weight">
+                            {c.cinturon} {c.peso_maximo && `— hasta ${c.peso_maximo} kg`}
+                          </div>
+                        </div>
+                        <div className={`categoria-status ${c.estado === 'abierta' ? 'inscripciones-abiertas' : 'inscripciones-cerradas'}`}>
+                          {c.estado === 'abierta' ? 'Abierta' : 'Cerrada'}
+                        </div>
+                        <div className="torneo-actions">
+                          <button
+                            disabled={isWorking}
+                            onClick={() => handleDeleteCategoria(c.id)}
+                            className="btn-action btn-eliminar"
+                          >
+                            Eliminar
+                          </button>
+                          {c.estado === 'abierta' && (
+                            <button
+                              disabled={isWorking}
+                              onClick={() => handleCerrarInscripciones(c.id)}
+                              className="btn-action btn-cerrar"
+                            >
+                              Cerrar
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
                 )}
-                {t.estado !== 'finalizado' && (
-                  <button
-                    disabled={isWorking}
-                    onClick={async ()=>{ if(!confirm('¿Finalizar este torneo?')) return; try{ setIsWorking(true); await torneoAPI.finalizar(t.id); await loadTorneos(); } catch(e){ setError(e.message);} finally{ setIsWorking(false);} }}
-                    className="btn-action btn-finalizar"
-                    title="Finalizar torneo"
-                  >
-                    Finalizar
-                  </button>
-                )}
-                <button
-                  disabled={isWorking}
-                  onClick={() => handleDeleteTorneo(t.id)}
-                  className="btn-action btn-eliminar"
-                  title="Eliminar torneo"
-                >
-                  Eliminar
-                </button>
               </div>
             </div>
-          ))}
+          )}
         </div>
       )}
 
-      {activeTorneo && (
-        <div className="categorias-section">
-          <h2 className="categorias-title">Categorías de "{activeTorneo.nombre}"</h2>
-          {categorias.length === 0 ? (
-            <div className="empty-state">
-              <h3>No hay categorías disponibles</h3>
-              <p>Este torneo aún no tiene categorías registradas.</p>
-            </div>
-          ) : (
-            categorias.map(c => (
-              <div key={c.id} className="categoria-card">
-                <div className="categoria-info">
-                  <div className="categoria-details">
-                    <span className="categoria-belt">{c.nombre}</span>
-                    <span className="categoria-weight">
-                      {` — ${c.grupo_edad} — ${c.genero} — ${c.cinturon} — ${c.peso_minimo}-${c.peso_maximo} kg`}
-                    </span>
+      {/* Sección Participantes */}
+      {activeCategoria && (
+        <div className="management-section">
+          {renderSectionHeader(`Participantes de "${activeCategoria.nombre}"`, 'participantes', '👤')}
+          {expandedSections.participantes && (
+            <div className="section-content">
+              {renderParticipanteForm()}
+              
+              <div className="participantes-list">
+                <h4>Participantes Registrados ({participantes.length})</h4>
+                {participantes.length === 0 ? (
+                  <div className="empty-state">
+                    <p>No hay participantes registrados en esta categoría</p>
                   </div>
-                  <div className={`categoria-status ${c.estado === 'abierta' ? 'inscripciones-abiertas' : 'inscripciones-cerradas'}`}>
-                    {c.estado === 'abierta' ? 'Abierta' : 'Cerrada'}
-                  </div>
-                  <div className="torneo-actions">
-                    <button
-                      disabled={isWorking}
-                      onClick={() => handleDeleteCategoria(c.id)}
-                      className="btn-action btn-eliminar"
-                    >
-                      Eliminar
-                    </button>
-                    {c.estado === 'abierta' && (
+                ) : (
+                  participantes.map(p => (
+                    <div key={p.id} className="participant-card">
+                      <div className="participant-info">
+                        <div>{p.nombre} {p.apellido}</div>
+                        <div className="participant-details">
+                          {p.peso && `${p.peso}kg`} {p.peso && p.edad && '•'} {p.edad && `${p.edad} años`} {(p.peso || p.edad) && p.cinturon && '•'} {p.cinturon} {p.cinturon && p.academia && '•'} {p.academia}
+                        </div>
+                      </div>
                       <button
                         disabled={isWorking}
-                        onClick={() => handleCerrarInscripciones(c.id)}
-                        className="btn-action btn-cerrar"
+                        onClick={() => handleDeleteParticipante(p.id)}
+                        className="btn-action btn-eliminar"
                       >
-                        Cerrar inscripciones
+                        Eliminar
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Sección Llaves */}
+      {activeCategoria && (
+        <div className="management-section">
+          {renderSectionHeader(`Llaves de "${activeCategoria.nombre}"`, 'llaves', '🗂️')}
+          {expandedSections.llaves && (
+            <div className="section-content">
+              <div className="form-container">
+                <div className="form-group">
+                  <button 
+                    onClick={() => handleGenerarLlave(activeCategoria.id)}
+                    disabled={isWorking || participantes.length < 2}
+                    className="btn-primary"
+                  >
+                    {isWorking ? '⏳ Generando...' : '🎯 Generar Llave Automática'}
+                  </button>
                 </div>
               </div>
-            ))
+              
+              <div className="llaves-list">
+                <h4>Llaves Generadas ({llaves.length})</h4>
+                {llaves.length === 0 ? (
+                  <div className="empty-state">
+                    <p>No hay llaves generadas para esta categoría</p>
+                    {participantes.length < 2 && (
+                      <small>Se necesitan al menos 2 participantes para generar una llave</small>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bracket-visualization">
+                    <p>🏗️ Visualización de llaves en desarrollo</p>
+                    <p>Llaves disponibles: {llaves.length}</p>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </div>
       )}

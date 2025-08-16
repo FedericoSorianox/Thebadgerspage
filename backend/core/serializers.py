@@ -21,6 +21,31 @@ class CategoriaSerializer(serializers.ModelSerializer):
         fields = ['id', 'torneo', 'torneo_nombre', 'nombre', 'peso_minimo', 'peso_maximo', 
                  'cinturon', 'grupo_edad', 'genero', 'estado', 'fecha_creacion', 'participantes_count']
         read_only_fields = ['fecha_creacion']
+        extra_kwargs = {
+            'peso_minimo': {'required': False, 'allow_null': True},
+            'peso_maximo': {'required': False, 'allow_null': True},
+            'cinturon': {'required': False, 'allow_blank': True},
+            'grupo_edad': {'required': False, 'allow_blank': True},
+            'genero': {'required': False, 'allow_blank': True},
+        }
+    
+    def validate_cinturon(self, value):
+        """Permitir cinturón vacío o None"""
+        if not value:
+            return ''
+        return value
+    
+    def validate_grupo_edad(self, value):
+        """Permitir grupo de edad vacío o None"""
+        if not value:
+            return ''
+        return value
+    
+    def validate_genero(self, value):
+        """Permitir género vacío o None"""
+        if not value:
+            return ''
+        return value
     
     def get_participantes_count(self, obj):
         return obj.participantes.filter(activo=True).count()
