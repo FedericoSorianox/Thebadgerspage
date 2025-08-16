@@ -188,18 +188,37 @@ export default function TorneoDashboard() {
 
   const handleCreateParticipante = async (e) => {
     e.preventDefault();
-    if (!participanteForm.nombre.trim() || !participanteForm.apellido.trim() || !participanteForm.categoria) {
-      setError('Nombre, apellido y categoría son obligatorios');
+    
+    // Validaciones básicas
+    if (!participanteForm.nombre.trim() || !participanteForm.apellido.trim()) {
+      setError('Nombre y apellido son obligatorios');
       return;
     }
     
-    // Calcular fecha de nacimiento a partir de la edad
-    const today = new Date();
-    const fechaNacimiento = new Date(today.getFullYear() - parseInt(participanteForm.edad), today.getMonth(), today.getDate());
+    if (!participanteForm.categoria) {
+      setError('Debe seleccionar una categoría');
+      return;
+    }
+    
+    if (!participanteForm.peso || isNaN(parseFloat(participanteForm.peso))) {
+      setError('El peso debe ser un número válido');
+      return;
+    }
+    
+    if (!participanteForm.edad || isNaN(parseInt(participanteForm.edad))) {
+      setError('La edad debe ser un número válido');
+      return;
+    }
     
     try {
       setIsWorking(true);
       setError(null);
+      
+      // Calcular fecha de nacimiento a partir de la edad
+      const today = new Date();
+      const edad = parseInt(participanteForm.edad);
+      const fechaNacimiento = new Date(today.getFullYear() - edad, today.getMonth(), today.getDate());
+      
       const participanteData = {
         nombre: participanteForm.nombre.trim(),
         apellido: participanteForm.apellido.trim(),
@@ -208,11 +227,15 @@ export default function TorneoDashboard() {
         cinturon: participanteForm.cinturon || 'blanca',
         genero: participanteForm.genero || 'masculino',
         academia: participanteForm.academia.trim() || 'The Badgers',
-        categoria: participanteForm.categoria
+        categoria: parseInt(participanteForm.categoria)
       };
+      
+      console.log('Enviando participante:', participanteData);
       
       await participanteAPI.create(participanteData);
       setSuccess('¡Participante registrado exitosamente!');
+      
+      // Resetear formulario
       setParticipanteForm({
         nombre: '',
         apellido: '',
@@ -223,9 +246,11 @@ export default function TorneoDashboard() {
         academia: 'The Badgers',
         categoria: activeCategoria?.id || ''
       });
+      
       if (activeCategoria) await loadParticipantes(activeCategoria.id);
     } catch (e) {
-      setError(e.message);
+      console.error('Error creando participante:', e);
+      setError(`Error al crear participante: ${e.message}`);
     } finally {
       setIsWorking(false);
     }
@@ -292,19 +317,6 @@ export default function TorneoDashboard() {
     }
   };
 
-  const handleGenerarLlave = async (categoriaId) => {
-    if (!confirm('¿Generar llave automáticamente para esta categoría?')) return;
-    try {
-      setIsWorking(true);
-      await llaveAPI.generar(categoriaId);
-      setSuccess('Llave generada exitosamente');
-      await loadLlaves(categoriaId);
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setIsWorking(false);
-    }
-  };
 
   const generateLlaves = async (categoriaId) => {
     if (!confirm('¿Generar las llaves para esta categoría? Esto organizará automáticamente los enfrentamientos.')) return;
@@ -344,9 +356,6 @@ export default function TorneoDashboard() {
     // Mezclar participantes aleatoriamente
     const shuffled = [...participantes].sort(() => Math.random() - 0.5);
     
-    // Calcular siguiente potencia de 2
-    const nextPowerOf2 = Math.pow(2, Math.ceil(Math.log2(shuffled.length)));
-    
     // Crear primera ronda
     const firstRound = [];
     for (let i = 0; i < shuffled.length; i += 2) {
@@ -367,19 +376,8 @@ export default function TorneoDashboard() {
     };
   };
 
-  const createLucha = async (luchaData) => {
-    try {
-      setIsWorking(true);
-      await luchaAPI.create(luchaData);
-      setSuccess('Lucha creada exitosamente');
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setIsWorking(false);
-    }
-  };
 
-  const iniciarLucha = async (lucha, llaveId) => {
+  const iniciarLucha = async (lucha) => {
     try {
       setIsWorking(true);
       setError(null);
@@ -427,21 +425,6 @@ export default function TorneoDashboard() {
   };
 
   // Componentes de renderizado
-  const renderMessages = () => (
-    <>
-      {error && (
-        <div className="error-message" onClick={clearMessages}>
-          ❌ {error} <small style={{float: 'right', cursor: 'pointer'}}>✕</small>
-        </div>
-      )}
-      {success && (
-        <div className="success-message" onClick={clearMessages}>
-          ✅ {success} <small style={{float: 'right', cursor: 'pointer'}}>✕</small>
-        </div>
-      )}
-    </>
-  );
-
   const renderSectionHeader = (title, section, icon) => (
     <div className="section-header" onClick={() => toggleSection(section)}>
       <h3>{icon} {title}</h3>
@@ -680,15 +663,28 @@ export default function TorneoDashboard() {
   );
 
   // Render principal
-  return (
-    <div className="torneo-container">
-      {/* Header */}
-      <div className="torneo-header">
-        <h1 className="torneo-title">Sistema de Gestión de Torneos BJJ</h1>
-      </div>
+  try {
+    return (
+      <div className="torneo-container">
+        {/* Header */}
+        <div className="torneo-header">
+          <h1 className="torneo-title">Sistema de Gestión de Torneos BJJ</h1>
+        </div>
 
-      {/* Mensajes */}
-      {renderMessages()}
+        {/* Mensajes */}
+        {error && (
+          <div className="alert alert-error">
+            <strong>Error:</strong> {error}
+            <button onClick={() => setError(null)} className="btn-close">×</button>
+          </div>
+        )}
+        
+        {success && (
+          <div className="alert alert-success">
+            <strong>Éxito:</strong> {success}
+            <button onClick={() => setSuccess(null)} className="btn-close">×</button>
+          </div>
+        )}
 
       {/* Sección Torneos */}
       <div className="management-section">
@@ -962,7 +958,7 @@ export default function TorneoDashboard() {
                                       <div className="fight-actions">
                                         <button 
                                           className="btn-small btn-iniciar"
-                                          onClick={() => iniciarLucha(lucha, llave.id)}
+                                          onClick={() => iniciarLucha(lucha)}
                                         >
                                           Iniciar Lucha
                                         </button>
@@ -997,4 +993,21 @@ export default function TorneoDashboard() {
       )}
     </div>
   );
+  } catch (error) {
+    console.error('Error rendering TorneoDashboard:', error);
+    return (
+      <div className="torneo-container">
+        <div className="torneo-header">
+          <h1 className="torneo-title">Sistema de Gestión de Torneos BJJ</h1>
+        </div>
+        <div className="alert alert-error">
+          <strong>Error:</strong> Hubo un problema cargando la aplicación. Recarga la página.
+          <details>
+            <summary>Detalles técnicos</summary>
+            <pre>{error.toString()}</pre>
+          </details>
+        </div>
+      </div>
+    );
+  }
 }

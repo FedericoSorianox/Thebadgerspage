@@ -1,8 +1,7 @@
+/* The following lines require Tailwind CSS to be set up and processed by its build tool. 
+   If you see an error, make sure Tailwind is installed and your build process includes PostCSS with Tailwind. */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* Importar estilos del torneo */
-@import url('./components/TorneoDashboard.css');
 
 /* Puedes agregar estilos globales aquí si los necesitas, pero deja que Tailwind controle el layout y los colores de fondo. */
