@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { torneoAPI, categoriaAPI, participanteAPI, llaveAPI } from '../services/api-new.js';
+import { torneoAPI, categoriaAPI, participanteAPI, llaveAPI, luchaAPI } from '../services/api-new.js';
 import './TorneoDashboard.css';
 
 export default function TorneoDashboard() {
@@ -45,7 +45,8 @@ export default function TorneoDashboard() {
     peso: '',
     edad: '',
     cinturon: 'blanca',
-    academia: '',
+    genero: 'masculino',
+    academia: 'The Badgers',
     categoria: ''
   });
 
@@ -192,18 +193,34 @@ export default function TorneoDashboard() {
       return;
     }
     
+    // Calcular fecha de nacimiento a partir de la edad
+    const today = new Date();
+    const fechaNacimiento = new Date(today.getFullYear() - parseInt(participanteForm.edad), today.getMonth(), today.getDate());
+    
     try {
       setIsWorking(true);
       setError(null);
-      await participanteAPI.create(participanteForm);
+      const participanteData = {
+        nombre: participanteForm.nombre.trim(),
+        apellido: participanteForm.apellido.trim(),
+        peso: parseFloat(participanteForm.peso),
+        fecha_nacimiento: fechaNacimiento.toISOString().split('T')[0],
+        cinturon: participanteForm.cinturon || 'blanca',
+        genero: participanteForm.genero || 'masculino',
+        academia: participanteForm.academia.trim() || 'The Badgers',
+        categoria: participanteForm.categoria
+      };
+      
+      await participanteAPI.create(participanteData);
       setSuccess('¡Participante registrado exitosamente!');
       setParticipanteForm({
         nombre: '',
         apellido: '',
         peso: '',
         edad: '',
-        cinturon: 'blanco',
-        academia: '',
+        cinturon: 'blanca',
+        genero: 'masculino',
+        academia: 'The Badgers',
         categoria: activeCategoria?.id || ''
       });
       if (activeCategoria) await loadParticipantes(activeCategoria.id);
@@ -287,6 +304,114 @@ export default function TorneoDashboard() {
     } finally {
       setIsWorking(false);
     }
+  };
+
+  const generateLlaves = async (categoriaId) => {
+    if (!confirm('¿Generar las llaves para esta categoría? Esto organizará automáticamente los enfrentamientos.')) return;
+    try {
+      setIsWorking(true);
+      setError(null);
+      
+      // Obtener participantes de la categoría
+      const participantesCategoria = participantes.filter(p => p.categoria === categoriaId);
+      
+      if (participantesCategoria.length < 2) {
+        setError('Se necesitan al menos 2 participantes para generar llaves');
+        return;
+      }
+      
+      // Generar estructura de llave (eliminación simple)
+      const estructura = generateBracketStructure(participantesCategoria);
+      
+      // Crear la llave en el backend
+      const llaveData = {
+        categoria: categoriaId,
+        estructura: estructura
+      };
+      
+      await llaveAPI.create(llaveData);
+      setSuccess('¡Llaves generadas exitosamente!');
+      await loadLlaves(categoriaId);
+      
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  const generateBracketStructure = (participantes) => {
+    // Mezclar participantes aleatoriamente
+    const shuffled = [...participantes].sort(() => Math.random() - 0.5);
+    
+    // Calcular siguiente potencia de 2
+    const nextPowerOf2 = Math.pow(2, Math.ceil(Math.log2(shuffled.length)));
+    
+    // Crear primera ronda
+    const firstRound = [];
+    for (let i = 0; i < shuffled.length; i += 2) {
+      const lucha = {
+        participante1: shuffled[i],
+        participante2: shuffled[i + 1] || null, // null = BYE
+        ronda: 'Primera',
+        estado: 'pendiente',
+        ganador: shuffled[i + 1] ? null : shuffled[i] // Si hay BYE, ganador automático
+      };
+      firstRound.push(lucha);
+    }
+    
+    return {
+      rondas: [firstRound],
+      participantes: shuffled,
+      estado: 'generada'
+    };
+  };
+
+  const createLucha = async (luchaData) => {
+    try {
+      setIsWorking(true);
+      await luchaAPI.create(luchaData);
+      setSuccess('Lucha creada exitosamente');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  const iniciarLucha = async (lucha, llaveId) => {
+    try {
+      setIsWorking(true);
+      setError(null);
+      
+      // Crear la lucha en el backend
+      const luchaData = {
+        categoria: activeCategoria.id,
+        participante1: lucha.participante1.id,
+        participante2: lucha.participante2?.id,
+        ronda: lucha.ronda,
+        estado: 'en_progreso',
+        duracion_segundos: 300, // 5 minutos por defecto
+        tiempo_transcurrido: 0
+      };
+      
+      await luchaAPI.create(luchaData);
+      setSuccess('¡Lucha iniciada!');
+      
+      // Recargar llaves para actualizar estado
+      await loadLlaves(activeCategoria.id);
+      
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const toggleSection = (section) => {
@@ -518,6 +643,18 @@ export default function TorneoDashboard() {
       </div>
       
       <div className="form-group">
+        <label className="form-label">Género</label>
+        <select
+          className="form-select"
+          value={participanteForm.genero}
+          onChange={(e) => setParticipanteForm(prev => ({ ...prev, genero: e.target.value }))}
+        >
+          <option value="masculino">Masculino</option>
+          <option value="femenino">Femenino</option>
+        </select>
+      </div>
+      
+      <div className="form-group">
         <label className="form-label">Categoría</label>
         <select
           className="form-select"
@@ -681,6 +818,13 @@ export default function TorneoDashboard() {
                               Cerrar
                             </button>
                           )}
+                          <button
+                            disabled={isWorking}
+                            onClick={() => generateLlaves(c.id)}
+                            className="btn-action btn-generar"
+                          >
+                            Generar Llaves
+                          </button>
                         </div>
                       </div>
                     </div>
@@ -731,7 +875,7 @@ export default function TorneoDashboard() {
         </div>
       )}
 
-      {/* Sección Llaves */}
+      {/* Sección Llaves y Luchas */}
       {activeCategoria && (
         <div className="management-section">
           {renderSectionHeader(`Llaves de "${activeCategoria.nombre}"`, 'llaves', '🗂️')}
@@ -740,12 +884,15 @@ export default function TorneoDashboard() {
               <div className="form-container">
                 <div className="form-group">
                   <button 
-                    onClick={() => handleGenerarLlave(activeCategoria.id)}
+                    onClick={() => generateLlaves(activeCategoria.id)}
                     disabled={isWorking || participantes.length < 2}
                     className="btn-primary"
                   >
                     {isWorking ? '⏳ Generando...' : '🎯 Generar Llave Automática'}
                   </button>
+                  {participantes.length < 2 && (
+                    <small className="help-text">Se necesitan al menos 2 participantes</small>
+                  )}
                 </div>
               </div>
               
@@ -754,15 +901,94 @@ export default function TorneoDashboard() {
                 {llaves.length === 0 ? (
                   <div className="empty-state">
                     <p>No hay llaves generadas para esta categoría</p>
-                    {participantes.length < 2 && (
-                      <small>Se necesitan al menos 2 participantes para generar una llave</small>
-                    )}
                   </div>
                 ) : (
-                  <div className="bracket-visualization">
-                    <p>🏗️ Visualización de llaves en desarrollo</p>
-                    <p>Llaves disponibles: {llaves.length}</p>
-                  </div>
+                  llaves.map(llave => (
+                    <div key={llave.id} className="bracket-container">
+                      <div className="bracket-header">
+                        <h5>Llave - {llave.categoria_nombre}</h5>
+                        <div className="bracket-status">
+                          Estado: {llave.estructura?.estado || 'En progreso'}
+                        </div>
+                      </div>
+                      
+                      {llave.estructura?.rondas && llave.estructura.rondas.length > 0 && (
+                        <div className="bracket-rounds">
+                          {llave.estructura.rondas.map((ronda, roundIndex) => (
+                            <div key={roundIndex} className="round-container">
+                              <h6>Ronda {roundIndex + 1}</h6>
+                              <div className="fights-container">
+                                {ronda.map((lucha, fightIndex) => (
+                                  <div key={fightIndex} className="fight-card">
+                                    <div className="fight-header">
+                                      <span className="fight-round">{lucha.ronda}</span>
+                                      <span className={`fight-status status-${lucha.estado}`}>
+                                        {lucha.estado}
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="fighters">
+                                      <div className="fighter">
+                                        <span className="fighter-name">
+                                          {lucha.participante1?.nombre} {lucha.participante1?.apellido}
+                                        </span>
+                                        <span className="fighter-score">
+                                          {lucha.puntos_p1 || 0} pts
+                                        </span>
+                                      </div>
+                                      
+                                      <div className="vs-divider">VS</div>
+                                      
+                                      <div className="fighter">
+                                        <span className="fighter-name">
+                                          {lucha.participante2 ? 
+                                            `${lucha.participante2.nombre} ${lucha.participante2.apellido}` : 
+                                            'BYE'
+                                          }
+                                        </span>
+                                        <span className="fighter-score">
+                                          {lucha.puntos_p2 || 0} pts
+                                        </span>
+                                      </div>
+                                    </div>
+                                    
+                                    {lucha.ganador && (
+                                      <div className="winner-banner">
+                                        🏆 Ganador: {lucha.ganador.nombre} {lucha.ganador.apellido}
+                                      </div>
+                                    )}
+                                    
+                                    {lucha.estado === 'pendiente' && lucha.participante2 && (
+                                      <div className="fight-actions">
+                                        <button 
+                                          className="btn-small btn-iniciar"
+                                          onClick={() => iniciarLucha(lucha, llave.id)}
+                                        >
+                                          Iniciar Lucha
+                                        </button>
+                                      </div>
+                                    )}
+                                    
+                                    {lucha.estado === 'en_progreso' && (
+                                      <div className="fight-timer">
+                                        <div className="timer-display">
+                                          {formatTime(lucha.tiempo_transcurrido || 0)} / {formatTime(lucha.duracion_segundos || 300)}
+                                        </div>
+                                        <div className="timer-controls">
+                                          <button className="btn-small">Pausa</button>
+                                          <button className="btn-small">Finalizar</button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))
                 )}
               </div>
             </div>

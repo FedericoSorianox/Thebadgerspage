@@ -287,6 +287,15 @@
     background-color: #e67e22;
 }
 
+.btn-generar {
+    background-color: #9b59b6;
+    color: white;
+}
+
+.btn-generar:hover:not(:disabled) {
+    background-color: #8e44ad;
+}
+
 .torneo-list {
     background: white;
     padding: 20px;
@@ -332,6 +341,226 @@
 .torneo-name.active {
     color: #3498db;
     font-weight: bold;
+}
+
+/* Estilos para llaves y luchas */
+.bracket-container {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-left: 4px solid #9b59b6;
+}
+
+.bracket-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #f1f2f6;
+    padding-bottom: 10px;
+}
+
+.bracket-header h5 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.3rem;
+}
+
+.bracket-status {
+    background-color: #3498db;
+    color: white;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
+.bracket-rounds {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.round-container {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+}
+
+.round-container h6 {
+    margin: 0 0 15px 0;
+    color: #495057;
+    font-size: 1.1rem;
+    text-align: center;
+}
+
+.fights-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 15px;
+}
+
+.fight-card {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    border: 1px solid #dee2e6;
+    transition: transform 0.2s;
+}
+
+.fight-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.fight-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.fight-round {
+    font-weight: bold;
+    color: #6c757d;
+}
+
+.fight-status {
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status-pendiente {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.status-en_progreso {
+    background-color: #28a745;
+    color: white;
+}
+
+.status-finalizada {
+    background-color: #6c757d;
+    color: white;
+}
+
+.fighters {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.fighter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background-color: #f8f9fa;
+    border-radius: 6px;
+}
+
+.fighter-name {
+    font-weight: 500;
+    color: #343a40;
+}
+
+.fighter-score {
+    font-weight: bold;
+    color: #28a745;
+    background-color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.vs-divider {
+    text-align: center;
+    font-weight: bold;
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin: 5px 0;
+}
+
+.winner-banner {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+    text-align: center;
+    padding: 8px;
+    border-radius: 6px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.fight-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.btn-iniciar {
+    background-color: #28a745;
+    color: white;
+}
+
+.btn-iniciar:hover {
+    background-color: #218838;
+}
+
+.fight-timer {
+    background-color: #343a40;
+    color: white;
+    padding: 10px;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.timer-display {
+    font-family: 'Courier New', monospace;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 8px;
+}
+
+.timer-controls {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.timer-controls .btn-small {
+    background-color: #495057;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+}
+
+.timer-controls .btn-small:hover {
+    background-color: #6c757d;
+}
+
+.btn-small {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.help-text {
+    display: block;
+    margin-top: 5px;
+    color: #6c757d;
+    font-style: italic;
 }
 
 /* Responsive Design */
