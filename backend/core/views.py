@@ -887,12 +887,54 @@ class ParticipanteViewSet(viewsets.ModelViewSet):
         """Filtrar participantes por categoría si se especifica"""
         queryset = Participante.objects.filter(activo=True)
         categoria_id = self.request.query_params.get('categoria', None)
+        torneo_id = self.request.query_params.get('torneo', None)
+        
         if categoria_id is not None:
-            queryset = queryset.filter(categoria_id=categoria_id)
+            try:
+                categoria = Categoria.objects.get(id=categoria_id)
+                
+                # Obtener participantes asignados directamente a esta categoría
+                participantes_asignados = queryset.filter(categoria_asignada=categoria)
+                
+                # Obtener participantes que coinciden automáticamente
+                participantes_automaticos = queryset.none()  # QuerySet vacío por defecto
+                
+                if categoria.tipo_categoria in ['blanca', 'azul', 'violeta', 'marron', 'negro']:
+                    # Es una categoría por cinturón
+                    cinturon_map = {
+                        'blanca': 'blanca',
+                        'azul': 'azul', 
+                        'violeta': 'violeta',
+                        'marron': 'marron',
+                        'negro': 'negro'
+                    }
+                    cinturon = cinturon_map.get(categoria.tipo_categoria)
+                    if cinturon:
+                        participantes_automaticos = queryset.filter(
+                            torneo=categoria.torneo,
+                            cinturon=cinturon,
+                            categoria_asignada__isnull=True  # Solo los no asignados manualmente
+                        )
+                        
+                        # Filtrar por peso si está definido
+                        if categoria.peso_minimo is not None:
+                            participantes_automaticos = participantes_automaticos.filter(peso__gte=categoria.peso_minimo)
+                        if categoria.peso_maximo is not None:
+                            participantes_automaticos = participantes_automaticos.filter(peso__lte=categoria.peso_maximo)
+                
+                # Combinar ambos querysets
+                queryset = participantes_asignados | participantes_automaticos
+                
+            except Categoria.DoesNotExist:
+                queryset = queryset.none()
+        
+        elif torneo_id is not None:
+            queryset = queryset.filter(torneo_id=torneo_id)
         
         # Log para debugging
         print(f"[ParticipanteViewSet] Categoria ID: {categoria_id}")
-        print(f"[ParticipanteViewSet] Queryset count (solo activos): {queryset.count()}")
+        print(f"[ParticipanteViewSet] Torneo ID: {torneo_id}")
+        print(f"[ParticipanteViewSet] Queryset count: {queryset.count()}")
         
         return queryset
     
@@ -908,45 +950,99 @@ class LlaveViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar llaves de torneo"""
     queryset = Llave.objects.all()
     serializer_class = LlaveSerializer
-    permission_classes = [IsAdminOrReadOnly]  # Solo admins pueden escribir; lectura pública
+    permission_classes = [AllowAny]  # TEMPORAL: Permitir acceso completo para debug
     
     def get_queryset(self):
         """Filtrar llaves por categoría si se especifica"""
         queryset = Llave.objects.all()
         categoria_id = self.request.query_params.get('categoria', None)
+        torneo_id = self.request.query_params.get('torneo', None)
+        
         if categoria_id is not None:
             queryset = queryset.filter(categoria_id=categoria_id)
+        elif torneo_id is not None:
+            queryset = queryset.filter(categoria__torneo_id=torneo_id)
+            
         return queryset
     
-    @action(detail=True, methods=['post'])
-    def generar_automatica(self, request, pk=None):
-        """Generar llave automáticamente basada en los participantes"""
-        llave = self.get_object()
-        participantes = list(llave.categoria.participantes.filter(activo=True))
-        
-        if len(participantes) < 2:
+    @action(detail=False, methods=['post'])
+    def crear_para_categoria(self, request):
+        """Crear llave para una categoría específica"""
+        categoria_id = request.data.get('categoria_id')
+        if not categoria_id:
             return Response(
-                {'error': 'Se necesitan al menos 2 participantes'}, 
+                {'error': 'categoria_id es requerido'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Generar estructura de llave simple
-        import random
-        random.shuffle(participantes)
+        try:
+            categoria = Categoria.objects.get(id=categoria_id)
+        except Categoria.DoesNotExist:
+            return Response(
+                {'error': 'Categoría no encontrada'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
         
-        estructura = {
-            'participantes': [
-                {'id': p.id, 'nombre': p.nombre_completo, 'academia': p.academia}
-                for p in participantes
-            ],
-            'rondas': [],
-            'tipo': 'eliminacion_simple'
-        }
+        # Verificar si ya existe una llave para esta categoría
+        llave, created = Llave.objects.get_or_create(
+            categoria=categoria,
+            defaults={
+                'tipo_eliminacion': 'simple',
+                'estructura': {}
+            }
+        )
         
-        llave.estructura = estructura
+        if not created and llave.bloqueada:
+            return Response(
+                {'error': 'La llave ya está bloqueada y no se puede regenerar'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Generar la llave automáticamente
+        participantes = llave.obtener_participantes()
+        
+        if len(participantes) < 2:
+            return Response(
+                {'error': f'Se necesitan al menos 2 participantes. Actualmente hay {len(participantes)}'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        llave.generar_llave_simple()
         llave.save()
         
-        return Response({'status': 'Llave generada automáticamente'})
+        serializer = self.get_serializer(llave)
+        return Response({
+            'message': f'Llave generada exitosamente para {len(participantes)} participantes',
+            'llave': serializer.data
+        })
+    
+    @action(detail=True, methods=['post'])
+    def regenerar(self, request, pk=None):
+        """Regenerar llave (solo si no está bloqueada)"""
+        llave = self.get_object()
+        
+        if llave.bloqueada:
+            return Response(
+                {'error': 'La llave está bloqueada y no se puede regenerar'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        participantes = llave.obtener_participantes()
+        
+        if len(participantes) < 2:
+            return Response(
+                {'error': f'Se necesitan al menos 2 participantes. Actualmente hay {len(participantes)}'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Eliminar luchas existentes de esta categoría
+        Lucha.objects.filter(categoria=llave.categoria).delete()
+        
+        # Regenerar la llave
+        llave.generar_llave_simple()
+        llave.save()
+        
+        return Response({'message': 'Llave regenerada exitosamente'})
     
     @action(detail=True, methods=['post'])
     def bloquear(self, request, pk=None):
@@ -954,7 +1050,7 @@ class LlaveViewSet(viewsets.ModelViewSet):
         llave = self.get_object()
         llave.bloqueada = True
         llave.save()
-        return Response({'status': 'Llave bloqueada'})
+        return Response({'status': 'Llave bloqueada - no se puede editar'})
     
     @action(detail=True, methods=['post'])
     def desbloquear(self, request, pk=None):
@@ -962,28 +1058,313 @@ class LlaveViewSet(viewsets.ModelViewSet):
         llave = self.get_object()
         llave.bloqueada = False
         llave.save()
-        return Response({'status': 'Llave desbloqueada'})
+        return Response({'status': 'Llave desbloqueada - se puede editar'})
+    
+    @action(detail=True, methods=['get'])
+    def luchas(self, request, pk=None):
+        """Obtener todas las luchas de esta llave"""
+        llave = self.get_object()
+        luchas = Lucha.objects.filter(categoria=llave.categoria).order_by('posicion_llave', 'ronda')
+        
+        from .serializers import LuchaSerializer
+        serializer = LuchaSerializer(luchas, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['post'], url_path='generar/(?P<categoria_id>[^/.]+)')
+    def generar(self, request, categoria_id=None):
+        """Generar llave para una categoría específica (endpoint simplificado)"""
+        if not categoria_id:
+            return Response(
+                {'error': 'categoria_id es requerido'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            categoria = Categoria.objects.get(id=categoria_id)
+        except Categoria.DoesNotExist:
+            return Response(
+                {'error': 'Categoría no encontrada'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Verificar si ya existe una llave para esta categoría
+        llave, created = Llave.objects.get_or_create(
+            categoria=categoria,
+            defaults={
+                'tipo_eliminacion': 'simple',
+                'estructura': {}
+            }
+        )
+        
+        if not created and llave.bloqueada:
+            return Response(
+                {'error': 'La llave ya está bloqueada y no se puede regenerar'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Generar la llave automáticamente
+        participantes = llave.obtener_participantes()
+        
+        if len(participantes) < 2:
+            return Response(
+                {'error': f'Se necesitan al menos 2 participantes. Actualmente hay {len(participantes)}'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        llave.generar_llave_simple()
+        llave.save()
+        
+        serializer = self.get_serializer(llave)
+        return Response({
+            'message': f'Llave generada exitosamente para {len(participantes)} participantes',
+            'llave': serializer.data
+        })
 
+    @action(detail=False, methods=['post'], url_path='regenerar/(?P<categoria_id>[^/.]+)')
+    def regenerar_by_categoria(self, request, categoria_id=None):
+        """Regenerar llave para una categoría específica (endpoint simplificado)"""
+        if not categoria_id:
+            return Response(
+                {'error': 'categoria_id es requerido'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            categoria = Categoria.objects.get(id=categoria_id)
+            llave = Llave.objects.get(categoria=categoria)
+        except Categoria.DoesNotExist:
+            return Response(
+                {'error': 'Categoría no encontrada'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Llave.DoesNotExist:
+            return Response(
+                {'error': 'No existe llave para esta categoría'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        if llave.bloqueada:
+            return Response(
+                {'error': 'La llave está bloqueada y no se puede regenerar'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        participantes = llave.obtener_participantes()
+        
+        if len(participantes) < 2:
+            return Response(
+                {'error': f'Se necesitan al menos 2 participantes. Actualmente hay {len(participantes)}'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Eliminar luchas existentes de esta categoría
+        Lucha.objects.filter(categoria=llave.categoria).delete()
+        
+        # Regenerar la llave
+        llave.generar_llave_simple()
+        llave.save()
+        
+        serializer = self.get_serializer(llave)
+        return Response({
+            'message': f'Llave regenerada exitosamente para {len(participantes)} participantes',
+            'llave': serializer.data
+        })
+    
 class LuchaViewSet(viewsets.ModelViewSet):
-    """ViewSet para gestionar luchas"""
+    """ViewSet para gestionar luchas con sistema de puntuación BJJ"""
     queryset = Lucha.objects.all()
     serializer_class = LuchaSerializer
-    permission_classes = [IsAdminOrReadOnly]  # Solo admins pueden escribir; lectura pública
+    permission_classes = [AllowAny]  # TEMPORAL: Permitir acceso completo para debug
     
     def get_queryset(self):
         """Filtrar luchas por categoría si se especifica"""
         queryset = Lucha.objects.all()
         categoria_id = self.request.query_params.get('categoria', None)
+        torneo_id = self.request.query_params.get('torneo', None)
+        
         if categoria_id is not None:
             queryset = queryset.filter(categoria_id=categoria_id)
-        return queryset
+        elif torneo_id is not None:
+            queryset = queryset.filter(categoria__torneo_id=torneo_id)
+            
+        return queryset.order_by('ronda', 'posicion_llave', '-fecha_creacion')
     
     @action(detail=True, methods=['post'])
     def iniciar(self, request, pk=None):
         """Iniciar una lucha"""
         lucha = self.get_object()
+        
+        if lucha.estado != 'pendiente':
+            return Response(
+                {'error': 'Solo se pueden iniciar luchas pendientes'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
         lucha.estado = 'en_progreso'
-        lucha.fecha_inicio = datetime.now()
+        lucha.fecha_inicio = timezone.now()
+        lucha.cronometro_activo = True
+        lucha.save()
+        
+        return Response({'message': 'Lucha iniciada'})
+    
+    @action(detail=True, methods=['post'])
+    def pausar(self, request, pk=None):
+        """Pausar una lucha"""
+        lucha = self.get_object()
+        
+        if lucha.estado != 'en_progreso':
+            return Response(
+                {'error': 'Solo se pueden pausar luchas en progreso'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        lucha.estado = 'pausada'
+        lucha.cronometro_activo = False
+        lucha.save()
+        
+        return Response({'message': 'Lucha pausada'})
+    
+    @action(detail=True, methods=['post'])
+    def reanudar(self, request, pk=None):
+        """Reanudar una lucha pausada"""
+        lucha = self.get_object()
+        
+        if lucha.estado != 'pausada':
+            return Response(
+                {'error': 'Solo se pueden reanudar luchas pausadas'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        lucha.estado = 'en_progreso'
+        lucha.cronometro_activo = True
+        lucha.save()
+        
+        return Response({'message': 'Lucha reanudada'})
+    
+    @action(detail=True, methods=['post'])
+    def finalizar(self, request, pk=None):
+        """Finalizar una lucha"""
+        lucha = self.get_object()
+        
+        if lucha.estado not in ['en_progreso', 'pausada']:
+            return Response(
+                {'error': 'Solo se pueden finalizar luchas en progreso o pausadas'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Obtener datos del request
+        tipo_victoria = request.data.get('tipo_victoria', 'puntos')
+        ganador_id = request.data.get('ganador_id')
+        resultado_detalle = request.data.get('resultado_detalle', '')
+        
+        lucha.estado = 'finalizada'
+        lucha.fecha_fin = timezone.now()
+        lucha.cronometro_activo = False
+        lucha.tipo_victoria = tipo_victoria
+        lucha.resultado_detalle = resultado_detalle
+        
+        # Si se especifica ganador manualmente (por sumisión, etc.)
+        if ganador_id:
+            try:
+                ganador = Participante.objects.get(id=ganador_id)
+                if ganador not in [lucha.participante1, lucha.participante2]:
+                    return Response(
+                        {'error': 'El ganador debe ser uno de los participantes de la lucha'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                lucha.ganador = ganador
+            except Participante.DoesNotExist:
+                return Response(
+                    {'error': 'Participante no encontrado'}, 
+                    status=status.HTTP_404_NOT_FOUND
+                )
+        else:
+            # Determinar ganador automáticamente
+            lucha.ganador = lucha.determinar_ganador()
+        
+        lucha.save()
+        
+        # Actualizar la llave si existe
+        try:
+            llave = lucha.categoria.llave
+            llave.actualizar_llave_con_resultado(lucha)
+        except Llave.DoesNotExist:
+            pass  # No hay llave generada
+        
+        return Response({
+            'message': 'Lucha finalizada',
+            'ganador': lucha.ganador.nombre if lucha.ganador else 'Empate'
+        })
+    
+    @action(detail=True, methods=['post'])
+    def actualizar_puntos(self, request, pk=None):
+        """Actualizar puntos de una lucha"""
+        lucha = self.get_object()
+        
+        if lucha.estado not in ['en_progreso', 'pausada']:
+            return Response(
+                {'error': 'Solo se pueden actualizar puntos en luchas activas'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Actualizar puntos del participante 1
+        if 'montadas_p1' in request.data:
+            lucha.montadas_p1 = max(0, int(request.data.get('montadas_p1', 0)))
+        if 'guardas_pasadas_p1' in request.data:
+            lucha.guardas_pasadas_p1 = max(0, int(request.data.get('guardas_pasadas_p1', 0)))
+        if 'rodillazos_p1' in request.data:
+            lucha.rodillazos_p1 = max(0, int(request.data.get('rodillazos_p1', 0)))
+        if 'derribos_p1' in request.data:
+            lucha.derribos_p1 = max(0, int(request.data.get('derribos_p1', 0)))
+        if 'ventajas_p1' in request.data:
+            lucha.ventajas_p1 = max(0, int(request.data.get('ventajas_p1', 0)))
+        if 'penalizaciones_p1' in request.data:
+            lucha.penalizaciones_p1 = max(0, int(request.data.get('penalizaciones_p1', 0)))
+        
+        # Actualizar puntos del participante 2
+        if 'montadas_p2' in request.data:
+            lucha.montadas_p2 = max(0, int(request.data.get('montadas_p2', 0)))
+        if 'guardas_pasadas_p2' in request.data:
+            lucha.guardas_pasadas_p2 = max(0, int(request.data.get('guardas_pasadas_p2', 0)))
+        if 'rodillazos_p2' in request.data:
+            lucha.rodillazos_p2 = max(0, int(request.data.get('rodillazos_p2', 0)))
+        if 'derribos_p2' in request.data:
+            lucha.derribos_p2 = max(0, int(request.data.get('derribos_p2', 0)))
+        if 'ventajas_p2' in request.data:
+            lucha.ventajas_p2 = max(0, int(request.data.get('ventajas_p2', 0)))
+        if 'penalizaciones_p2' in request.data:
+            lucha.penalizaciones_p2 = max(0, int(request.data.get('penalizaciones_p2', 0)))
+        
+        # Actualizar tiempo
+        if 'tiempo_transcurrido' in request.data:
+            lucha.tiempo_transcurrido = max(0, int(request.data.get('tiempo_transcurrido', 0)))
+        
+        lucha.save()  # Esto calculará automáticamente los puntos totales
+        
+        return Response({
+            'message': 'Puntos actualizados',
+            'puntos_p1': lucha.puntos_p1,
+            'puntos_p2': lucha.puntos_p2
+        })
+    
+    @action(detail=True, methods=['post'])
+    def toggle_cronometro(self, request, pk=None):
+        """Pausar/reanudar cronómetro"""
+        lucha = self.get_object()
+        
+        if lucha.estado not in ['en_progreso', 'pausada']:
+            return Response(
+                {'error': 'Solo se puede controlar el cronómetro en luchas activas'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        lucha.cronometro_activo = not lucha.cronometro_activo
+        lucha.save()
+        
+        return Response({
+            'message': 'Cronómetro pausado' if not lucha.cronometro_activo else 'Cronómetro reanudado',
+            'cronometro_activo': lucha.cronometro_activo
+        })
         lucha.save()
         return Response({'status': 'Lucha iniciada'})
     

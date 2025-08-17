@@ -14,7 +14,7 @@ fi
 echo "📡 Iniciando backend (puerto 8000)..."
 cd backend
 export USE_SQLITE=true
-python manage.py runserver 0.0.0.0:8000 &
+python3 manage.py runserver 0.0.0.0:8000 &
 BACKEND_PID=$!
 cd ..
 

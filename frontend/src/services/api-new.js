@@ -1,7 +1,7 @@
 // Servicios API para el sistema de torneo BJJ (simplificado sin autenticación)
 
 // FORCE RENDER API - HARDCODED para resolver problema de producción
-const API_BASE_URL = 'https://thebadgerspage.onrender.com';
+const API_BASE_URL = import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : 'http://127.0.0.1:8001';
 
 const TORNEO_API_URL = `${API_BASE_URL}/api/torneo`;
 
@@ -255,6 +255,13 @@ export const llaveAPI = {
         return handleResponse(response);
     },
 
+    // Obtener llave por categoría
+    getByCategoria: async (categoriaId) => {
+        const response = await fetch(`${TORNEO_API_URL}/llaves/?categoria=${categoriaId}`, createApiConfig());
+        const data = await handleResponse(response);
+        return Array.isArray(data) && data.length > 0 ? data[0] : null;
+    },
+
     // Obtener una llave específica
     getById: async (id) => {
         const response = await fetch(`${TORNEO_API_URL}/llaves/${id}/`, createApiConfig());
@@ -278,6 +285,12 @@ export const llaveAPI = {
         const response = await fetch(`${TORNEO_API_URL}/llaves/generar/${categoriaId}/`, createApiConfig('POST'));
         return handleResponse(response);
     },
+
+    // Regenerar llave automáticamente
+    regenerar: async (categoriaId) => {
+        const response = await fetch(`${TORNEO_API_URL}/llaves/regenerar/${categoriaId}/`, createApiConfig('POST'));
+        return handleResponse(response);
+    },
 };
 
 // =================== SERVICIOS DE LUCHAS ===================
@@ -289,6 +302,12 @@ export const luchaAPI = {
             ? `${TORNEO_API_URL}/luchas/?llave=${llaveId}`
             : `${TORNEO_API_URL}/luchas/`;
         const response = await fetch(url, createApiConfig());
+        return handleResponse(response);
+    },
+
+    // Obtener luchas por categoría
+    getByCategoria: async (categoriaId) => {
+        const response = await fetch(`${TORNEO_API_URL}/luchas/?categoria=${categoriaId}`, createApiConfig());
         return handleResponse(response);
     },
 

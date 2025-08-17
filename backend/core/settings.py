@@ -104,10 +104,10 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 import os
-from dotenv import load_dotenv
+# from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+# Load environment variables from .env file (commented temporarily)
+# load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

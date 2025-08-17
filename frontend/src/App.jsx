@@ -8,7 +8,7 @@ import { ProtectedComponent } from './components/AuthComponents.jsx';
 import badgersHeroBg from "./assets/the-badgers-academia.jpeg";
 import gymBackground from "./assets/gym-background.jpeg";
 import Galeria from './components/Galeria.jsx';
-import TorneoDashboard from './components/TorneoDashboard.jsx';
+import TorneoDashboardSimple from './components/TorneoDashboardSimple.jsx';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 
   (import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : 'http://127.0.0.1:8000');
@@ -27,7 +27,7 @@ const NAV_ITEMS = [
   { label: "Clases", href: "/#clases" },
   { label: "Tienda", href: "/tienda" },
   { label: "Galería", href: "/galeria" },
-  // { label: "Torneo BJJ", href: "/torneo" }, // Ocultado temporalmente
+  { label: "Torneo BJJ", href: "/torneo" },
   { label: "Contacto", href: "/#contacto" },
 ];
 
@@ -492,7 +492,7 @@ function Home() {
 function TorneoPage() {
   return (
     <div className="min-h-screen w-full pt-28 px-4" style={{backgroundColor: '#f5f5f5'}}>
-      <TorneoDashboard />
+      <TorneoDashboardSimple />
     </div>
   );
 }

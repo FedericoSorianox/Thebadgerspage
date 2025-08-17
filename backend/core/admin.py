@@ -37,32 +37,70 @@ class TorneoAdmin(admin.ModelAdmin):
 
 @admin.register(Categoria)
 class CategoriaAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'torneo', 'cinturon', 'grupo_edad', 'genero', 'peso_rango', 'estado', 'participantes_count']
-    list_filter = ['torneo', 'cinturon', 'grupo_edad', 'genero', 'estado']
+    list_display = ['nombre', 'torneo', 'tipo_categoria', 'peso_rango', 'estado', 'participantes_count']
+    list_filter = ['torneo', 'tipo_categoria', 'estado']
     search_fields = ['nombre', 'torneo__nombre']
+    readonly_fields = ['fecha_creacion']
     
     def peso_rango(self, obj):
-        return f"{obj.peso_minimo}kg - {obj.peso_maximo}kg"
-    peso_rango.short_description = 'Peso'
+        if obj.peso_minimo is None and obj.peso_maximo is None:
+            return "Sin límite"
+        elif obj.peso_minimo is None:
+            return f"Hasta {obj.peso_maximo}kg"
+        elif obj.peso_maximo is None:
+            return f"Más de {obj.peso_minimo}kg"
+        else:
+            return f"{obj.peso_minimo}kg - {obj.peso_maximo}kg"
+    peso_rango.short_description = 'Rango de Peso'
     
     def participantes_count(self, obj):
-        return obj.participantes.filter(activo=True).count()
+        # Contar participantes asignados + automáticos
+        asignados = obj.participantes_asignados.filter(activo=True).count()
+        
+        automaticos = 0
+        if obj.tipo_categoria in ['blanca', 'azul', 'violeta', 'marron', 'negro']:
+            queryset = obj.torneo.participantes.filter(
+                activo=True,
+                cinturon=obj.tipo_categoria,
+                categoria_asignada__isnull=True
+            )
+            if obj.peso_minimo is not None:
+                queryset = queryset.filter(peso__gte=obj.peso_minimo)
+            if obj.peso_maximo is not None:
+                queryset = queryset.filter(peso__lte=obj.peso_maximo)
+            automaticos = queryset.count()
+        
+        return asignados + automaticos
     participantes_count.short_description = 'Participantes'
 
 
 @admin.register(Participante)
 class ParticipanteAdmin(admin.ModelAdmin):
-    list_display = ['nombre_completo', 'academia', 'categoria', 'cinturon', 'peso', 'edad', 'activo']
-    list_filter = ['categoria__torneo', 'categoria', 'cinturon', 'genero', 'activo', 'academia']
-    search_fields = ['nombre', 'apellido', 'academia']
-    readonly_fields = ['edad', 'fecha_inscripcion']
+    list_display = ['nombre', 'academia', 'categoria_actual_nombre', 'cinturon', 'peso', 'activo']
+    list_filter = ['torneo', 'cinturon', 'activo', 'academia']
+    search_fields = ['nombre', 'academia']
+    readonly_fields = ['fecha_inscripcion', 'categoria_sugerida_nombre']
+    
+    def categoria_actual_nombre(self, obj):
+        categoria = obj.categoria_actual
+        return categoria.nombre if categoria else "Sin categoría"
+    categoria_actual_nombre.short_description = 'Categoría'
+    
+    def categoria_sugerida_nombre(self, obj):
+        categoria = obj.categoria_sugerida
+        return categoria.nombre if categoria else "Sin sugerencia (falta peso)"
+    categoria_sugerida_nombre.short_description = 'Categoría Sugerida'
     
     fieldsets = (
-        ('Información Personal', {
-            'fields': ('nombre', 'apellido', 'fecha_nacimiento', 'edad', 'genero')
+        ('Información Básica', {
+            'fields': ('nombre', 'academia', 'cinturon')
         }),
         ('Información Deportiva', {
-            'fields': ('academia', 'peso', 'cinturon', 'categoria')
+            'fields': ('peso', 'torneo')
+        }),
+        ('Categorización', {
+            'fields': ('categoria_sugerida_nombre', 'categoria_asignada'),
+            'description': 'La categoría sugerida se calcula automáticamente. Use "categoria_asignada" solo si necesita una asignación manual.'
         }),
         ('Estado', {
             'fields': ('activo', 'fecha_inscripcion')
@@ -82,8 +120,7 @@ class LlaveAdmin(admin.ModelAdmin):
 class LuchaAdmin(admin.ModelAdmin):
     list_display = ['__str__', 'categoria', 'ronda', 'estado', 'ganador', 'fecha_inicio']
     list_filter = ['categoria__torneo', 'categoria', 'ronda', 'estado', 'fecha_inicio']
-    search_fields = ['participante1__nombre', 'participante1__apellido', 
-                    'participante2__nombre', 'participante2__apellido', 'categoria__nombre']
+    search_fields = ['participante1__nombre', 'participante2__nombre', 'categoria__nombre']
     readonly_fields = ['fecha_creacion']
     
     fieldsets = (
