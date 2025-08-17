@@ -41,7 +41,7 @@ class Torneo(models.Model):
         ('cancelado', 'Cancelado')
     ], default='planificacion')
     fecha_creacion = models.DateTimeField(auto_now_add=True)
-    usuario_creador = models.ForeignKey(User, on_delete=models.CASCADE)
+    usuario_creador = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
     
     def create_default_categories(self):
         """Crea las categorías fijas predefinidas para este torneo"""

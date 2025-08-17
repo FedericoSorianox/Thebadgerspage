@@ -13,9 +13,19 @@ class TorneoSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         """Crear torneo y sus categorías fijas automáticamente"""
-        torneo = super().create(validated_data)
-        torneo.create_default_categories()
-        return torneo
+        print(f"DEBUG TorneoSerializer.create: validated_data={validated_data}")
+        try:
+            torneo = super().create(validated_data)
+            print(f"DEBUG TorneoSerializer.create: Torneo creado: {torneo}")
+            
+            print("DEBUG TorneoSerializer.create: Creando categorías por defecto...")
+            torneo.create_default_categories()
+            print(f"DEBUG TorneoSerializer.create: Categorías creadas para torneo {torneo.id}")
+            
+            return torneo
+        except Exception as e:
+            print(f"DEBUG TorneoSerializer.create: ERROR: {e}")
+            raise
 
 
 class CategoriaSerializer(serializers.ModelSerializer):

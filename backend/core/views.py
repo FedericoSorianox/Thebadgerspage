@@ -828,15 +828,20 @@ class TorneoViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         """Asignar el usuario actual como creador del torneo"""
+        print(f"DEBUG TorneoViewSet.perform_create: usuario={self.request.user}, autenticado={self.request.user.is_authenticated}")
+        
         # Si no hay usuario autenticado, usar el primer admin
         if self.request.user.is_authenticated:
+            print(f"DEBUG TorneoViewSet.perform_create: Usuario autenticado encontrado: {self.request.user}")
             serializer.save(usuario_creador=self.request.user)
         else:
             from django.contrib.auth.models import User
             admin_user = User.objects.filter(is_staff=True).first()
+            print(f"DEBUG TorneoViewSet.perform_create: Usuario no autenticado, buscando admin: {admin_user}")
             if admin_user:
                 serializer.save(usuario_creador=admin_user)
             else:
+                print("DEBUG TorneoViewSet.perform_create: No hay admin, creando sin usuario")
                 serializer.save()  # Sin usuario_creador si no hay admins
     
     @action(detail=True, methods=['post'])
