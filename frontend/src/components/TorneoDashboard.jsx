@@ -83,9 +83,18 @@ export default function TorneoDashboard() {
   const loadParticipantes = useCallback(async (categoriaId) => {
     try {
       setError(null);
+      console.log('[TorneoDashboard] Cargando participantes para categoría ID:', categoriaId);
       const data = await participanteAPI.getAll(categoriaId);
+      console.log('[TorneoDashboard] Datos recibidos del API:', data);
+      console.log('[TorneoDashboard] Tipo de datos:', typeof data);
+      console.log('[TorneoDashboard] Es array?:', Array.isArray(data));
+      if (Array.isArray(data)) {
+        console.log('[TorneoDashboard] Número de participantes:', data.length);
+        console.log('[TorneoDashboard] Primer participante:', data[0]);
+      }
       const participantesArray = Array.isArray(data) ? data : [];
       setParticipantes(participantesArray);
+      console.log('[TorneoDashboard] Participantes establecidos en estado:', participantesArray.length);
     } catch (e) {
       console.error('[TorneoDashboard] Error al cargar participantes:', e);
       setError(e.message);
@@ -239,7 +248,8 @@ export default function TorneoDashboard() {
         cinturon: participanteForm.cinturon || 'blanca',
         genero: participanteForm.genero || 'masculino',
         academia: participanteForm.academia.trim() || 'The Badgers',
-        categoria: parseInt(participanteForm.categoria)
+        categoria: parseInt(participanteForm.categoria),
+        activo: true  // Asegurar que el participante esté activo
       };
       
       console.log('Enviando participante:', participanteData);

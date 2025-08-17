@@ -212,8 +212,13 @@ export const participanteAPI = {
         const url = categoriaId 
             ? `${TORNEO_API_URL}/participantes/?categoria=${categoriaId}`
             : `${TORNEO_API_URL}/participantes/`;
+        console.log('[participanteAPI.getAll] URL construida:', url);
+        console.log('[participanteAPI.getAll] Categoria ID recibido:', categoriaId);
         const response = await fetch(url, createApiConfig());
-        return handleResponse(response);
+        console.log('[participanteAPI.getAll] Response status:', response.status);
+        const data = await handleResponse(response);
+        console.log('[participanteAPI.getAll] Data recibida:', data);
+        return data;
     },
 
     // Crear nuevo participante

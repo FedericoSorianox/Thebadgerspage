@@ -889,6 +889,11 @@ class ParticipanteViewSet(viewsets.ModelViewSet):
         categoria_id = self.request.query_params.get('categoria', None)
         if categoria_id is not None:
             queryset = queryset.filter(categoria_id=categoria_id)
+        
+        # Log para debugging
+        print(f"[ParticipanteViewSet] Categoria ID: {categoria_id}")
+        print(f"[ParticipanteViewSet] Queryset count (solo activos): {queryset.count()}")
+        
         return queryset
     
     @action(detail=True, methods=['post'])
