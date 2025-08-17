@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { torneoAPI, categoriaAPI, participanteAPI, llaveAPI, luchaAPI } from '../services/api-new.js';
 import LlaveManager from './LlaveManager.jsx';
 import './TorneoDashboard.css';
+import './TorneoDashboard-llaves.css';
 
 export default function TorneoDashboardSimple() {
   // Estados principales
@@ -341,9 +342,66 @@ export default function TorneoDashboardSimple() {
   return (
     <div className="torneo-dashboard">
       <div className="dashboard-header">
-        <h1>🥋 Sistema de Torneos BJJ - Simplificado</h1>
-        <p>Gestión simplificada con categorías automáticas</p>
+        <h1>🥋 Sistema de Gestión de Torneos BJJ</h1>
+        <p>Gestiona categorías, participantes, llaves y luchas de manera automática y profesional</p>
+        {activeTorneo && (
+          <div className="torneo-active-info">
+            <span className="active-badge">🏆 Torneo Activo</span>
+            <span className="torneo-name">{activeTorneo.nombre}</span>
+          </div>
+        )}
       </div>
+
+      {/* PANEL DE ACCIONES RÁPIDAS */}
+      {activeTorneo && (
+        <div className="quick-actions-panel">
+          <h3>⚡ Acciones Rápidas</h3>
+          <div className="quick-actions-grid">
+            <div className="quick-action-card" onClick={() => toggleSection('participantes')}>
+              <div className="action-icon">👥</div>
+              <div className="action-text">
+                <h4>Registrar Participante</h4>
+                <p>Agregar nuevo luchador</p>
+              </div>
+            </div>
+            
+            <div className="quick-action-card" onClick={() => toggleSection('categorias')}>
+              <div className="action-icon">🏷️</div>
+              <div className="action-text">
+                <h4>Ver Categorías</h4>
+                <p>Explorar {categorias.length} categorías</p>
+              </div>
+            </div>
+            
+            {categorias.some(c => (c.participantes_count || 0) >= 2) && (
+              <div 
+                className="quick-action-card action-highlight"
+                onClick={() => {
+                  const categoriaConParticipantes = categorias.find(c => (c.participantes_count || 0) >= 2);
+                  if (categoriaConParticipantes) {
+                    setActiveCategoria(categoriaConParticipantes);
+                    setShowLlaveManager(true);
+                  }
+                }}
+              >
+                <div className="action-icon">🏆</div>
+                <div className="action-text">
+                  <h4>Generar Llaves</h4>
+                  <p>Crear eliminatorias</p>
+                </div>
+              </div>
+            )}
+            
+            <div className="quick-action-card" onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}>
+              <div className="action-icon">📊</div>
+              <div className="action-text">
+                <h4>Ver Estadísticas</h4>
+                <p>Resumen del torneo</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {error && (
         <div className="alert alert-error">
@@ -439,24 +497,56 @@ export default function TorneoDashboardSimple() {
                       </div>
                     </div>
                     
-                    {/* Botones de gestión de llave */}
+                    {/* Botones de gestión de llave - MEJORADOS */}
                     <div className="category-actions mt-3">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setActiveCategoria(categoria);
-                          setShowLlaveManager(true);
-                        }}
-                        className="btn btn-sm btn-primary mr-2"
-                        disabled={(categoria.participantes_count || 0) < 2}
-                      >
-                        🏆 Gestionar Llave
-                      </button>
-                      {(categoria.participantes_count || 0) < 2 && (
-                        <small className="text-gray-500 block mt-1">
-                          Mínimo 2 participantes
-                        </small>
-                      )}
+                      <div className="llave-status-info mb-2">
+                        {categoria.llaves_count > 0 ? (
+                          <div className="llave-status-indicator">
+                            <span className="status-badge status-llaves-generadas">
+                              🗂️ {categoria.llaves_count} llave(s) generada(s)
+                            </span>
+                            <span className="status-badge status-luchas">
+                              ⚔️ {categoria.luchas_pendientes || 0} luchas pendientes
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="status-badge status-sin-llaves">
+                            📋 Sin llaves generadas
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="llave-action-buttons">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveCategoria(categoria);
+                            setShowLlaveManager(true);
+                          }}
+                          className={`btn ${(categoria.participantes_count || 0) >= 2 ? 'btn-primary btn-prominent' : 'btn-disabled'}`}
+                          disabled={(categoria.participantes_count || 0) < 2}
+                        >
+                          {categoria.llaves_count > 0 ? (
+                            <>🏆 Ver Llaves y Luchas</>
+                          ) : (
+                            <>🎯 Generar Llave</>
+                          )}
+                        </button>
+                        
+                        {(categoria.participantes_count || 0) < 2 ? (
+                          <small className="text-warning block mt-1">
+                            ⚠️ Mínimo 2 participantes requeridos
+                          </small>
+                        ) : categoria.llaves_count > 0 ? (
+                          <small className="text-success block mt-1">
+                            ✅ Listo para gestionar luchas
+                          </small>
+                        ) : (
+                          <small className="text-info block mt-1">
+                            🎲 {categoria.participantes_count} participantes listos
+                          </small>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -526,6 +616,72 @@ export default function TorneoDashboardSimple() {
             categoria={activeCategoria}
             onClose={() => setShowLlaveManager(false)}
           />
+        </div>
+      )}
+
+      {/* SECCIÓN DE ESTADÍSTICAS */}
+      {activeTorneo && (
+        <div className="stats-section">
+          <h3>📊 Estadísticas del Torneo</h3>
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-icon">🏆</div>
+              <div className="stat-content">
+                <div className="stat-number">{categorias.length}</div>
+                <div className="stat-label">Categorías</div>
+              </div>
+            </div>
+            
+            <div className="stat-card">
+              <div className="stat-icon">👥</div>
+              <div className="stat-content">
+                <div className="stat-number">
+                  {categorias.reduce((sum, c) => sum + (c.participantes_count || 0), 0)}
+                </div>
+                <div className="stat-label">Participantes</div>
+              </div>
+            </div>
+            
+            <div className="stat-card">
+              <div className="stat-icon">🗂️</div>
+              <div className="stat-content">
+                <div className="stat-number">
+                  {categorias.reduce((sum, c) => sum + (c.llaves_count || 0), 0)}
+                </div>
+                <div className="stat-label">Llaves Generadas</div>
+              </div>
+            </div>
+            
+            <div className="stat-card">
+              <div className="stat-icon">⚔️</div>
+              <div className="stat-content">
+                <div className="stat-number">
+                  {categorias.reduce((sum, c) => sum + (c.luchas_pendientes || 0), 0)}
+                </div>
+                <div className="stat-label">Luchas Pendientes</div>
+              </div>
+            </div>
+            
+            <div className="stat-card">
+              <div className="stat-icon">✅</div>
+              <div className="stat-content">
+                <div className="stat-number">
+                  {categorias.filter(c => (c.participantes_count || 0) >= 2).length}
+                </div>
+                <div className="stat-label">Listas para Luchas</div>
+              </div>
+            </div>
+            
+            <div className="stat-card">
+              <div className="stat-icon">🎯</div>
+              <div className="stat-content">
+                <div className="stat-number">
+                  {Math.round((categorias.filter(c => (c.participantes_count || 0) >= 2).length / Math.max(categorias.length, 1)) * 100)}%
+                </div>
+                <div className="stat-label">Progreso</div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>

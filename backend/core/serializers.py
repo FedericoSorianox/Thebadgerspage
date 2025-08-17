@@ -31,11 +31,14 @@ class TorneoSerializer(serializers.ModelSerializer):
 class CategoriaSerializer(serializers.ModelSerializer):
     torneo_nombre = serializers.CharField(source='torneo.nombre', read_only=True)
     participantes_count = serializers.SerializerMethodField()
+    llaves_count = serializers.SerializerMethodField()
+    luchas_pendientes = serializers.SerializerMethodField()
     
     class Meta:
         model = Categoria
         fields = ['id', 'torneo', 'torneo_nombre', 'nombre', 'tipo_categoria', 
-                 'peso_minimo', 'peso_maximo', 'estado', 'fecha_creacion', 'participantes_count']
+                 'peso_minimo', 'peso_maximo', 'estado', 'fecha_creacion', 
+                 'participantes_count', 'llaves_count', 'luchas_pendientes']
         read_only_fields = ['fecha_creacion', 'nombre', 'tipo_categoria', 'peso_minimo', 'peso_maximo']
     
     def get_participantes_count(self, obj):
@@ -70,6 +73,18 @@ class CategoriaSerializer(serializers.ModelSerializer):
                 participantes_automaticos = queryset.count()
         
         return participantes_asignados + participantes_automaticos
+    
+    def get_llaves_count(self, obj):
+        """Contar el número de llaves generadas para esta categoría"""
+        return obj.llaves.count()
+    
+    def get_luchas_pendientes(self, obj):
+        """Contar el número de luchas pendientes en esta categoría"""
+        from .models import Lucha
+        return Lucha.objects.filter(
+            llave__categoria=obj,
+            estado='pendiente'
+        ).count()
 
 
 class ParticipanteSerializer(serializers.ModelSerializer):
