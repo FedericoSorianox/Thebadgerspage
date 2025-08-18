@@ -68,7 +68,7 @@ def galeria_items(request):
     """Listado paginado de galería con scroll infinito y filtros.
     Params:
       - cursor: ISO datetime (fecha_subida) para paginar hacia abajo
-      - limit: cantidad (default 24, max 100)
+      - limit: cantidad (default 24, max 500)
       - tipo: img|video (opcional)
       - q: texto en nombre (opcional)
     """
@@ -97,7 +97,7 @@ def galeria_items(request):
                 pass
 
         try:
-            limit = min(int(request.GET.get('limit', '24')), 100)
+            limit = min(int(request.GET.get('limit', '24')), 500)
         except ValueError:
             limit = 24
 
@@ -346,9 +346,12 @@ def galeria_upload(request):
     if archivo.content_type not in allowed_types:
         return JsonResponse({'error': f'Tipo de archivo no permitido: {archivo.content_type}'}, status=400)
     
-    # Verificar tamaño del archivo (máximo 10MB)
-    if archivo.size > 10 * 1024 * 1024:
-        return JsonResponse({'error': 'El archivo es demasiado grande (máximo 10MB)'}, status=400)
+    # Verificar tamaño del archivo
+    # Máximo 50MB para videos, 10MB para imágenes
+    is_video = (archivo.content_type or '').startswith('video')
+    max_bytes = 50 * 1024 * 1024 if is_video else 10 * 1024 * 1024
+    if archivo.size > max_bytes:
+        return JsonResponse({'error': 'El archivo es demasiado grande (máximo 50MB para videos y 10MB para imágenes)'}, status=400)
     
     try:
         print(f"DEBUG: Intentando crear GaleriaItem con nombre: {nombre}")
@@ -411,11 +414,7 @@ def galeria_upload(request):
         else:
             print(f"DEBUG: ADVERTENCIA: El archivo no se guardó correctamente")
         
-        # Mantener solo los últimos 8 elementos
-        items = GaleriaItem.objects.order_by('-fecha_subida')
-        if items.count() > 8:
-            for old in items[8:]:
-                old.delete()
+        # Ya no se purgan elementos antiguos: conservamos todo el historial
         
         response_data = {
             'ok': True,
