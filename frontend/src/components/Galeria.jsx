@@ -6,12 +6,13 @@ export default function Galeria({ API_BASE }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState(null); // item seleccionado (img o video)
-  const [tipo, setTipo] = useState('all'); // all | img | video
   const [cursor, setCursor] = useState(null);
   const [hasMore, setHasMore] = useState(true);
   const sentinelRef = useRef(null);
+  const inFlightRef = useRef(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showUploader, setShowUploader] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [user, setUser] = useState(localStorage.getItem('badgers_user') || '');
   const [pass, setPass] = useState(localStorage.getItem('badgers_pass') || '');
   const [uploading, setUploading] = useState(false);
@@ -21,8 +22,9 @@ export default function Galeria({ API_BASE }) {
 
 
   const fetchPage = useCallback(async (reset=false) => {
+    if (inFlightRef.current) return; // evitar llamadas concurrentes/loop
+    inFlightRef.current = true;
     const params = new URLSearchParams();
-    if (tipo !== 'all') params.set('tipo', tipo);
     if (!reset && cursor) params.set('cursor', cursor);
     params.set('limit', '24');
     const url = `${base}/api/galeria/items/?${params.toString()}`;
@@ -39,8 +41,9 @@ export default function Galeria({ API_BASE }) {
       setError(e.message);
     } finally {
       setLoading(false);
+      inFlightRef.current = false;
     }
-  }, [base, tipo, cursor]);
+  }, [base, cursor]);
 
   const authHeader = useCallback(() => {
     if (!user || !pass) return {};
@@ -88,10 +91,10 @@ export default function Galeria({ API_BASE }) {
   useEffect(() => {
     setCursor(null); setHasMore(true); setItems([]);
     fetchPage(true);
-  }, [tipo, fetchPage]);
+  }, [fetchPage]);
 
   useEffect(() => {
-    if (!hasMore) return;
+    if (!hasMore || loading) return;
     const el = sentinelRef.current;
     if (!el) return;
     const io = new IntersectionObserver((entries)=>{
@@ -101,7 +104,7 @@ export default function Galeria({ API_BASE }) {
     }, { rootMargin: '800px' });
     io.observe(el);
     return () => io.disconnect();
-  }, [fetchPage, hasMore]);
+  }, [fetchPage, hasMore, loading]);
 
 
 
@@ -109,18 +112,16 @@ export default function Galeria({ API_BASE }) {
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 font-sans pt-32 flex flex-col items-center px-2">
       <h2 className="text-3xl md:text-4xl font-bold text-slate-800 mb-4">Galería</h2>
 
-      {/* Filtros + Uploader admin */}
-      <div className="mb-4 flex gap-2 w-full max-w-6xl items-center justify-between">
-        <div className="flex gap-2">
-          {['all','img','video'].map(t => (
-            <button key={t}
-              className={`px-3 py-1 rounded-full text-sm font-semibold ${tipo===t?'bg-indigo-600 text-white':'bg-white text-slate-700 border'}`}
-              onClick={()=>{ setTipo(t); }}>
-              {t==='all'?'Todas': t==='img'?'Imágenes':'Videos'}
-            </button>
-          ))}
-        </div>
-        <div className="flex gap-2">
+      {/* Toggle admin + uploader */}
+      <div className="mb-4 w-full max-w-6xl flex items-center justify-between">
+        <div />
+        <button className="px-3 py-1 rounded bg-slate-700 text-white" onClick={()=>setShowAdminPanel(v=>!v)}>
+          {showAdminPanel?'Ocultar Admin':'Modo Admin'}
+        </button>
+      </div>
+
+      {showAdminPanel && (
+        <div className="mb-4 w-full max-w-6xl flex items-center justify-between">
           {!isAdmin ? (
             <div className="flex items-center gap-2 text-sm">
               <input className="px-2 py-1" placeholder="Usuario" value={user} onChange={(e)=>setUser(e.target.value)} style={{border:'1px solid #ddd', borderRadius:6}} />
@@ -131,7 +132,7 @@ export default function Galeria({ API_BASE }) {
             <button className="px-3 py-1 rounded bg-emerald-600 text-white" onClick={()=>setShowUploader(v=>!v)}>{showUploader?'Cerrar Uploader':'Subir'}</button>
           )}
         </div>
-      </div>
+      )}
 
       {isAdmin && showUploader && (
         <div className="w-full max-w-6xl mb-4 p-4 border rounded-xl bg-white">
