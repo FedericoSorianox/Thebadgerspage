@@ -27,6 +27,7 @@ from rest_framework.authtoken.models import Token
 from .permissions import IsAdminOrReadOnly
 from django.views.decorators.http import require_http_methods
 from django.utils.decorators import method_decorator
+from django.utils import timezone
 
 # Decorador para añadir headers CORS manualmente
 def add_cors_headers(view_func):
@@ -1251,7 +1252,7 @@ class LuchaViewSet(viewsets.ModelViewSet):
         """Finalizar una lucha"""
         lucha = self.get_object()
         
-        if lucha.estado not in ['en_progreso', 'pausada']:
+        if lucha.estado not in ['en_progreso', 'pausada', 'pendiente']:
             return Response(
                 {'error': 'Solo se pueden finalizar luchas en progreso o pausadas'}, 
                 status=status.HTTP_400_BAD_REQUEST
@@ -1370,57 +1371,7 @@ class LuchaViewSet(viewsets.ModelViewSet):
             'message': 'Cronómetro pausado' if not lucha.cronometro_activo else 'Cronómetro reanudado',
             'cronometro_activo': lucha.cronometro_activo
         })
-        lucha.save()
-        return Response({'status': 'Lucha iniciada'})
-    
-    @action(detail=True, methods=['post'])
-    def pausar(self, request, pk=None):
-        """Pausar una lucha"""
-        lucha = self.get_object()
-        lucha.estado = 'pausada'
-        lucha.save()
-        return Response({'status': 'Lucha pausada'})
-    
-    @action(detail=True, methods=['post'])
-    def finalizar(self, request, pk=None):
-        """Finalizar una lucha"""
-        lucha = self.get_object()
-        data = request.data
-        
-        lucha.estado = 'finalizada'
-        lucha.fecha_fin = datetime.now()
-        
-        # Actualizar puntuación final
-        lucha.puntos_p1 = data.get('puntos_p1', lucha.puntos_p1)
-        lucha.ventajas_p1 = data.get('ventajas_p1', lucha.ventajas_p1)
-        lucha.penalizaciones_p1 = data.get('penalizaciones_p1', lucha.penalizaciones_p1)
-        
-        lucha.puntos_p2 = data.get('puntos_p2', lucha.puntos_p2)
-        lucha.ventajas_p2 = data.get('ventajas_p2', lucha.ventajas_p2)
-        lucha.penalizaciones_p2 = data.get('penalizaciones_p2', lucha.penalizaciones_p2)
-        
-        lucha.tiempo_transcurrido = data.get('tiempo_transcurrido', lucha.tiempo_transcurrido)
-        
-        # Determinar ganador
-        if lucha.puntos_p1 > lucha.puntos_p2:
-            lucha.ganador = lucha.participante1
-            lucha.resultado = 'Por puntos'
-        elif lucha.puntos_p2 > lucha.puntos_p1:
-            lucha.ganador = lucha.participante2
-            lucha.resultado = 'Por puntos'
-        else:
-            # En caso de empate, revisar ventajas
-            if lucha.ventajas_p1 > lucha.ventajas_p2:
-                lucha.ganador = lucha.participante1
-                lucha.resultado = 'Por ventajas'
-            elif lucha.ventajas_p2 > lucha.ventajas_p1:
-                lucha.ganador = lucha.participante2
-                lucha.resultado = 'Por ventajas'
-            else:
-                lucha.resultado = 'Empate'
-        
-        lucha.save()
-        return Response({'status': 'Lucha finalizada', 'ganador': lucha.ganador.nombre_completo if lucha.ganador else None})
+        # Fin de método toggle_cronometro
     
     @action(detail=True, methods=['post'])
     def actualizar_puntuacion(self, request, pk=None):

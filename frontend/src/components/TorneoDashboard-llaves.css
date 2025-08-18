@@ -1,4 +1,56 @@
 /* =================== ESTILOS MEJORADOS PARA GESTIÓN DE LLAVES =================== */
+.bracket {
+    width: 100%;
+}
+.bracket-column {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 12px;
+}
+.bracket-round-title {
+    font-weight: 700;
+    color: #1f2937;
+    margin-bottom: 8px;
+}
+.bracket-column-matches {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+.bracket-match {
+    background: #f9fafb;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 8px;
+}
+.bracket-match.is-bye {
+    opacity: 0.7;
+}
+.bracket-player {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 8px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+.bracket-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.btn-small {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+.bracket-winner {
+    font-size: 12px;
+    color: #059669;
+    font-weight: 700;
+}
 
 /* Información de estado de llaves */
 .llave-status-info {

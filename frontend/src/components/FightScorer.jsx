@@ -68,6 +68,20 @@ export default function FightScorer({ categoria, onClose }) {
     }
   };
 
+  const addDelta = async (field, delta) => {
+    if (!current) return;
+    try {
+      setWorking(true);
+      const value = Math.max(0, (current[field] || 0) + delta);
+      await luchaAPI.update(current.id, { [field]: value });
+      await refreshCurrent();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setWorking(false);
+    }
+  };
+
   const toggleTimer = async () => {
     if (!current) return;
     try {
@@ -165,13 +179,19 @@ export default function FightScorer({ categoria, onClose }) {
           <div className="border rounded-xl p-4">
             <div className="text-center text-lg font-semibold mb-2">{current.participante1_nombre || current.participante1?.nombre || 'P1'}</div>
             <div className="text-center text-4xl font-black text-blue-600 mb-4">{calcPoints.p1}</div>
-            <div className="grid grid-cols-2 gap-2">
-              <button disabled={working} onClick={() => addValue('montadas_p1')} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">Montada +4</button>
-              <button disabled={working} onClick={() => addValue('guardas_pasadas_p1')} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">Guarda +3</button>
-              <button disabled={working} onClick={() => addValue('rodillazos_p1')} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">Rodillazo +2</button>
-              <button disabled={working} onClick={() => addValue('derribos_p1')} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">Derribo +2</button>
-              <button disabled={working} onClick={() => addValue('ventajas_p1')} className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded">Ventaja +1</button>
-              <button disabled={working} onClick={() => addValue('penalizaciones_p1')} className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded">Penalización +1</button>
+            <div className="grid grid-cols-3 gap-2">
+              <button disabled={working} onClick={() => addDelta('montadas_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">+4</button>
+              <button disabled={working} onClick={() => addDelta('guardas_pasadas_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">+3</button>
+              <button disabled={working} onClick={() => addDelta('rodillazos_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">+2</button>
+              <button disabled={working} onClick={() => addDelta('derribos_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">+2</button>
+              <button disabled={working} onClick={() => addDelta('ventajas_p1', +1)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded">Ventaja +1</button>
+              <button disabled={working} onClick={() => addDelta('penalizaciones_p1', +1)} className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded">Penal -1</button>
+              <button disabled={working} onClick={() => addDelta('montadas_p1', -1)} className="bg-gray-200 px-3 py-2 rounded">-4</button>
+              <button disabled={working} onClick={() => addDelta('guardas_pasadas_p1', -1)} className="bg-gray-200 px-3 py-2 rounded">-3</button>
+              <button disabled={working} onClick={() => addDelta('rodillazos_p1', -1)} className="bg-gray-200 px-3 py-2 rounded">-2</button>
+              <button disabled={working} onClick={() => addDelta('derribos_p1', -1)} className="bg-gray-200 px-3 py-2 rounded">-2</button>
+              <button disabled={working} onClick={() => addDelta('ventajas_p1', -1)} className="bg-yellow-200 px-3 py-2 rounded">Ventaja -1</button>
+              <button disabled={working} onClick={() => addDelta('penalizaciones_p1', -1)} className="bg-red-200 px-3 py-2 rounded">Penal +1</button>
             </div>
           </div>
 
@@ -179,13 +199,19 @@ export default function FightScorer({ categoria, onClose }) {
           <div className="border rounded-xl p-4">
             <div className="text-center text-lg font-semibold mb-2">{current.participante2_nombre || current.participante2?.nombre || 'P2'}</div>
             <div className="text-center text-4xl font-black text-green-600 mb-4">{calcPoints.p2}</div>
-            <div className="grid grid-cols-2 gap-2">
-              <button disabled={working} onClick={() => addValue('montadas_p2')} className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded">Montada +4</button>
-              <button disabled={working} onClick={() => addValue('guardas_pasadas_p2')} className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded">Guarda +3</button>
-              <button disabled={working} onClick={() => addValue('rodillazos_p2')} className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded">Rodillazo +2</button>
-              <button disabled={working} onClick={() => addValue('derribos_p2')} className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded">Derribo +2</button>
-              <button disabled={working} onClick={() => addValue('ventajas_p2')} className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded">Ventaja +1</button>
-              <button disabled={working} onClick={() => addValue('penalizaciones_p2')} className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded">Penalización +1</button>
+            <div className="grid grid-cols-3 gap-2">
+              <button disabled={working} onClick={() => addDelta('montadas_p2', +1)} className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded">+4</button>
+              <button disabled={working} onClick={() => addDelta('guardas_pasadas_p2', +1)} className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded">+3</button>
+              <button disabled={working} onClick={() => addDelta('rodillazos_p2', +1)} className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded">+2</button>
+              <button disabled={working} onClick={() => addDelta('derribos_p2', +1)} className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded">+2</button>
+              <button disabled={working} onClick={() => addDelta('ventajas_p2', +1)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded">Ventaja +1</button>
+              <button disabled={working} onClick={() => addDelta('penalizaciones_p2', +1)} className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded">Penal -1</button>
+              <button disabled={working} onClick={() => addDelta('montadas_p2', -1)} className="bg-gray-200 px-3 py-2 rounded">-4</button>
+              <button disabled={working} onClick={() => addDelta('guardas_pasadas_p2', -1)} className="bg-gray-200 px-3 py-2 rounded">-3</button>
+              <button disabled={working} onClick={() => addDelta('rodillazos_p2', -1)} className="bg-gray-200 px-3 py-2 rounded">-2</button>
+              <button disabled={working} onClick={() => addDelta('derribos_p2', -1)} className="bg-gray-200 px-3 py-2 rounded">-2</button>
+              <button disabled={working} onClick={() => addDelta('ventajas_p2', -1)} className="bg-yellow-200 px-3 py-2 rounded">Ventaja -1</button>
+              <button disabled={working} onClick={() => addDelta('penalizaciones_p2', -1)} className="bg-red-200 px-3 py-2 rounded">Penal +1</button>
             </div>
           </div>
         </div>

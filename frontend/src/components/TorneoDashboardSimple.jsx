@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { torneoAPI, categoriaAPI, participanteAPI } from '../services/api-new.js';
+import { torneoAPI, categoriaAPI, participanteAPI, llaveAPI } from '../services/api-new.js';
 import LlaveManager from './LlaveManager.jsx';
 import FightScorer from './FightScorer.jsx';
 import './TorneoDashboard.css';
@@ -372,8 +372,106 @@ export default function TorneoDashboardSimple() {
         )}
       </div>
 
-      {/* PANEL DE ACCIONES RÁPIDAS */}
-      {activeTorneo && (
+      {/* BARRA COMPACTA: SELECCIÓN RÁPIDA */}
+      <div className="section" style={{ marginTop: 12 }}>
+        <div className="section-content" style={{ paddingTop: 12 }}>
+          <div className="content-grid" style={{ gridTemplateColumns: '1fr' }}>
+            <div className="content-column">
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                <div>
+                  <label className="form-label">Torneo</label>
+                  <select
+                    className="form-select"
+                    value={activeTorneo?.id || ''}
+                    onChange={(e) => {
+                      const id = Number(e.target.value);
+                      const t = torneos.find(tt => tt.id === id) || null;
+                      setActiveTorneo(t);
+                      setActiveCategoria(null);
+                      if (t) loadCategorias(t.id);
+                    }}
+                  >
+                    <option value="">Seleccionar...</option>
+                    {torneos.map(t => (
+                      <option key={t.id} value={t.id}>{t.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="form-label">Categoría</label>
+                  <select
+                    className="form-select"
+                    value={activeCategoria?.id || ''}
+                    onChange={async (e) => {
+                      const id = Number(e.target.value);
+                      const c = categorias.find(cc => cc.id === id) || null;
+                      setActiveCategoria(c);
+                      if (c) await loadParticipantes(c.id);
+                    }}
+                    disabled={!activeTorneo}
+                  >
+                    <option value="">Seleccionar...</option>
+                    {categorias.map(c => (
+                      <option key={c.id} value={c.id}>{c.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {activeCategoria && (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                    {!(activeCategoria.llaves_count > 0) && (
+                      <button
+                        className="btn btn-primary"
+                        onClick={async () => {
+                          try {
+                            setIsWorking(true);
+                            await llaveAPI.generar(activeCategoria.id);
+                            await loadCategorias(activeTorneo.id);
+                            setSuccess('¡Llave generada exitosamente!');
+                          } catch (e) {
+                            setError(e.message);
+                          } finally {
+                            setIsWorking(false);
+                          }
+                        }}
+                        disabled={isWorking}
+                      >
+                        🎯 Generar Llave
+                      </button>
+                    )}
+                    {activeCategoria.llaves_count > 0 && (
+                      <>
+                        <button className="btn btn-success" onClick={() => setShowLlaveManager(true)}>⚔️ Gestionar Luchas</button>
+                        <button className="btn btn-primary" onClick={() => setShowScorer(true)}>▶️ COMENZAR</button>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* TABS PRINCIPALES */}
+      <div className="section" style={{ marginTop: 10 }}>
+        <div className="section-content" style={{ paddingTop: 0 }}>
+          <div className="content-grid" style={{ gridTemplateColumns: '1fr' }}>
+            <div className="content-column">
+              <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid #e5e7eb' }}>
+                <button className={`btn ${expandedSections.torneos ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ torneos: true, categorias: false, participantes: false, llaves: false })}>🏆 Torneo</button>
+                <button className={`btn ${expandedSections.categorias ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ torneos: false, categorias: true, participantes: false, llaves: false })}>🏷️ Categorías</button>
+                <button className={`btn ${expandedSections.participantes ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ torneos: false, categorias: false, participantes: true, llaves: false })}>👥 Participantes</button>
+                <button className={`btn ${expandedSections.llaves ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ torneos: false, categorias: false, participantes: false, llaves: true })}>🗂️ Llaves / Luchas</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* PANEL DE ACCIONES RÁPIDAS (solo en tab Llaves/Luchas) */}
+      {activeTorneo && expandedSections.llaves && (
         <div className="quick-actions-panel">
           <h3>⚡ Acciones Rápidas</h3>
           <div className="quick-actions-grid">
@@ -442,14 +540,14 @@ export default function TorneoDashboardSimple() {
         </div>
       )}
 
-      {/* LUCHAS ACTIVAS */}
-      {activeTorneo && categorias.some(c => (c.luchas_pendientes || 0) > 0) && (
+      {/* LUCHAS ACTIVAS (solo en tab Llaves/Luchas) */}
+      {activeTorneo && expandedSections.llaves && categorias.some(c => (c.luchas_pendientes || 0) > 0 || (c.llaves_count || 0) > 0) && (
         <div className="active-fights-panel">
           <h3>⚔️ Luchas Disponibles</h3>
           <p>Haz clic en una categoría para comenzar las luchas</p>
           <div className="active-fights-grid">
             {categorias
-              .filter(c => (c.luchas_pendientes || 0) > 0)
+              .filter(c => (c.luchas_pendientes || 0) > 0 || (c.llaves_count || 0) > 0)
               .map(categoria => (
                 <div 
                   key={categoria.id} 
@@ -462,7 +560,7 @@ export default function TorneoDashboardSimple() {
                   <div className="fight-icon">🥊</div>
                   <div className="fight-info">
                     <h4>{categoria.nombre}</h4>
-                    <p>{categoria.luchas_pendientes} luchas pendientes</p>
+                    <p>{categoria.luchas_pendientes || 0} luchas pendientes</p>
                     <div className="fight-status">
                       <span className="participants-count">👥 {categoria.participantes_count} participantes</span>
                     </div>
@@ -494,7 +592,8 @@ export default function TorneoDashboardSimple() {
         </div>
       )}
 
-      {/* SECCIÓN TORNEOS */}
+      {/* SECCIÓN TORNEOS (solo tab Torneos) */}
+      {expandedSections.torneos && (
       <div className="section">
         <div className="section-header" onClick={() => toggleSection('torneos')}>
           <h2>🏆 Torneos ({torneos.length})</h2>
@@ -539,9 +638,10 @@ export default function TorneoDashboardSimple() {
           </div>
         )}
       </div>
+      )}
 
-      {/* SECCIÓN CATEGORÍAS */}
-      {activeTorneo && (
+      {/* SECCIÓN CATEGORÍAS (solo tab Categorías) */}
+      {activeTorneo && expandedSections.categorias && (
         <div className="section">
           <div className="section-header" onClick={() => toggleSection('categorias')}>
             <h2>🏷️ Categorías de "{activeTorneo.nombre}" ({categorias.length})</h2>
@@ -639,8 +739,8 @@ export default function TorneoDashboardSimple() {
         </div>
       )}
 
-      {/* SECCIÓN PARTICIPANTES */}
-      {activeTorneo && (
+      {/* SECCIÓN PARTICIPANTES (solo tab Participantes) */}
+      {activeTorneo && expandedSections.participantes && (
         <div className="section">
           <div className="section-header" onClick={() => toggleSection('participantes')}>
             <h2>👥 Participantes</h2>
@@ -702,8 +802,13 @@ export default function TorneoDashboardSimple() {
         </div>
       )}
 
-      {/* SECCIÓN DE ESTADÍSTICAS */}
-      {activeTorneo && (
+      {/* MARCADOR (FightScorer) */}
+      {showScorer && activeCategoria && (
+        <FightScorer categoria={activeCategoria} onClose={() => setShowScorer(false)} />
+      )}
+
+      {/* SECCIÓN DE ESTADÍSTICAS (solo tab Torneos) */}
+      {activeTorneo && expandedSections.torneos && (
         <div className="stats-section">
           <h3>📊 Estadísticas del Torneo</h3>
           <div className="stats-grid">

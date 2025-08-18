@@ -283,58 +283,51 @@ export default function LlaveManager({ categoria, onClose }) {
       return <div className="text-gray-500">No hay llave generada</div>;
     }
     
+    const rondas = llave.estructura.rondas;
+    const gridTemplate = `repeat(${rondas.length}, minmax(220px, 1fr))`;
+
     return (
       <div className="llave-visualization">
-        <h4 className="text-lg font-semibold mb-4">Estructura de la Llave</h4>
-        
-        {llave.estructura.rondas.map((ronda, rondaIdx) => (
-          <div key={rondaIdx} className="mb-6">
-            <h5 className="text-md font-medium mb-2 text-blue-600">{ronda.nombre}</h5>
-            <div className="grid gap-2">
-              {ronda.luchas.map((lucha, luchaIdx) => (
-                <div key={luchaIdx} className="border rounded p-3 bg-gray-50">
-                  <div className="flex justify-between items-center">
-                    <div className="flex-1">
-                      <div className="text-sm">
-                        <span className={lucha.participante1 ? 'font-medium' : 'text-gray-400'}>
-                          {lucha.participante1 ? lucha.participante1.nombre : 'TBD'}
-                        </span>
-                        <span className="mx-2">vs</span>
-                        <span className={lucha.participante2 && !lucha.participante2.bye ? 'font-medium' : 'text-gray-400'}>
-                          {lucha.participante2 && !lucha.participante2.bye ? lucha.participante2.nombre : lucha.participante2?.bye ? 'BYE' : 'TBD'}
-                        </span>
+        <h4 className="text-lg font-semibold mb-4">Llave del Torneo</h4>
+        <div className="bracket" style={{ display: 'grid', gridTemplateColumns: gridTemplate, gap: 16, overflowX: 'auto' }}>
+          {rondas.map((ronda, rondaIdx) => (
+            <div key={rondaIdx} className="bracket-column">
+              <div className="bracket-round-title">{ronda.nombre}</div>
+              <div className="bracket-column-matches">
+                {ronda.luchas.map((lucha, luchaIdx) => {
+                  const luchaReal = luchas.find(l => {
+                    const p1Id = l.participante1?.id || l.participante1;
+                    const p2Id = l.participante2?.id || l.participante2;
+                    const eP1Id = lucha.participante1?.id;
+                    const eP2Id = lucha.participante2?.id;
+                    return p1Id === eP1Id && p2Id === eP2Id;
+                  });
+                  const p1 = lucha.participante1;
+                  const p2 = lucha.participante2;
+                  const isBye = p2 && p2.bye;
+                  return (
+                    <div key={luchaIdx} className={`bracket-match ${isBye ? 'is-bye' : ''}`}>
+                      <div className="bracket-player">
+                        <span>{p1 ? p1.nombre : 'TBD'}</span>
                       </div>
-                      {lucha.ganador && (
-                        <div className="text-xs text-green-600 mt-1">
-                          Ganador: {lucha.ganador.nombre}
-                        </div>
-                      )}
+                      <div className="bracket-player">
+                        <span>{p2 ? (isBye ? 'BYE' : p2.nombre) : 'TBD'}</span>
+                      </div>
+                      <div className="bracket-actions">
+                        {luchaReal && !isBye && (
+                          <button onClick={() => handleEditarLucha(luchaReal)} className="btn btn-small btn-primary">Editar</button>
+                        )}
+                        {lucha.ganador && (
+                          <div className="bracket-winner">🏆 {lucha.ganador.nombre}</div>
+                        )}
+                      </div>
                     </div>
-                    
-                    {/* Buscar la lucha real para mostrar botón de editar */}
-                    {(() => {
-                      const luchaReal = luchas.find(l => {
-                        const p1Id = l.participante1?.id || l.participante1; // soporta objeto o id
-                        const p2Id = l.participante2?.id || l.participante2;
-                        const eP1Id = lucha.participante1?.id;
-                        const eP2Id = lucha.participante2?.id;
-                        return p1Id === eP1Id && p2Id === eP2Id;
-                      });
-                      return luchaReal && (
-                        <button
-                          onClick={() => handleEditarLucha(luchaReal)}
-                          className="text-sm bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600"
-                        >
-                          Editar
-                        </button>
-                      );
-                    })()}
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   };
