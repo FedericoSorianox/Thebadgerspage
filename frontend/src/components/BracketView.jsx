@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { llaveAPI, luchaAPI } from '../services/api-new.js';
+import { llaveAPI, luchaAPI, participanteAPI } from '../services/api-new.js';
 
 export default function BracketView({ categoria, onManage }) {
   const [llave, setLlave] = useState(null);
@@ -7,6 +7,7 @@ export default function BracketView({ categoria, onManage }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [dragData, setDragData] = useState(null); // { tipo: 'participante'|'slot', data: {...} }
+  const [catalogo, setCatalogo] = useState([]);
 
   useEffect(() => {
     let mounted = true;
@@ -16,9 +17,11 @@ export default function BracketView({ categoria, onManage }) {
         setError(null);
         const l = await llaveAPI.getByCategoria(categoria.id);
         const lu = await luchaAPI.getByCategoria(categoria.id);
+        const all = await participanteAPI.getAll(null, categoria.torneo);
         if (!mounted) return;
         setLlave(l);
         setLuchas(Array.isArray(lu?.results) ? lu.results : Array.isArray(lu) ? lu : []);
+        setCatalogo(Array.isArray(all?.results) ? all.results : Array.isArray(all) ? all : []);
       } catch (e) {
         if (!mounted) return;
         setError(e.message);
@@ -53,6 +56,19 @@ export default function BracketView({ categoria, onManage }) {
         {onManage && (
           <button className="btn btn-primary" onClick={onManage}>⚙️ Gestionar</button>
         )}
+      </div>
+      {/* Bandeja de participantes para DnD */}
+      <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:10 }}>
+        {catalogo.map(p => (
+          <div key={p.id} className="participant-card" draggable
+               onDragStart={(e)=>{ try{ e.dataTransfer.setData('participant-id', String(p.id)); e.dataTransfer.effectAllowed='move'; }catch(_){ } }}
+               style={{ cursor:'grab' }}>
+            <div className="participant-info">
+              <strong>{p.nombre}</strong>
+              <div className="text-xs">{p.academia} • {p.cinturon}{p.peso?` • ${p.peso}kg`:''}</div>
+            </div>
+          </div>
+        ))}
       </div>
       <div className="bracket" style={{ display: 'grid', gridTemplateColumns: gridTemplate, gap: 16, overflowX: 'auto' }}>
         {rondas.map((ronda, rondaIdx) => (

@@ -898,39 +898,8 @@ class ParticipanteViewSet(viewsets.ModelViewSet):
         if categoria_id is not None:
             try:
                 categoria = Categoria.objects.get(id=categoria_id)
-                
-                # Obtener participantes asignados directamente a esta categoría
-                participantes_asignados = queryset.filter(categoria_asignada=categoria)
-                
-                # Obtener participantes que coinciden automáticamente
-                participantes_automaticos = queryset.none()  # QuerySet vacío por defecto
-                
-                if categoria.tipo_categoria in ['blanca', 'azul', 'violeta', 'marron', 'negro']:
-                    # Es una categoría por cinturón
-                    cinturon_map = {
-                        'blanca': 'blanca',
-                        'azul': 'azul', 
-                        'violeta': 'violeta',
-                        'marron': 'marron',
-                        'negro': 'negro'
-                    }
-                    cinturon = cinturon_map.get(categoria.tipo_categoria)
-                    if cinturon:
-                        participantes_automaticos = queryset.filter(
-                            torneo=categoria.torneo,
-                            cinturon=cinturon,
-                            categoria_asignada__isnull=True  # Solo los no asignados manualmente
-                        )
-                        
-                        # Filtrar por peso si está definido
-                        if categoria.peso_minimo is not None:
-                            participantes_automaticos = participantes_automaticos.filter(peso__gte=categoria.peso_minimo)
-                        if categoria.peso_maximo is not None:
-                            participantes_automaticos = participantes_automaticos.filter(peso__lte=categoria.peso_maximo)
-                
-                # Combinar ambos querysets
-                queryset = participantes_asignados | participantes_automaticos
-                
+                # Solo los asignados manualmente
+                queryset = queryset.filter(categoria_asignada=categoria)
             except Categoria.DoesNotExist:
                 queryset = queryset.none()
         

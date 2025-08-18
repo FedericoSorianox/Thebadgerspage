@@ -219,23 +219,8 @@ class Llave(models.Model):
     finalizada = models.BooleanField(default=False)
 
     def obtener_participantes(self):
-        """Obtiene todos los participantes de la categoría"""
-        participantes_asignados = self.categoria.participantes_asignados.filter(activo=True)
-        
-        participantes_automaticos = []
-        if self.categoria.tipo_categoria in ['blanca', 'azul', 'violeta', 'marron', 'negro']:
-            queryset = self.categoria.torneo.participantes.filter(
-                activo=True,
-                cinturon=self.categoria.tipo_categoria,
-                categoria_asignada__isnull=True
-            )
-            if self.categoria.peso_minimo is not None:
-                queryset = queryset.filter(peso__gte=self.categoria.peso_minimo)
-            if self.categoria.peso_maximo is not None:
-                queryset = queryset.filter(peso__lte=self.categoria.peso_maximo)
-            participantes_automaticos = list(queryset)
-        
-        return list(participantes_asignados) + participantes_automaticos
+        """Obtiene únicamente los participantes asignados manualmente a la categoría"""
+        return list(self.categoria.participantes_asignados.filter(activo=True))
     
     def calcular_rondas_necesarias(self, num_participantes):
         """Calcula cuántas rondas son necesarias para un número de participantes"""
