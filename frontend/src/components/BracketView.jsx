@@ -6,6 +6,7 @@ export default function BracketView({ categoria, onManage }) {
   const [luchas, setLuchas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [dragData, setDragData] = useState(null); // { tipo: 'participante'|'slot', data: {...} }
 
   useEffect(() => {
     let mounted = true;
@@ -70,12 +71,32 @@ export default function BracketView({ categoria, onManage }) {
                 const p2 = lucha.participante2;
                 const isBye = p2 && p2.bye;
                 return (
-                  <div key={luchaIdx} className={`bracket-match ${isBye ? 'is-bye' : ''}`}>
-                    <div className="bracket-player">
+                  <div key={luchaIdx} className={`bracket-match ${isBye ? 'is-bye' : ''}`}
+                       onDragOver={(e)=>e.preventDefault()}
+                       onDrop={async (e)=>{
+                         e.preventDefault();
+                         let pid = null;
+                         try{ pid = e.dataTransfer.getData('participant-id'); }catch(_){ }
+                         if (!pid) return;
+                         try{
+                           const slot = e.target.getAttribute('data-slot');
+                           if(!slot) return;
+                           if(r){
+                             await luchaAPI.update(r.id, { [slot==='p1'?'participante1':'participante2']: Number(pid) });
+                           }
+                         }catch(err){
+                           // noop visual, errors se ignoran aquí
+                         }
+                       }}>
+                    <div className="bracket-player" draggable
+                         onDragStart={()=>setDragData({tipo:'slot', data:{matchId:r?.id, slot:'p1'}})}
+                         data-slot="p1">
                       <span>{p1 ? p1.nombre : 'TBD'}</span>
                       <span className="text-xs text-gray-500">{r ? (r.puntos_p1 || 0) : 0}</span>
                     </div>
-                    <div className="bracket-player">
+                    <div className="bracket-player" draggable
+                         onDragStart={()=>setDragData({tipo:'slot', data:{matchId:r?.id, slot:'p2'}})}
+                         data-slot="p2">
                       <span>{p2 ? (isBye ? 'BYE' : p2.nombre) : 'TBD'}</span>
                       <span className="text-xs text-gray-500">{r ? (r.puntos_p2 || 0) : 0}</span>
                     </div>
@@ -89,6 +110,7 @@ export default function BracketView({ categoria, onManage }) {
           </div>
         ))}
       </div>
+      <div className="text-xs text-gray-500 mt-2">Tip: arrastra un participante desde la lista y suéltalo sobre P1/P2.</div>
     </div>
   );
 }

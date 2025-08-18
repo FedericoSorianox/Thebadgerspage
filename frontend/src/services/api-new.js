@@ -336,6 +336,12 @@ export const luchaAPI = {
         return handleResponse(response);
     },
 
+    // Eliminar lucha
+    delete: async (id) => {
+        const response = await fetch(`${TORNEO_API_URL}/luchas/${id}/`, createApiConfig('DELETE'));
+        return response.ok;
+    },
+
     // Iniciar lucha
     iniciar: async (id) => {
         const response = await fetch(`${TORNEO_API_URL}/luchas/${id}/iniciar/`, createApiConfig('POST'));

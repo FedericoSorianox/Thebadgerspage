@@ -526,28 +526,44 @@ export default function TorneoDashboardSimple() {
             {activeCategoria ? (
               <BracketView categoria={activeCategoria} onManage={() => setShowLlaveManager(true)} />
             ) : (
-              <div className="active-fights-grid">
-                {categorias
-                  .filter(c => (c.llaves_count || 0) > 0)
-                  .map(categoria => (
-                    <div 
-                      key={categoria.id} 
-                      className="fight-category-card"
-                      onClick={() => setActiveCategoria(categoria)}
+              <div>
+                <div style={{ display:'flex', gap:12, flexWrap:'wrap', marginBottom:12 }}>
+                  {participantes.map(p => (
+                    <div key={p.id} className="participant-card" draggable
+                         onDragStart={(e)=>{ try{ e.dataTransfer.setData('participant-id', String(p.id)); e.dataTransfer.effectAllowed='move'; }catch(_){} }}
+                         style={{ cursor:'grab' }}
+                         data-participante-id={p.id}
                     >
-                      <div className="fight-icon">🥊</div>
-                      <div className="fight-info">
-                        <h4>{categoria.nombre}</h4>
-                        <p>{categoria.luchas_pendientes || 0} luchas pendientes</p>
-                        <div className="fight-status">
-                          <span className="participants-count">👥 {categoria.participantes_count} participantes</span>
-                        </div>
-                      </div>
-                      <div className="fight-action">
-                        <button className="btn btn-fight" onClick={(e) => { e.stopPropagation(); setActiveCategoria(categoria); }}>Ver Llave</button>
+                      <div className="participant-info">
+                        <strong>{p.nombre}</strong>
+                        <div className="text-xs">{p.academia} • {p.cinturon}{p.peso?` • ${p.peso}kg`:''}</div>
                       </div>
                     </div>
                   ))}
+                </div>
+                <div className="active-fights-grid">
+                  {categorias
+                    .filter(c => (c.llaves_count || 0) > 0)
+                    .map(categoria => (
+                      <div 
+                        key={categoria.id} 
+                        className="fight-category-card"
+                        onClick={() => setActiveCategoria(categoria)}
+                      >
+                        <div className="fight-icon">🥊</div>
+                        <div className="fight-info">
+                          <h4>{categoria.nombre}</h4>
+                          <p>{categoria.luchas_pendientes || 0} luchas pendientes</p>
+                          <div className="fight-status">
+                            <span className="participants-count">👥 {categoria.participantes_count} participantes</span>
+                          </div>
+                        </div>
+                        <div className="fight-action">
+                          <button className="btn btn-fight" onClick={(e) => { e.stopPropagation(); setActiveCategoria(categoria); }}>Ver Llave</button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
               </div>
             )}
           </div>
