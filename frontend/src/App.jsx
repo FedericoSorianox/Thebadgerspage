@@ -27,7 +27,6 @@ const NAV_ITEMS = [
   { label: "Clases", href: "/#clases" },
   { label: "Tienda", href: "/tienda" },
   { label: "Galería", href: "/galeria" },
-  { label: "Torneo BJJ", href: "/torneo" },
   { label: "Contacto", href: "/#contacto" },
 ];
 
@@ -35,6 +34,9 @@ function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(!!(localStorage.getItem('badgers_user') && localStorage.getItem('badgers_pass')));
+  const [user, setUser] = useState(localStorage.getItem('badgers_user') || '');
+  const [pass, setPass] = useState(localStorage.getItem('badgers_pass') || '');
 
   const handleNavigation = (href) => {
     if (href.startsWith('/#')) {
@@ -64,17 +66,52 @@ function Navbar() {
     setIsMenuOpen(false);
   };
 
+  // Doble click en logo para toggle admin/login
+  const handleLogoDoubleClick = async () => {
+    if (!isAdmin) {
+      const u = prompt('Usuario admin:');
+      if (!u) return;
+      const p = prompt('Contraseña:');
+      if (!p) return;
+      try {
+        const token = btoa(`${u}:${p}`);
+        const r = await fetch(`${FORCED_API_BASE}/api/galeria/upload/`, { method: 'GET', headers: { Authorization: `Basic ${token}` } });
+        if (!r.ok) throw new Error('Credenciales inválidas');
+        localStorage.setItem('badgers_user', u);
+        localStorage.setItem('badgers_pass', p);
+        setUser(u); setPass(p); setIsAdmin(true);
+        window.dispatchEvent(new Event('badgers-admin-changed'));
+        alert('Modo admin activado');
+      } catch (e) {
+        alert('Error de autenticación');
+      }
+    } else {
+      localStorage.removeItem('badgers_user');
+      localStorage.removeItem('badgers_pass');
+      setUser(''); setPass(''); setIsAdmin(false);
+      window.dispatchEvent(new Event('badgers-admin-changed'));
+      alert('Modo admin desactivado');
+    }
+  };
+
+  // Reflejar estado admin al cargar
+  useEffect(() => {
+    const sync = () => setIsAdmin(!!(localStorage.getItem('badgers_user') && localStorage.getItem('badgers_pass')));
+    window.addEventListener('badgers-admin-changed', sync);
+    return () => window.removeEventListener('badgers-admin-changed', sync);
+  }, []);
+
   return (
     <nav className="navbar-badgers fixed top-0 left-0 w-full z-50 shadow-xl border-b border-cyan-500/60 backdrop-blur-md">
       <div className="max-w-4xl mx-auto px-4 py-2 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <img src={badgersLogo} alt="Logo The Badgers" className="h-12 w-auto max-w-[56px] object-contain drop-shadow-2xl" />
+          <img src={badgersLogo} alt="Logo The Badgers" className="h-12 w-auto max-w-[56px] object-contain drop-shadow-2xl cursor-pointer" onDoubleClick={handleLogoDoubleClick} />
           <span className="text-2xl font-extrabold text-cyan-300 tracking-wide drop-shadow">The Badgers</span>
         </div>
 
         {/* Menú de escritorio */}
         <ul className="hidden md:flex gap-6">
-          {NAV_ITEMS.map((item) => (
+          {[...NAV_ITEMS, ...(isAdmin ? [{ label: 'Torneo BJJ', href: '/torneo' }] : [])].map((item) => (
             <li key={item.label}>
               {item.href.startsWith('/tienda') ? (
                 <Link
@@ -125,7 +162,7 @@ function Navbar() {
       <div className={`md:hidden transition-all duration-300 ease-in-out ${isMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
         <div className="bg-black/95 backdrop-blur-md border-t border-cyan-500/60">
           <ul className="flex flex-col space-y-2 px-4 py-4">
-            {NAV_ITEMS.map((item) => (
+            {[...NAV_ITEMS, ...(isAdmin ? [{ label: 'Torneo BJJ', href: '/torneo' }] : [])].map((item) => (
               <li key={item.label} className="border-b border-cyan-500/20 last:border-b-0">
                 {item.href.startsWith('/tienda') ? (
                   <Link

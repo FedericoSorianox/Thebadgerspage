@@ -12,7 +12,6 @@ export default function Galeria({ API_BASE }) {
   const inFlightRef = useRef(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showUploader, setShowUploader] = useState(false);
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [user, setUser] = useState(localStorage.getItem('badgers_user') || '');
   const [pass, setPass] = useState(localStorage.getItem('badgers_pass') || '');
   const [uploading, setUploading] = useState(false);
@@ -97,6 +96,25 @@ export default function Galeria({ API_BASE }) {
     fetchPage(true);
   }, [base, fetchPage]);
 
+  // Validar admin automáticamente si hay credenciales guardadas
+  useEffect(() => {
+    if (user && pass) {
+      validateAdmin();
+    } else {
+      setIsAdmin(false);
+    }
+  }, [user, pass, validateAdmin]);
+
+  // Escuchar cambios globales de admin (desde el Navbar)
+  useEffect(() => {
+    const onAdminChanged = () => {
+      setUser(localStorage.getItem('badgers_user') || '');
+      setPass(localStorage.getItem('badgers_pass') || '');
+    };
+    window.addEventListener('badgers-admin-changed', onAdminChanged);
+    return () => window.removeEventListener('badgers-admin-changed', onAdminChanged);
+  }, []);
+
   useEffect(() => {
     if (!hasMore || loading) return;
     const el = sentinelRef.current;
@@ -116,25 +134,10 @@ export default function Galeria({ API_BASE }) {
     <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 font-sans pt-32 flex flex-col items-center px-2">
       <h2 className="text-3xl md:text-4xl font-bold text-slate-800 mb-4">Galería</h2>
 
-      {/* Toggle admin + uploader */}
-      <div className="mb-4 w-full max-w-6xl flex items-center justify-between">
-        <div />
-        <button className="px-3 py-1 rounded bg-slate-700 text-white" onClick={()=>setShowAdminPanel(v=>!v)}>
-          {showAdminPanel?'Ocultar Admin':'Modo Admin'}
-        </button>
-      </div>
-
-      {showAdminPanel && (
-        <div className="mb-4 w-full max-w-6xl flex items-center justify-between">
-          {!isAdmin ? (
-            <div className="flex items-center gap-2 text-sm">
-              <input className="px-2 py-1" placeholder="Usuario" value={user} onChange={(e)=>setUser(e.target.value)} style={{border:'1px solid #ddd', borderRadius:6}} />
-              <input className="px-2 py-1" placeholder="Contraseña" type="password" value={pass} onChange={(e)=>setPass(e.target.value)} style={{border:'1px solid #ddd', borderRadius:6}} />
-              <button className="px-3 py-1 rounded bg-slate-800 text-white" onClick={validateAdmin}>Validar Admin</button>
-            </div>
-          ) : (
-            <button className="px-3 py-1 rounded bg-emerald-600 text-white" onClick={()=>setShowUploader(v=>!v)}>{showUploader?'Cerrar Uploader':'Subir'}</button>
-          )}
+      {/* Controles de admin: solo botón de subir si ya es admin */}
+      {isAdmin && (
+        <div className="mb-4 w-full max-w-6xl flex items-center justify-end">
+          <button className="px-3 py-1 rounded bg-emerald-600 text-white" onClick={()=>setShowUploader(v=>!v)}>{showUploader?'Cerrar Uploader':'Subir'}</button>
         </div>
       )}
 
