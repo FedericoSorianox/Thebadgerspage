@@ -1428,7 +1428,7 @@ class LuchaViewSet(viewsets.ModelViewSet):
         lucha = self.get_object()
         data = request.data
         
-        # Actualizar puntuación
+        # Actualizar puntuación directa
         if 'puntos_p1' in data:
             lucha.puntos_p1 = max(0, data['puntos_p1'])
         if 'ventajas_p1' in data:
@@ -1443,8 +1443,31 @@ class LuchaViewSet(viewsets.ModelViewSet):
         if 'penalizaciones_p2' in data:
             lucha.penalizaciones_p2 = max(0, data['penalizaciones_p2'])
         
+        # Actualizar puntuación detallada P1
+        if 'montadas_p1' in data:
+            lucha.montadas_p1 = max(0, data['montadas_p1'])
+        if 'guardas_pasadas_p1' in data:
+            lucha.guardas_pasadas_p1 = max(0, data['guardas_pasadas_p1'])
+        if 'rodillazos_p1' in data:
+            lucha.rodillazos_p1 = max(0, data['rodillazos_p1'])
+        if 'derribos_p1' in data:
+            lucha.derribos_p1 = max(0, data['derribos_p1'])
+            
+        # Actualizar puntuación detallada P2
+        if 'montadas_p2' in data:
+            lucha.montadas_p2 = max(0, data['montadas_p2'])
+        if 'guardas_pasadas_p2' in data:
+            lucha.guardas_pasadas_p2 = max(0, data['guardas_pasadas_p2'])
+        if 'rodillazos_p2' in data:
+            lucha.rodillazos_p2 = max(0, data['rodillazos_p2'])
+        if 'derribos_p2' in data:
+            lucha.derribos_p2 = max(0, data['derribos_p2'])
+        
         if 'tiempo_transcurrido' in data:
             lucha.tiempo_transcurrido = data['tiempo_transcurrido']
+        
+        # Calcular puntos automáticamente basado en las técnicas
+        lucha.calcular_puntos()
         
         lucha.save()
         

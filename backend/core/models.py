@@ -511,6 +511,11 @@ class Lucha(models.Model):
                 self.guardas_pasadas_p2 * 3 + 
                 (self.rodillazos_p2 + self.derribos_p2) * 2)
     
+    def calcular_puntos(self):
+        """Calcula y actualiza los puntos totales de ambos participantes"""
+        self.puntos_p1 = self.calcular_puntos_p1()
+        self.puntos_p2 = self.calcular_puntos_p2()
+    
     def save(self, *args, **kwargs):
         """Actualizar puntos totales automáticamente al guardar"""
         self.puntos_p1 = self.calcular_puntos_p1()

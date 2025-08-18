@@ -409,6 +409,25 @@ export default function TorneoDashboardSimple() {
                 </div>
               </div>
             )}
+
+            {categorias.some(c => (c.llaves_count || 0) > 0) && (
+              <div 
+                className="quick-action-card action-primary"
+                onClick={() => {
+                  const categoriaConLlaves = categorias.find(c => (c.llaves_count || 0) > 0);
+                  if (categoriaConLlaves) {
+                    setActiveCategoria(categoriaConLlaves);
+                    setShowLlaveManager(true);
+                  }
+                }}
+              >
+                <div className="action-icon">⚔️</div>
+                <div className="action-text">
+                  <h4>Ver Luchas</h4>
+                  <p>Sistema de puntuación</p>
+                </div>
+              </div>
+            )}
             
             <div className="quick-action-card" onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}>
               <div className="action-icon">📊</div>
@@ -417,6 +436,43 @@ export default function TorneoDashboardSimple() {
                 <p>Resumen del torneo</p>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* LUCHAS ACTIVAS */}
+      {activeTorneo && categorias.some(c => (c.luchas_pendientes || 0) > 0) && (
+        <div className="active-fights-panel">
+          <h3>⚔️ Luchas Disponibles</h3>
+          <p>Haz clic en una categoría para comenzar las luchas</p>
+          <div className="active-fights-grid">
+            {categorias
+              .filter(c => (c.luchas_pendientes || 0) > 0)
+              .map(categoria => (
+                <div 
+                  key={categoria.id} 
+                  className="fight-category-card"
+                  onClick={() => {
+                    setActiveCategoria(categoria);
+                    setShowLlaveManager(true);
+                  }}
+                >
+                  <div className="fight-icon">🥊</div>
+                  <div className="fight-info">
+                    <h4>{categoria.nombre}</h4>
+                    <p>{categoria.luchas_pendientes} luchas pendientes</p>
+                    <div className="fight-status">
+                      <span className="participants-count">👥 {categoria.participantes_count} participantes</span>
+                    </div>
+                  </div>
+                  <div className="fight-action">
+                    <button className="btn btn-fight">
+                      ▶️ COMENZAR
+                    </button>
+                  </div>
+                </div>
+              ))
+            }
           </div>
         </div>
       )}
@@ -541,11 +597,15 @@ export default function TorneoDashboardSimple() {
                             setActiveCategoria(categoria);
                             setShowLlaveManager(true);
                           }}
-                          className={`btn ${(categoria.participantes_count || 0) >= 2 ? 'btn-primary btn-prominent' : 'btn-disabled'}`}
+                          className={`btn ${
+                            (categoria.participantes_count || 0) >= 2 ? 
+                              categoria.llaves_count > 0 ? 'btn-success btn-prominent-large' : 'btn-primary btn-prominent'
+                              : 'btn-disabled'
+                          }`}
                           disabled={(categoria.participantes_count || 0) < 2}
                         >
                           {categoria.llaves_count > 0 ? (
-                            <>🏆 Ver Llaves y Luchas</>
+                            <>⚔️ GESTIONAR LUCHAS</>
                           ) : (
                             <>🎯 Generar Llave</>
                           )}
