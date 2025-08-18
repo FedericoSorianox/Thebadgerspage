@@ -6,7 +6,7 @@ export default function Galeria({ API_BASE }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selected, setSelected] = useState(null); // item seleccionado (img o video)
-  const [cursor, setCursor] = useState(null);
+  const cursorRef = useRef(null);
   const [hasMore, setHasMore] = useState(true);
   const sentinelRef = useRef(null);
   const inFlightRef = useRef(false);
@@ -25,7 +25,8 @@ export default function Galeria({ API_BASE }) {
     if (inFlightRef.current) return; // evitar llamadas concurrentes/loop
     inFlightRef.current = true;
     const params = new URLSearchParams();
-    if (!reset && cursor) params.set('cursor', cursor);
+    const cursorToUse = (!reset && cursorRef.current) ? cursorRef.current : null;
+    if (cursorToUse) params.set('cursor', cursorToUse);
     params.set('limit', '24');
     const url = `${base}/api/galeria/items/?${params.toString()}`;
     try {
@@ -34,7 +35,7 @@ export default function Galeria({ API_BASE }) {
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const data = await r.json();
       setItems(prev => reset ? data.results : [...prev, ...data.results]);
-      setCursor(data.next_cursor);
+      cursorRef.current = data.next_cursor || null;
       setHasMore(Boolean(data.next_cursor));
       setError(null);
     } catch (e) {
@@ -43,7 +44,7 @@ export default function Galeria({ API_BASE }) {
       setLoading(false);
       inFlightRef.current = false;
     }
-  }, [base, cursor]);
+  }, [base]);
 
   const authHeader = useCallback(() => {
     if (!user || !pass) return {};
@@ -89,9 +90,12 @@ export default function Galeria({ API_BASE }) {
   };
 
   useEffect(() => {
-    setCursor(null); setHasMore(true); setItems([]);
+    // Carga inicial o cuando cambia la base de la API
+    setItems([]);
+    setHasMore(true);
+    cursorRef.current = null;
     fetchPage(true);
-  }, [fetchPage]);
+  }, [base, fetchPage]);
 
   useEffect(() => {
     if (!hasMore || loading) return;
@@ -170,8 +174,8 @@ export default function Galeria({ API_BASE }) {
             {it.tipo==='video' ? (
               <video src={it.url} muted playsInline controls={false} autoPlay={false}
                      className="w-full h-auto cursor-pointer"
-                     onMouseEnter={(e)=>{ try{ e.currentTarget.play(); }catch(_){} }}
-                     onMouseLeave={(e)=>{ try{ e.currentTarget.pause(); e.currentTarget.currentTime=0; }catch(_){} }}
+                     onMouseEnter={(e)=>{ try { const p = e.currentTarget.play(); if (p && typeof p.catch === 'function') { p.catch(()=>{}); } } catch (err) { void err; } }}
+                     onMouseLeave={(e)=>{ try { e.currentTarget.pause(); e.currentTarget.currentTime = 0; } catch (err) { void err; } }}
                      onClick={()=> setSelected(it) } />
             ) : (
               <img src={it.url} alt={it.nombre} loading="lazy" decoding="async"
