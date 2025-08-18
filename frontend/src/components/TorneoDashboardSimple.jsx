@@ -30,6 +30,16 @@ export default function TorneoDashboardSimple() {
   // Estados para el gestor de llaves
   const [showLlaveManager, setShowLlaveManager] = useState(false);
   const [showScorer, setShowScorer] = useState(false);
+  // Estado para modal de edición de participante
+  const [showParticipanteModal, setShowParticipanteModal] = useState(false);
+  const [participanteEdit, setParticipanteEdit] = useState(null);
+  const [participanteEditForm, setParticipanteEditForm] = useState({
+    nombre: '',
+    academia: 'The Badgers',
+    cinturon: 'blanca',
+    peso: '',
+    categoria_asignada: ''
+  });
   
   // Estados para formularios
   const [torneoForm, setTorneoForm] = useState({
@@ -141,6 +151,64 @@ export default function TorneoDashboardSimple() {
     setActiveCategoria(categoria);
     await loadParticipantes(categoria.id);
   };
+
+  // Abrir modal de edición de participante
+  const openParticipanteModal = (p) => {
+    setParticipanteEdit(p);
+    setParticipanteEditForm({
+      nombre: p?.nombre || '',
+      academia: p?.academia || 'The Badgers',
+      cinturon: p?.cinturon || 'blanca',
+      peso: typeof p?.peso === 'number' ? String(p.peso) : (p?.peso || ''),
+      categoria_asignada: p?.categoria_asignada || ''
+    });
+    setShowParticipanteModal(true);
+  };
+
+  const closeParticipanteModal = () => {
+    setShowParticipanteModal(false);
+    setParticipanteEdit(null);
+  };
+
+  const handleSaveParticipante = async (e) => {
+    e?.preventDefault?.();
+    if (!participanteEdit) return;
+    try {
+      setIsWorking(true);
+      const payload = {
+        nombre: (participanteEditForm.nombre || '').trim(),
+        academia: (participanteEditForm.academia || '').trim() || 'The Badgers',
+        cinturon: (participanteEditForm.cinturon || 'blanca').trim(),
+      };
+      if (participanteEditForm.peso !== '' && !isNaN(parseFloat(participanteEditForm.peso))) {
+        payload.peso = parseFloat(participanteEditForm.peso);
+      }
+      if (participanteEditForm.categoria_asignada) {
+        payload.categoria_asignada = participanteEditForm.categoria_asignada;
+      } else {
+        payload.categoria_asignada = null;
+      }
+      await participanteAPI.update(participanteEdit.id, payload);
+      if (expandedSections.participantes && activeTorneo) {
+        await loadParticipantesTorneo(activeTorneo.id);
+      } else if (activeCategoria) {
+        await loadParticipantes(activeCategoria.id);
+      }
+      setSuccess('Participante actualizado');
+      closeParticipanteModal();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  // Cargar participantes al abrir detalle de categoría en pestaña Llaves
+  useEffect(() => {
+    if (expandedSections.llaves && activeCategoria) {
+      loadParticipantes(activeCategoria.id);
+    }
+  }, [expandedSections.llaves, activeCategoria, loadParticipantes]);
 
   const handleCreateTorneo = async (e) => {
     e.preventDefault();
@@ -524,25 +592,75 @@ export default function TorneoDashboardSimple() {
         <div className="section">
           <div className="section-content">
             {activeCategoria ? (
-              <BracketView categoria={activeCategoria} onManage={() => setShowLlaveManager(true)} />
-            ) : (
               <div>
-                <div style={{ display:'flex', gap:12, flexWrap:'wrap', marginBottom:12 }}>
-                  {participantes.map(p => (
-                    <div key={p.id} className="participant-card" draggable
-                         onDragStart={(e)=>{ try{ e.dataTransfer.setData('participant-id', String(p.id)); e.dataTransfer.effectAllowed='move'; }catch(_){} }}
-                         style={{ cursor:'grab' }}
-                         data-participante-id={p.id}
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 }}>
+                  <h3>🗂️ {activeCategoria.nombre}</h3>
+                  <div style={{ display:'flex', gap:8 }}>
+                    <button className="btn" onClick={()=>setActiveCategoria(null)}>Volver</button>
+                    <button
+                      className="btn btn-primary"
+                      disabled={isWorking || (participantes.length < 2)}
+                      onClick={async ()=>{
+                        try {
+                          setIsWorking(true);
+                          await llaveAPI.generar(activeCategoria.id);
+                          await loadCategorias(activeTorneo.id);
+                          setSuccess('Llave generada aleatoriamente');
+                          setShowLlaveManager(true);
+                        } catch (e) {
+                          setError(e.message);
+                        } finally {
+                          setIsWorking(false);
+                        }
+                      }}
                     >
+                      🎲 Armar llaves random
+                    </button>
+                  </div>
+                </div>
+
+                <div className="participants-list">
+                  {participantes.map(p => (
+                    <div key={p.id} className="participant-card" style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
                       <div className="participant-info">
-                        <strong>{p.nombre}</strong>
-                        <div className="text-xs">{p.academia} • {p.cinturon}{p.peso?` • ${p.peso}kg`:''}</div>
+                        <h4>{p.nombre}</h4>
+                        <p>🏛️ {p.academia} • 🥋 {p.cinturon}{p.peso?` • ⚖️ ${p.peso}kg`:''}</p>
+                      </div>
+                      <div className="torneo-actions" style={{ display:'flex', gap:8 }}>
+                        <button className="btn btn-action" onClick={() => openParticipanteModal(p)}>Editar</button>
+                        <button className="btn btn-action btn-eliminar" onClick={async (e)=>{
+                          e.preventDefault();
+                          if (!confirm('¿Eliminar participante?')) return;
+                          try {
+                            setIsWorking(true);
+                            const ok = await participanteAPI.delete(p.id);
+                            if (!ok) throw new Error('No se pudo eliminar');
+                            await loadParticipantes(activeCategoria.id);
+                            setSuccess('Participante eliminado');
+                          } catch (err) {
+                            setError(err.message);
+                          } finally {
+                            setIsWorking(false);
+                          }
+                        }}>Eliminar</button>
                       </div>
                     </div>
                   ))}
+                  {participantes.length === 0 && (
+                    <p className="empty-state">No hay participantes asignados a esta categoría</p>
+                  )}
                 </div>
+
+                {(activeCategoria.llaves_count || 0) > 0 && (
+                  <div style={{ marginTop:16 }}>
+                    <BracketView categoria={activeCategoria} onManage={() => setShowLlaveManager(true)} />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>
                 <div className="active-fights-grid">
-                  {categorias.map(categoria => (
+                  {categorias.filter(c=> (c.participantes_count || 0) > 0).map(categoria => (
                     <div 
                       key={categoria.id} 
                       className="fight-category-card"
@@ -558,12 +676,15 @@ export default function TorneoDashboardSimple() {
                       </div>
                       <div className="fight-action">
                         <button className="btn btn-fight" onClick={(e) => { e.stopPropagation(); setActiveCategoria(categoria); }}>
-                          {(categoria.llaves_count || 0) > 0 ? 'Ver Llave' : 'Generar Llave'}
+                          {(categoria.llaves_count || 0) > 0 ? 'Ver Llave' : 'Seleccionar'}
                         </button>
                       </div>
                     </div>
                   ))}
                 </div>
+                {categorias.filter(c=> (c.participantes_count || 0) > 0).length === 0 && (
+                  <p className="empty-state">No hay categorías con participantes aún</p>
+                )}
               </div>
             )}
           </div>
@@ -758,36 +879,16 @@ export default function TorneoDashboardSimple() {
                   <h3>Participantes del Torneo</h3>
                   <div className="participants-list">
                     {participantes.map(p => (
-                      <div key={p.id} className="participant-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div key={p.id} className="participant-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => openParticipanteModal(p)}>
                         <div className="participant-info">
                           <h4>{p.nombre}</h4>
                           <p>🏛️ {p.academia} • 🥋 {p.cinturon}{p.peso ? ` • ⚖️ ${p.peso}kg` : ''}</p>
                         </div>
                         <div className="torneo-actions" style={{ display: 'flex', gap: 8 }}>
-                          <button className="btn btn-action" onClick={async (e) => {
-                            e.preventDefault();
-                            const nombre = prompt('Nombre', p.nombre);
-                            if (nombre === null) return;
-                            const academia = prompt('Academia', p.academia || '');
-                            if (academia === null) return;
-                            const cinturon = prompt('Cinturón (blanca, azul, violeta, marron, negro)', p.cinturon || 'blanca');
-                            if (cinturon === null) return;
-                            const pesoStr = prompt('Peso (opcional)', p.peso ?? '');
-                            try {
-                              setIsWorking(true);
-                              const payload = { nombre: nombre.trim(), academia: (academia||'').trim(), cinturon: (cinturon||'blanca').trim() };
-                              if (pesoStr && !isNaN(parseFloat(pesoStr))) payload.peso = parseFloat(pesoStr);
-                              await participanteAPI.update(p.id, payload);
-                              await loadParticipantesTorneo(activeTorneo.id);
-                              setSuccess('Participante actualizado');
-                            } catch (err) {
-                              setError(err.message);
-                            } finally {
-                              setIsWorking(false);
-                            }
-                          }}>Editar</button>
+                          <button className="btn btn-action" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openParticipanteModal(p); }}>Editar</button>
                           <button className="btn btn-action btn-eliminar" onClick={async (e) => {
                             e.preventDefault();
+                            e.stopPropagation();
                             if (!confirm('¿Eliminar participante?')) return;
                             try {
                               setIsWorking(true);
@@ -830,6 +931,95 @@ export default function TorneoDashboardSimple() {
       {/* MARCADOR (FightScorer) */}
       {showScorer && activeCategoria && (
         <FightScorer categoria={activeCategoria} onClose={() => setShowScorer(false)} />
+      )}
+
+      {/* MODAL EDICIÓN PARTICIPANTE */}
+      {showParticipanteModal && participanteEdit && (
+        <div className="overlay" onClick={closeParticipanteModal}>
+          <div
+            className="modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: '#fff',
+              padding: 20,
+              maxWidth: 420,
+              width: '90%',
+              margin: '60px auto',
+              borderRadius: 12,
+              boxShadow: '0 10px 30px rgba(0,0,0,0.15)'
+            }}
+          >
+            <h3 style={{ marginTop: 0 }}>Editar Participante</h3>
+            <form onSubmit={handleSaveParticipante} className="form-container">
+              <div className="form-group">
+                <label className="form-label">Nombre</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={participanteEditForm.nombre}
+                  onChange={(e) => setParticipanteEditForm(prev => ({ ...prev, nombre: e.target.value }))}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Academia</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={participanteEditForm.academia}
+                  onChange={(e) => setParticipanteEditForm(prev => ({ ...prev, academia: e.target.value }))}
+                  required
+                />
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Cinturón</label>
+                <select
+                  className="form-select"
+                  value={participanteEditForm.cinturon}
+                  onChange={(e) => setParticipanteEditForm(prev => ({ ...prev, cinturon: e.target.value }))}
+                >
+                  <option value="blanca">Blanca</option>
+                  <option value="azul">Azul</option>
+                  <option value="violeta">Violeta</option>
+                  <option value="marron">Marrón</option>
+                  <option value="negro">Negro</option>
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Categoría asignada</label>
+                <select
+                  className="form-select"
+                  value={participanteEditForm.categoria_asignada || ''}
+                  onChange={(e)=> setParticipanteEditForm(prev => ({ ...prev, categoria_asignada: e.target.value ? Number(e.target.value) : '' }))}
+                >
+                  <option value="">Sin asignar</option>
+                  {categorias.map(c => (
+                    <option key={c.id} value={c.id}>{c.nombre}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Peso (kg)</label>
+                <input
+                  type="number"
+                  step="0.1"
+                  className="form-input"
+                  value={participanteEditForm.peso}
+                  onChange={(e) => setParticipanteEditForm(prev => ({ ...prev, peso: e.target.value }))}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button type="button" className="btn" onClick={closeParticipanteModal} disabled={isWorking}>Cancelar</button>
+                <button type="submit" className="btn btn-primary" disabled={isWorking}>{isWorking ? 'Guardando...' : 'Guardar'}</button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* Estadísticas ocultas según pedido */}
