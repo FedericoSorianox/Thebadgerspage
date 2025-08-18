@@ -542,27 +542,27 @@ export default function TorneoDashboardSimple() {
                   ))}
                 </div>
                 <div className="active-fights-grid">
-                  {categorias
-                    .filter(c => (c.llaves_count || 0) > 0)
-                    .map(categoria => (
-                      <div 
-                        key={categoria.id} 
-                        className="fight-category-card"
-                        onClick={() => setActiveCategoria(categoria)}
-                      >
-                        <div className="fight-icon">🥊</div>
-                        <div className="fight-info">
-                          <h4>{categoria.nombre}</h4>
-                          <p>{categoria.luchas_pendientes || 0} luchas pendientes</p>
-                          <div className="fight-status">
-                            <span className="participants-count">👥 {categoria.participantes_count} participantes</span>
-                          </div>
-                        </div>
-                        <div className="fight-action">
-                          <button className="btn btn-fight" onClick={(e) => { e.stopPropagation(); setActiveCategoria(categoria); }}>Ver Llave</button>
+                  {categorias.map(categoria => (
+                    <div 
+                      key={categoria.id} 
+                      className="fight-category-card"
+                      onClick={() => setActiveCategoria(categoria)}
+                    >
+                      <div className="fight-icon">🥊</div>
+                      <div className="fight-info">
+                        <h4>{categoria.nombre}</h4>
+                        <p>{categoria.luchas_pendientes || 0} luchas pendientes</p>
+                        <div className="fight-status">
+                          <span className="participants-count">👥 {categoria.participantes_count} participantes</span>
                         </div>
                       </div>
-                    ))}
+                      <div className="fight-action">
+                        <button className="btn btn-fight" onClick={(e) => { e.stopPropagation(); setActiveCategoria(categoria); }}>
+                          {(categoria.llaves_count || 0) > 0 ? 'Ver Llave' : 'Generar Llave'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
