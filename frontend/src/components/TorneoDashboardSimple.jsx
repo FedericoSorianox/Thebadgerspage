@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { torneoAPI, categoriaAPI, participanteAPI, llaveAPI } from '../services/api-new.js';
 import LlaveManager from './LlaveManager.jsx';
 import FightScorer from './FightScorer.jsx';
+import BracketView from './BracketView.jsx';
 import './TorneoDashboard.css';
 import './TorneoDashboard-llaves.css';
 
@@ -516,112 +517,39 @@ export default function TorneoDashboardSimple() {
         </div>
       </div>
 
-      {/* PANEL DE ACCIONES RÁPIDAS (solo en tab Llaves/Luchas) */}
+      {/* Acciones rápidas ocultas en tab Llaves/Luchas según pedido */}
+
+      {/* BRACKET en la pestaña Llaves/Luchas */}
       {activeTorneo && expandedSections.llaves && (
-        <div className="quick-actions-panel">
-          <h3>⚡ Acciones Rápidas</h3>
-          <div className="quick-actions-grid">
-            <div className="quick-action-card" onClick={() => toggleSection('participantes')}>
-              <div className="action-icon">👥</div>
-              <div className="action-text">
-                <h4>Registrar Participante</h4>
-                <p>Agregar nuevo luchador</p>
-              </div>
-            </div>
-            
-            <div className="quick-action-card" onClick={() => toggleSection('categorias')}>
-              <div className="action-icon">🏷️</div>
-              <div className="action-text">
-                <h4>Ver Categorías</h4>
-                <p>Explorar {categorias.length} categorías</p>
-              </div>
-            </div>
-            
-            {categorias.some(c => (c.participantes_count || 0) >= 2) && (
-              <div 
-                className="quick-action-card action-highlight"
-                onClick={() => {
-                  const categoriaConParticipantes = categorias.find(c => (c.participantes_count || 0) >= 2);
-                  if (categoriaConParticipantes) {
-                    setActiveCategoria(categoriaConParticipantes);
-                    setShowLlaveManager(true);
-                  }
-                }}
-              >
-                <div className="action-icon">🏆</div>
-                <div className="action-text">
-                  <h4>Generar Llaves</h4>
-                  <p>Crear eliminatorias</p>
-                </div>
-              </div>
-            )}
-
-            {categorias.some(c => (c.llaves_count || 0) > 0) && (
-              <div 
-                className="quick-action-card action-primary"
-                onClick={() => {
-                  const categoriaConLlaves = categorias.find(c => (c.llaves_count || 0) > 0);
-                  if (categoriaConLlaves) {
-                    setActiveCategoria(categoriaConLlaves);
-                    setShowLlaveManager(true);
-                  }
-                }}
-              >
-                <div className="action-icon">⚔️</div>
-                <div className="action-text">
-                  <h4>Ver Luchas</h4>
-                  <p>Sistema de puntuación</p>
-                </div>
-              </div>
-            )}
-            
-            <div className="quick-action-card" onClick={() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' })}>
-              <div className="action-icon">📊</div>
-              <div className="action-text">
-                <h4>Ver Estadísticas</h4>
-                <p>Resumen del torneo</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* LUCHAS ACTIVAS (solo en tab Llaves/Luchas) */}
-      {activeTorneo && expandedSections.llaves && categorias.some(c => (c.luchas_pendientes || 0) > 0 || (c.llaves_count || 0) > 0) && (
-        <div className="active-fights-panel">
-          <h3>⚔️ Luchas Disponibles</h3>
-          <p>Haz clic en una categoría para comenzar las luchas</p>
-          <div className="active-fights-grid">
-            {categorias
-              .filter(c => (c.luchas_pendientes || 0) > 0 || (c.llaves_count || 0) > 0)
-              .map(categoria => (
-                <div 
-                  key={categoria.id} 
-                  className="fight-category-card"
-                  onClick={() => {
-                    setActiveCategoria(categoria);
-                    setShowScorer(true);
-                  }}
-                >
-                  <div className="fight-icon">🥊</div>
-                  <div className="fight-info">
-                    <h4>{categoria.nombre}</h4>
-                    <p>{categoria.luchas_pendientes || 0} luchas pendientes</p>
-                    <div className="fight-status">
-                      <span className="participants-count">👥 {categoria.participantes_count} participantes</span>
-                    </div>
-                  </div>
-                  <div className="fight-action">
-                    <button 
-                      className="btn btn-fight"
-                      onClick={(e) => { e.stopPropagation(); setActiveCategoria(categoria); setShowScorer(true); }}
+        <div className="section">
+          <div className="section-content">
+            {activeCategoria ? (
+              <BracketView categoria={activeCategoria} onManage={() => setShowLlaveManager(true)} />
+            ) : (
+              <div className="active-fights-grid">
+                {categorias
+                  .filter(c => (c.llaves_count || 0) > 0)
+                  .map(categoria => (
+                    <div 
+                      key={categoria.id} 
+                      className="fight-category-card"
+                      onClick={() => setActiveCategoria(categoria)}
                     >
-                      ▶️ COMENZAR
-                    </button>
-                  </div>
-                </div>
-              ))
-            }
+                      <div className="fight-icon">🥊</div>
+                      <div className="fight-info">
+                        <h4>{categoria.nombre}</h4>
+                        <p>{categoria.luchas_pendientes || 0} luchas pendientes</p>
+                        <div className="fight-status">
+                          <span className="participants-count">👥 {categoria.participantes_count} participantes</span>
+                        </div>
+                      </div>
+                      <div className="fight-action">
+                        <button className="btn btn-fight" onClick={(e) => { e.stopPropagation(); setActiveCategoria(categoria); }}>Ver Llave</button>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -888,71 +816,7 @@ export default function TorneoDashboardSimple() {
         <FightScorer categoria={activeCategoria} onClose={() => setShowScorer(false)} />
       )}
 
-      {/* SECCIÓN DE ESTADÍSTICAS (solo tab Torneos) */}
-      {activeTorneo && expandedSections.torneos && (
-        <div className="stats-section">
-          <h3>📊 Estadísticas del Torneo</h3>
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-icon">🏆</div>
-              <div className="stat-content">
-                <div className="stat-number">{categorias.length}</div>
-                <div className="stat-label">Categorías</div>
-              </div>
-            </div>
-            
-            <div className="stat-card">
-              <div className="stat-icon">👥</div>
-              <div className="stat-content">
-                <div className="stat-number">
-                  {categorias.reduce((sum, c) => sum + (c.participantes_count || 0), 0)}
-                </div>
-                <div className="stat-label">Participantes</div>
-              </div>
-            </div>
-            
-            <div className="stat-card">
-              <div className="stat-icon">🗂️</div>
-              <div className="stat-content">
-                <div className="stat-number">
-                  {categorias.reduce((sum, c) => sum + (c.llaves_count || 0), 0)}
-                </div>
-                <div className="stat-label">Llaves Generadas</div>
-              </div>
-            </div>
-            
-            <div className="stat-card">
-              <div className="stat-icon">⚔️</div>
-              <div className="stat-content">
-                <div className="stat-number">
-                  {categorias.reduce((sum, c) => sum + (c.luchas_pendientes || 0), 0)}
-                </div>
-                <div className="stat-label">Luchas Pendientes</div>
-              </div>
-            </div>
-            
-            <div className="stat-card">
-              <div className="stat-icon">✅</div>
-              <div className="stat-content">
-                <div className="stat-number">
-                  {categorias.filter(c => (c.participantes_count || 0) >= 2).length}
-                </div>
-                <div className="stat-label">Listas para Luchas</div>
-              </div>
-            </div>
-            
-            <div className="stat-card">
-              <div className="stat-icon">🎯</div>
-              <div className="stat-content">
-                <div className="stat-number">
-                  {Math.round((categorias.filter(c => (c.participantes_count || 0) >= 2).length / Math.max(categorias.length, 1)) * 100)}%
-                </div>
-                <div className="stat-label">Progreso</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Estadísticas ocultas según pedido */}
     </div>
   );
 }

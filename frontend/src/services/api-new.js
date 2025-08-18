@@ -222,7 +222,9 @@ export const participanteAPI = {
         console.log('[participanteAPI.getAll] Response status:', response.status);
         const data = await handleResponse(response);
         console.log('[participanteAPI.getAll] Data recibida:', data);
-        return data;
+        if (data && data.results && Array.isArray(data.results)) return data.results;
+        if (Array.isArray(data)) return data;
+        return [];
     },
 
     // Crear nuevo participante
