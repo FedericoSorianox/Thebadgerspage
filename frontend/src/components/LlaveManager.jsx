@@ -313,10 +313,13 @@ export default function LlaveManager({ categoria, onClose }) {
                     
                     {/* Buscar la lucha real para mostrar botón de editar */}
                     {(() => {
-                      const luchaReal = luchas.find(l => 
-                        l.participante1.id === lucha.participante1?.id && 
-                        l.participante2.id === lucha.participante2?.id
-                      );
+                      const luchaReal = luchas.find(l => {
+                        const p1Id = l.participante1?.id || l.participante1; // soporta objeto o id
+                        const p2Id = l.participante2?.id || l.participante2;
+                        const eP1Id = lucha.participante1?.id;
+                        const eP2Id = lucha.participante2?.id;
+                        return p1Id === eP1Id && p2Id === eP2Id;
+                      });
                       return luchaReal && (
                         <button
                           onClick={() => handleEditarLucha(luchaReal)}

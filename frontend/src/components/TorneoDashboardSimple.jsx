@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { torneoAPI, categoriaAPI, participanteAPI } from '../services/api-new.js';
 import LlaveManager from './LlaveManager.jsx';
+import FightScorer from './FightScorer.jsx';
 import './TorneoDashboard.css';
 import './TorneoDashboard-llaves.css';
 
@@ -27,6 +28,7 @@ export default function TorneoDashboardSimple() {
   
   // Estados para el gestor de llaves
   const [showLlaveManager, setShowLlaveManager] = useState(false);
+  const [showScorer, setShowScorer] = useState(false);
   
   // Estados para formularios
   const [torneoForm, setTorneoForm] = useState({
@@ -454,7 +456,7 @@ export default function TorneoDashboardSimple() {
                   className="fight-category-card"
                   onClick={() => {
                     setActiveCategoria(categoria);
-                    setShowLlaveManager(true);
+                    setShowScorer(true);
                   }}
                 >
                   <div className="fight-icon">🥊</div>
@@ -466,7 +468,10 @@ export default function TorneoDashboardSimple() {
                     </div>
                   </div>
                   <div className="fight-action">
-                    <button className="btn btn-fight">
+                    <button 
+                      className="btn btn-fight"
+                      onClick={(e) => { e.stopPropagation(); setActiveCategoria(categoria); setShowScorer(true); }}
+                    >
                       ▶️ COMENZAR
                     </button>
                   </div>

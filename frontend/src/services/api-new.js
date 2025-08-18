@@ -323,9 +323,10 @@ export const luchaAPI = {
         return handleResponse(response);
     },
 
-    // Actualizar lucha
+    // Actualizar lucha (parcial)
     update: async (id, luchaData) => {
-        const response = await fetch(`${TORNEO_API_URL}/luchas/${id}/`, createApiConfig('PUT', luchaData));
+        const cfg = createApiConfig('PATCH', luchaData);
+        const response = await fetch(`${TORNEO_API_URL}/luchas/${id}/`, cfg);
         return handleResponse(response);
     },
 
