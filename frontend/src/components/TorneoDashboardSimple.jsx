@@ -34,8 +34,7 @@ export default function TorneoDashboardSimple() {
   const [torneoForm, setTorneoForm] = useState({
     nombre: '',
     descripcion: '',
-    fecha_inicio: '',
-    fecha_fin: '',
+    fecha: '',
     ubicacion: ''
   });
   
@@ -91,6 +90,19 @@ export default function TorneoDashboardSimple() {
     }
   }, []);
 
+  const loadParticipantesTorneo = useCallback(async (torneoId) => {
+    try {
+      setError(null);
+      const data = await participanteAPI.getAll(null, torneoId);
+      const participantesArray = Array.isArray(data) ? data : [];
+      setParticipantes(participantesArray);
+    } catch (e) {
+      console.error('[TorneoDashboard] Error al cargar participantes del torneo:', e);
+      setError(e.message);
+      setParticipantes([]);
+    }
+  }, []);
+
   // Efectos
   useEffect(() => {
     loadTorneos();
@@ -103,10 +115,12 @@ export default function TorneoDashboardSimple() {
   }, [activeTorneo, loadCategorias]);
 
   useEffect(() => {
-    if (activeCategoria) {
+    if (expandedSections.participantes && activeTorneo) {
+      loadParticipantesTorneo(activeTorneo.id);
+    } else if (activeCategoria) {
       loadParticipantes(activeCategoria.id);
     }
-  }, [activeCategoria, loadParticipantes]);
+  }, [expandedSections.participantes, activeTorneo, activeCategoria, loadParticipantes, loadParticipantesTorneo]);
 
   // Handlers
   const toggleSection = (section) => {
@@ -137,16 +151,62 @@ export default function TorneoDashboardSimple() {
     try {
       setIsWorking(true);
       setError(null);
-      await torneoAPI.create(torneoForm);
+      // mapear una sola fecha a inicio/fin
+      const payload = {
+        nombre: torneoForm.nombre,
+        descripcion: torneoForm.descripcion,
+        fecha_inicio: torneoForm.fecha || '',
+        fecha_fin: torneoForm.fecha || '',
+        ubicacion: torneoForm.ubicacion
+      };
+      await torneoAPI.create(payload);
       setSuccess('¡Torneo creado exitosamente con todas las categorías!');
       setTorneoForm({
         nombre: '',
         descripcion: '',
-        fecha_inicio: '',
-        fecha_fin: '',
+        fecha: '',
         ubicacion: ''
       });
       await loadTorneos();
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  const handleEditTorneo = async (torneo) => {
+    const nombre = prompt('Nombre del torneo', torneo.nombre);
+    if (nombre === null) return;
+    const fecha = prompt('Fecha (YYYY-MM-DD)', torneo.fecha_inicio || '');
+    if (fecha === null) return;
+    try {
+      setIsWorking(true);
+      const payload = {
+        nombre: nombre.trim(),
+        descripcion: torneo.descripcion || '',
+        fecha_inicio: fecha,
+        fecha_fin: fecha,
+        ubicacion: torneo.ubicacion || ''
+      };
+      await torneoAPI.update(torneo.id, payload);
+      await loadTorneos();
+      setSuccess('Torneo actualizado');
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setIsWorking(false);
+    }
+  };
+
+  const handleDeleteTorneo = async (id) => {
+    if (!confirm('¿Eliminar torneo?')) return;
+    try {
+      setIsWorking(true);
+      const ok = await torneoAPI.delete(id);
+      if (!ok) throw new Error('No se pudo eliminar');
+      await loadTorneos();
+      setSuccess('Torneo eliminado');
     } catch (e) {
       setError(e.message);
     } finally {
@@ -232,28 +292,15 @@ export default function TorneoDashboardSimple() {
         />
       </div>
       
-      <div className="form-row">
-        <div className="form-group">
-          <label className="form-label">Fecha Inicio *</label>
-          <input
-            type="date"
-            className="form-input"
-            value={torneoForm.fecha_inicio}
-            onChange={(e) => setTorneoForm(prev => ({ ...prev, fecha_inicio: e.target.value }))}
-            required
-          />
-        </div>
-        
-        <div className="form-group">
-          <label className="form-label">Fecha Fin *</label>
-          <input
-            type="date"
-            className="form-input"
-            value={torneoForm.fecha_fin}
-            onChange={(e) => setTorneoForm(prev => ({ ...prev, fecha_fin: e.target.value }))}
-            required
-          />
-        </div>
+      <div className="form-group">
+        <label className="form-label">Fecha *</label>
+        <input
+          type="date"
+          className="form-input"
+          value={torneoForm.fecha}
+          onChange={(e) => setTorneoForm(prev => ({ ...prev, fecha: e.target.value }))}
+          required
+        />
       </div>
       
       <div className="form-group">
@@ -460,8 +507,7 @@ export default function TorneoDashboardSimple() {
           <div className="content-grid" style={{ gridTemplateColumns: '1fr' }}>
             <div className="content-column">
               <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid #e5e7eb' }}>
-                <button className={`btn ${expandedSections.torneos ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ torneos: true, categorias: false, participantes: false, llaves: false })}>🏆 Torneo</button>
-                <button className={`btn ${expandedSections.categorias ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ torneos: false, categorias: true, participantes: false, llaves: false })}>🏷️ Categorías</button>
+                <button className={`btn ${expandedSections.torneos ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ torneos: true, categorias: false, participantes: false, llaves: false })}>🏆 Torneos</button>
                 <button className={`btn ${expandedSections.participantes ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ torneos: false, categorias: false, participantes: true, llaves: false })}>👥 Participantes</button>
                 <button className={`btn ${expandedSections.llaves ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ torneos: false, categorias: false, participantes: false, llaves: true })}>🗂️ Llaves / Luchas</button>
               </div>
@@ -623,10 +669,14 @@ export default function TorneoDashboardSimple() {
                       onClick={() => handleSelectTorneo(torneo)}
                     >
                       <h4>{torneo.nombre}</h4>
-                      <p>{torneo.fecha_inicio} - {torneo.fecha_fin}</p>
+                      <p>{torneo.fecha_inicio || torneo.fecha_fin || ''}</p>
                       <span className={`status status-${torneo.estado}`}>
                         {torneo.estado}
                       </span>
+                      <div className="torneo-actions" style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                        <button className="btn btn-action" onClick={(e) => { e.stopPropagation(); handleEditTorneo(torneo); }}>Editar</button>
+                        <button className="btn btn-action btn-eliminar" onClick={(e) => { e.stopPropagation(); handleDeleteTorneo(torneo.id); }}>Eliminar</button>
+                      </div>
                     </div>
                   ))}
                   {torneos.length === 0 && (
@@ -761,27 +811,58 @@ export default function TorneoDashboardSimple() {
                 </div>
 
                 <div className="content-column">
-                  <h3>Participantes {activeCategoria ? `en "${activeCategoria.nombre}"` : 'del Torneo'}</h3>
+                  <h3>Participantes del Torneo</h3>
                   <div className="participants-list">
-                    {participantes.map(participante => (
-                      <div key={participante.id} className="participant-card">
+                    {participantes.map(p => (
+                      <div key={p.id} className="participant-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div className="participant-info">
-                          <h4>{participante.nombre}</h4>
-                          <p>🏛️ {participante.academia}</p>
-                          <p>🥋 {participante.cinturon}</p>
-                          {participante.peso && <p>⚖️ {participante.peso}kg</p>}
-                          {participante.categoria_actual_nombre && (
-                            <p>🏷️ {participante.categoria_actual_nombre}</p>
-                          )}
+                          <h4>{p.nombre}</h4>
+                          <p>🏛️ {p.academia} • 🥋 {p.cinturon}{p.peso ? ` • ⚖️ ${p.peso}kg` : ''}</p>
+                        </div>
+                        <div className="torneo-actions" style={{ display: 'flex', gap: 8 }}>
+                          <button className="btn btn-action" onClick={async (e) => {
+                            e.preventDefault();
+                            const nombre = prompt('Nombre', p.nombre);
+                            if (nombre === null) return;
+                            const academia = prompt('Academia', p.academia || '');
+                            if (academia === null) return;
+                            const cinturon = prompt('Cinturón (blanca, azul, violeta, marron, negro)', p.cinturon || 'blanca');
+                            if (cinturon === null) return;
+                            const pesoStr = prompt('Peso (opcional)', p.peso ?? '');
+                            try {
+                              setIsWorking(true);
+                              const payload = { nombre: nombre.trim(), academia: (academia||'').trim(), cinturon: (cinturon||'blanca').trim() };
+                              if (pesoStr && !isNaN(parseFloat(pesoStr))) payload.peso = parseFloat(pesoStr);
+                              await participanteAPI.update(p.id, payload);
+                              await loadParticipantesTorneo(activeTorneo.id);
+                              setSuccess('Participante actualizado');
+                            } catch (err) {
+                              setError(err.message);
+                            } finally {
+                              setIsWorking(false);
+                            }
+                          }}>Editar</button>
+                          <button className="btn btn-action btn-eliminar" onClick={async (e) => {
+                            e.preventDefault();
+                            if (!confirm('¿Eliminar participante?')) return;
+                            try {
+                              setIsWorking(true);
+                              const ok = await participanteAPI.delete(p.id);
+                              if (!ok) throw new Error('No se pudo eliminar');
+                              await loadParticipantesTorneo(activeTorneo.id);
+                              setSuccess('Participante eliminado');
+                            } catch (err) {
+                              setError(err.message);
+                            } finally {
+                              setIsWorking(false);
+                            }
+                          }}>Eliminar</button>
                         </div>
                       </div>
                     ))}
                     {participantes.length === 0 && (
                       <p className="empty-state">
-                        {activeCategoria 
-                          ? 'No hay participantes en esta categoría' 
-                          : 'Selecciona una categoría para ver sus participantes'
-                        }
+                        No hay participantes en este torneo
                       </p>
                     )}
                   </div>

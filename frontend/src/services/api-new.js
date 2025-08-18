@@ -207,13 +207,17 @@ export const categoriaAPI = {
 // =================== SERVICIOS DE PARTICIPANTES ===================
 
 export const participanteAPI = {
-    // Obtener participantes de una categoría
-    getAll: async (categoriaId = null) => {
-        const url = categoriaId 
-            ? `${TORNEO_API_URL}/participantes/?categoria=${categoriaId}`
-            : `${TORNEO_API_URL}/participantes/`;
+    // Obtener participantes (por categoría o torneo)
+    getAll: async (categoriaId = null, torneoId = null) => {
+        let url = `${TORNEO_API_URL}/participantes/`;
+        if (categoriaId) {
+            url = `${TORNEO_API_URL}/participantes/?categoria=${categoriaId}`;
+        } else if (torneoId) {
+            url = `${TORNEO_API_URL}/participantes/?torneo=${torneoId}`;
+        }
         console.log('[participanteAPI.getAll] URL construida:', url);
         console.log('[participanteAPI.getAll] Categoria ID recibido:', categoriaId);
+        console.log('[participanteAPI.getAll] Torneo ID recibido:', torneoId);
         const response = await fetch(url, createApiConfig());
         console.log('[participanteAPI.getAll] Response status:', response.status);
         const data = await handleResponse(response);
