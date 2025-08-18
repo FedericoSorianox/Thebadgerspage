@@ -64,6 +64,76 @@ def api_root(request):
     return JsonResponse({"mensaje": "¡API funcionando correctamente!"})
 
 @add_cors_headers
+def galeria_items(request):
+    """Listado paginado de galería con scroll infinito y filtros.
+    Params:
+      - cursor: ISO datetime (fecha_subida) para paginar hacia abajo
+      - limit: cantidad (default 24, max 100)
+      - tipo: img|video (opcional)
+      - q: texto en nombre (opcional)
+    """
+    try:
+        from core.models import GaleriaItem
+        qs = GaleriaItem.objects.all().order_by('-fecha_subida')
+
+        tipo = request.GET.get('tipo')
+        if tipo in ('img', 'video'):
+            qs = qs.filter(tipo=tipo)
+
+        q = request.GET.get('q')
+        if q:
+            qs = qs.filter(nombre__icontains=q)
+
+        cursor = request.GET.get('cursor')
+        if cursor:
+            try:
+                # cursor es fecha_subida ISO
+                from datetime import datetime
+                from django.utils.dateparse import parse_datetime
+                dt = parse_datetime(cursor)
+                if dt is not None:
+                    qs = qs.filter(fecha_subida__lt=dt)
+            except Exception:
+                pass
+
+        try:
+            limit = min(int(request.GET.get('limit', '24')), 100)
+        except ValueError:
+            limit = 24
+
+        items = list(qs[:limit])
+        data = []
+        for it in items:
+            archivo_value = str(it.archivo)
+            # ocultar unsplash
+            if 'unsplash.com' in archivo_value:
+                continue
+            if archivo_value.startswith('http') and 'cloudinary.com' in archivo_value:
+                file_url = archivo_value
+            elif hasattr(it.archivo, 'url'):
+                file_url = it.archivo.url
+                if not file_url.startswith('http'):
+                    file_url = f"https://thebadgerspage.onrender.com{file_url}"
+            else:
+                continue
+            data.append({
+                'id': it.id,
+                'url': file_url,
+                'nombre': it.nombre,
+                'fecha': it.fecha_subida.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                'tipo': it.tipo or 'img',
+                'usuario': it.usuario.username if it.usuario else 'Anónimo',
+            })
+
+        next_cursor = None
+        if items:
+            next_cursor = items[-1].fecha_subida.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        return JsonResponse({'results': data, 'next_cursor': next_cursor})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@add_cors_headers
 @csrf_exempt
 def galeria_list(request):
     # Manejar preflight OPTIONS request
@@ -216,6 +286,11 @@ def galeria_upload(request):
             print(f"DEBUG: Autenticación fallida para usuario: {username}")
             return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
         print(f"DEBUG: Usuario autenticado exitosamente: {username}")
+
+        # Solo admins pueden subir
+        if not (user.is_staff or user.is_superuser):
+            print(f"DEBUG: Usuario sin permisos de admin: {username}")
+            return JsonResponse({'error': 'Permisos insuficientes'}, status=403)
     except Exception as e:
         print(f"DEBUG: Error en autenticación: {e}")
         return JsonResponse({'error': 'Error en autenticación'}, status=401)

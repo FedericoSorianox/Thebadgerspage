@@ -59,6 +59,7 @@ urlpatterns = [
     path('api/user/', views.user_info),
     path('api/create-user/', views.create_user),
     path('api/galeria/', views.galeria_list),
+    path('api/galeria/items/', views.galeria_items),
     path('api/galeria/temp/', views.galeria_list_temp),
     path('api/galeria/upload/', views.galeria_upload),
     path('api/productos/', views.productos_proxy),
