@@ -76,13 +76,16 @@ class CategoriaSerializer(serializers.ModelSerializer):
     
     def get_llaves_count(self, obj):
         """Contar el número de llaves generadas para esta categoría"""
-        return obj.llaves.count()
+        try:
+            return 1 if hasattr(obj, 'llave') and obj.llave else 0
+        except:
+            return 0
     
     def get_luchas_pendientes(self, obj):
         """Contar el número de luchas pendientes en esta categoría"""
         from .models import Lucha
         return Lucha.objects.filter(
-            llave__categoria=obj,
+            categoria=obj,
             estado='pendiente'
         ).count()
 
