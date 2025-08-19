@@ -295,13 +295,13 @@ export default function LlaveManager({ categoria, onClose }) {
               <div className="bracket-round-title">{ronda.nombre}</div>
               <div className="bracket-column-matches">
                 {ronda.luchas.map((lucha, luchaIdx) => {
-                  const luchaReal = luchas.find(l => {
+                  const luchaReal = Array.isArray(luchas) ? luchas.find(l => {
                     const p1Id = l.participante1?.id || l.participante1;
                     const p2Id = l.participante2?.id || l.participante2;
                     const eP1Id = lucha.participante1?.id;
                     const eP2Id = lucha.participante2?.id;
                     return p1Id === eP1Id && p2Id === eP2Id;
-                  });
+                  }) : null;
                   const p1 = lucha.participante1;
                   const p2 = lucha.participante2;
                   const isBye = p2 && p2.bye;

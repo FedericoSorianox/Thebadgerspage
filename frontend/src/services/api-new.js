@@ -325,7 +325,10 @@ export const luchaAPI = {
     // Obtener luchas por categoría
     getByCategoria: async (categoriaId) => {
         const response = await fetch(`${TORNEO_API_URL}/luchas/?categoria=${categoriaId}`, createApiConfig());
-        return handleResponse(response);
+        const data = await handleResponse(response);
+        if (data && Array.isArray(data.results)) return data.results;
+        if (Array.isArray(data)) return data;
+        return [];
     },
 
     // Obtener una lucha específica
