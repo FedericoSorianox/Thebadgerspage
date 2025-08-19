@@ -440,24 +440,12 @@ export default function TorneoDashboardSimple() {
         >
           <option value="">Seleccionar categoría de peso...</option>
           <optgroup label="Categorías Masculinas">
-            <option value="56">Gallo - Hasta 56kg</option>
-            <option value="62">Pluma - Hasta 62kg</option>
-            <option value="69">Liviano - Hasta 69kg</option>
-            <option value="77">Welter - Hasta 77kg</option>
-            <option value="85">Medio - Hasta 85kg</option>
-            <option value="94">Medio Pesado - Hasta 94kg</option>
-            <option value="102">Pesado - Hasta 102kg</option>
-            <option value="110">Super Pesado - Más de 102kg</option>
-          </optgroup>
-          <optgroup label="Categorías Femeninas">
-            <option value="48.5">Palha - Hasta 48.5kg</option>
-            <option value="53.5">Mosca - Hasta 53.5kg</option>
-            <option value="58.5">Gallo - Hasta 58.5kg</option>
-            <option value="64">Pluma - Hasta 64kg</option>
-            <option value="69.5">Liviano - Hasta 69.5kg</option>
-            <option value="75.5">Welter - Hasta 75.5kg</option>
-            <option value="82">Medio - Hasta 82kg</option>
-            <option value="90">Pesado - Más de 82kg</option>
+            <option value="56">Hasta 57kg</option>
+            <option value="62">Hasta 64kg</option>
+            <option value="69">Hasta 76kg</option>
+            <option value="77">Hasta 82kg</option>
+            <option value="85">Hasta 88kg</option>
+            <option value="94">Hasta 93kg</option>
           </optgroup>
         </select>
         <small className="form-help">
