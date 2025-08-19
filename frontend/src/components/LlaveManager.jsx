@@ -232,10 +232,8 @@ export default function LlaveManager({ categoria, onClose }) {
       }
       
       const updateData = {
-        estado: 'finalizada',
         tipo_victoria: tipoVictoria,
-        resultado_detalle: detalle,
-        tiempo_transcurrido: selectedLucha.tiempo_transcurrido
+        resultado_detalle: detalle
       };
       
       // Determinar ganador automáticamente por puntos si no se especifica
@@ -261,11 +259,8 @@ export default function LlaveManager({ categoria, onClose }) {
         }
       }
       
-      if (ganadorId) {
-        updateData.ganador = ganadorId;
-      }
-      
-      await luchaAPI.update(selectedLucha.id, updateData);
+      const payloadFinalizar = ganadorId ? { ...updateData, ganador_id: Number(ganadorId) } : updateData;
+      await luchaAPI.finalizar(selectedLucha.id, payloadFinalizar);
       setSuccess('¡Lucha finalizada exitosamente!');
       
       // Recargar datos

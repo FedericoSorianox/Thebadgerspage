@@ -8,6 +8,7 @@ export default function BracketView({ categoria, onManage }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [openScorer, setOpenScorer] = useState(false);
+  const [scorerLuchaId, setScorerLuchaId] = useState(null);
   // Sin bandeja: no mantenemos catálogo de participantes
 
   useEffect(() => {
@@ -232,8 +233,18 @@ export default function BracketView({ categoria, onManage }) {
                           } catch (syncErr) {
                             console.warn('No se pudo sincronizar estructura de llave:', syncErr);
                           }
-
-                          window.location.reload();
+                          // Refrescar datos sin recargar toda la página
+                          try {
+                            const [refLuchas, refLlave] = await Promise.all([
+                              luchaAPI.getByCategoria(categoria.id),
+                              llaveAPI.getByCategoria(categoria.id)
+                            ]);
+                            const arr = Array.isArray(refLuchas?.results) ? refLuchas.results : Array.isArray(refLuchas) ? refLuchas : [];
+                            setLuchas(arr);
+                            if (refLlave) setLlave(refLlave);
+                          } catch (eRefresh) {
+                            console.warn('Refresh DnD falló, considere recargar manualmente:', eRefresh);
+                          }
                         } else {
                           // Si no existe aún la Lucha de ese cuadro (p.ej., Semifinal vacía),
                           // intentar crearla solo si ambos participantes quedan definidos.
@@ -279,10 +290,18 @@ export default function BracketView({ categoria, onManage }) {
                             } catch (eSync) {
                               console.warn('Sync semifinals/finals fallo:', eSync);
                             }
-                            // Completar swap con el origen si había alguien en destino (no aplica porque r no existía)
-                            // y si venimos de otra casilla, debemos dejar origen vacío; no permitido por backend
-                            // por lo que no movemos si el destino estaba vacío originalmente.
-                            window.location.reload();
+                            // Actualizar estados locales sin recargar
+                            try {
+                              const [refLuchas, refLlave] = await Promise.all([
+                                luchaAPI.getByCategoria(categoria.id),
+                                llaveAPI.getByCategoria(categoria.id)
+                              ]);
+                              const arr = Array.isArray(refLuchas?.results) ? refLuchas.results : Array.isArray(refLuchas) ? refLuchas : [];
+                              setLuchas(arr);
+                              if (refLlave) setLlave(refLlave);
+                            } catch (eRefresh2) {
+                              console.warn('Refresh post-create falló:', eRefresh2);
+                            }
                           }
                         }
                       } catch (error) {
@@ -319,6 +338,7 @@ export default function BracketView({ categoria, onManage }) {
                               try {
                                 // Abrir marcador sin cambiar estado aún; el botón interno mostrará "Iniciar"
                                 setOpenScorer(true);
+                                setScorerLuchaId(r.id);
                               } catch (err) {
                                 console.error('Error al iniciar lucha:', err);
                               }
@@ -501,8 +521,10 @@ export default function BracketView({ categoria, onManage }) {
       {openScorer && (
         <FightScorer
           categoria={categoria}
+          initialLuchaId={scorerLuchaId}
           onClose={() => {
             setOpenScorer(false);
+            setScorerLuchaId(null);
             // Recargar estado de luchas para reflejar cierre o finalización
             Promise.all([
               luchaAPI.getByCategoria(categoria.id),

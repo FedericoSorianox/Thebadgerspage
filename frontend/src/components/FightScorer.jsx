@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { luchaAPI } from '../services/api-new.js';
 
-export default function FightScorer({ categoria, onClose }) {
+export default function FightScorer({ categoria, onClose, initialLuchaId = null }) {
   const [luchas, setLuchas] = useState([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -23,8 +23,13 @@ export default function FightScorer({ categoria, onClose }) {
       const order = { en_progreso: 0, pendiente: 1, pausada: 2, finalizada: 3 };
       arr.sort((a, b) => (order[a.estado] ?? 9) - (order[b.estado] ?? 9));
       setLuchas(arr);
-      const firstIdx = arr.findIndex(l => l.estado !== 'finalizada');
-      setCurrentIdx(firstIdx >= 0 ? firstIdx : 0);
+      if (initialLuchaId) {
+        const idx = arr.findIndex(l => l.id === initialLuchaId);
+        setCurrentIdx(idx >= 0 ? idx : 0);
+      } else {
+        const firstIdx = arr.findIndex(l => l.estado !== 'finalizada');
+        setCurrentIdx(firstIdx >= 0 ? firstIdx : 0);
+      }
     } catch (e) {
       setError(e.message || 'Error cargando luchas');
     } finally {
@@ -118,7 +123,7 @@ export default function FightScorer({ categoria, onClose }) {
     if (!current) return;
     try {
       setWorking(true);
-      const payload = selectedWinnerId ? { ganador_id: selectedWinnerId, tipo_victoria: 'puntos' } : {};
+      const payload = selectedWinnerId ? { ganador_id: Number(selectedWinnerId), tipo_victoria: 'puntos' } : {};
       await luchaAPI.finalizar(current.id, payload);
       await load();
       // Cerrar modal externo automáticamente al finalizar
@@ -191,8 +196,8 @@ export default function FightScorer({ categoria, onClose }) {
               <button disabled={working} onClick={() => addDelta('guardas_pasadas_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">+3</button>
               <button disabled={working} onClick={() => addDelta('rodillazos_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">+2</button>
               <button disabled={working} onClick={() => addDelta('derribos_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">+2</button>
-              <button disabled={working} onClick={() => addDelta('ventajas_p1', +1)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded">Ventaja +1</button>
-              <button disabled={working} onClick={() => addDelta('penalizaciones_p1', +1)} className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded">Penal -1</button>
+              <button disabled={working} onClick={() => addDelta('ventajas_p1', +1)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded">Vent +1</button>
+              <button disabled={working} onClick={() => addDelta('penalizaciones_p1', +1)} className="bg-red-500 hover:bg-red-200 text-white px-3 py-2 rounded">Pen -1</button>
               <button disabled={working} onClick={() => addDelta('montadas_p1', -1)} className="bg-gray-200 px-3 py-2 rounded">-4</button>
               <button disabled={working} onClick={() => addDelta('guardas_pasadas_p1', -1)} className="bg-gray-200 px-3 py-2 rounded">-3</button>
               <button disabled={working} onClick={() => addDelta('rodillazos_p1', -1)} className="bg-gray-200 px-3 py-2 rounded">-2</button>
@@ -207,12 +212,12 @@ export default function FightScorer({ categoria, onClose }) {
             <div className="text-center text-lg font-semibold mb-2">{current.participante2_nombre || current.participante2?.nombre || 'P2'}</div>
             <div className="text-center text-4xl font-black text-green-600 mb-4">{calcPoints.p2}</div>
             <div className="grid grid-cols-3 gap-2">
-              <button disabled={working} onClick={() => addDelta('montadas_p2', +1)} className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded">+4</button>
-              <button disabled={working} onClick={() => addDelta('guardas_pasadas_p2', +1)} className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded">+3</button>
-              <button disabled={working} onClick={() => addDelta('rodillazos_p2', +1)} className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded">+2</button>
-              <button disabled={working} onClick={() => addDelta('derribos_p2', +1)} className="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded">+2</button>
-              <button disabled={working} onClick={() => addDelta('ventajas_p2', +1)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded">Ventaja +1</button>
-              <button disabled={working} onClick={() => addDelta('penalizaciones_p2', +1)} className="bg-red-500 hover:bg-red-600 text-white px-3 py-2 rounded">Penal -1</button>
+              <button disabled={working} onClick={() => addDelta('montadas_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded">+4</button>
+              <button disabled={working} onClick={() => addDelta('guardas_pasadas_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded">+3</button>
+              <button disabled={working} onClick={() => addDelta('rodillazos_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded">+2</button>
+              <button disabled={working} onClick={() => addDelta('derribos_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded">+2</button>
+              <button disabled={working} onClick={() => addDelta('ventajas_p2', +1)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded">Vent +1</button>
+              <button disabled={working} onClick={() => addDelta('penalizaciones_p2', +1)} className="bg-red-500 hover:bg-red-200 text-white px-3 py-2 rounded">Pen -1</button>
               <button disabled={working} onClick={() => addDelta('montadas_p2', -1)} className="bg-gray-200 px-3 py-2 rounded">-4</button>
               <button disabled={working} onClick={() => addDelta('guardas_pasadas_p2', -1)} className="bg-gray-200 px-3 py-2 rounded">-3</button>
               <button disabled={working} onClick={() => addDelta('rodillazos_p2', -1)} className="bg-gray-200 px-3 py-2 rounded">-2</button>
@@ -241,13 +246,21 @@ export default function FightScorer({ categoria, onClose }) {
             <h4 className="text-lg font-semibold mb-4">Seleccionar ganador</h4>
             <div className="space-y-3 mb-6">
               <label className="flex items-center gap-2">
-                <input type="radio" name="winner" value={current.participante1}
-                  onChange={() => setSelectedWinnerId(current.participante1 || current.participante1?.id)} />
+                <input
+                  type="radio"
+                  name="winner"
+                  value={(current.participante1?.id ?? current.participante1) || ''}
+                  onChange={() => setSelectedWinnerId(current.participante1?.id ?? current.participante1)}
+                />
                 <span>{current.participante1_nombre || current.participante1?.nombre || 'P1'}</span>
               </label>
               <label className="flex items-center gap-2">
-                <input type="radio" name="winner" value={current.participante2}
-                  onChange={() => setSelectedWinnerId(current.participante2 || current.participante2?.id)} />
+                <input
+                  type="radio"
+                  name="winner"
+                  value={(current.participante2?.id ?? current.participante2) || ''}
+                  onChange={() => setSelectedWinnerId(current.participante2?.id ?? current.participante2)}
+                />
                 <span>{current.participante2_nombre || current.participante2?.nombre || 'P2'}</span>
               </label>
             </div>
