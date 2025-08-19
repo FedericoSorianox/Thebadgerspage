@@ -258,14 +258,25 @@ export const llaveAPI = {
     // Obtener llaves de una categoría
     getAll: async (categoriaId) => {
         const response = await fetch(`${TORNEO_API_URL}/llaves/?categoria=${categoriaId}`, createApiConfig());
-        return handleResponse(response);
+        const data = await handleResponse(response);
+        // Soportar tanto {results: [...]} como arrays directos
+        if (data && Array.isArray(data.results)) return data.results;
+        if (Array.isArray(data)) return data;
+        return [];
     },
 
     // Obtener llave por categoría
     getByCategoria: async (categoriaId) => {
         const response = await fetch(`${TORNEO_API_URL}/llaves/?categoria=${categoriaId}`, createApiConfig());
         const data = await handleResponse(response);
-        return Array.isArray(data) && data.length > 0 ? data[0] : null;
+        // La API puede devolver {results:[...]} o un array directo
+        if (data && Array.isArray(data.results)) {
+            return data.results.length > 0 ? data.results[0] : null;
+        }
+        if (Array.isArray(data)) {
+            return data.length > 0 ? data[0] : null;
+        }
+        return null;
     },
 
     // Obtener una llave específica
