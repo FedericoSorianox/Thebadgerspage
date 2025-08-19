@@ -9,7 +9,7 @@ export default function LlaveManager({ categoria, onClose }) {
   const [success, setSuccess] = useState(null);
   
   // Estados para el editor de lucha
-  const [selectedLucha, setSelectedLucha] = useState(null);
+  const [selectedLucha, setSelectedLucha] = useState(null)
   const [cronometroActivo, setCronometroActivo] = useState(false);
   const [cronometroInterval, setCronometroInterval] = useState(null);
 

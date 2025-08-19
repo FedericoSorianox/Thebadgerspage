@@ -8,6 +8,8 @@ export default function FightScorer({ categoria, onClose }) {
   const [error, setError] = useState(null);
   const [working, setWorking] = useState(false);
   const [timerId, setTimerId] = useState(null);
+  const [showFinishModal, setShowFinishModal] = useState(false);
+  const [selectedWinnerId, setSelectedWinnerId] = useState(null);
 
   const current = luchas[currentIdx] || null;
 
@@ -41,8 +43,15 @@ export default function FightScorer({ categoria, onClose }) {
     if (!current) return;
     try {
       const fresh = await luchaAPI.getById(current.id);
-      setLuchas(prev => prev.map((l, i) => (i === currentIdx ? fresh : l)));
-    } catch (e) {
+      // Preservar tiempo local mientras esté en progreso para evitar reinicios visuales
+      setLuchas(prev => prev.map((l, i) => {
+        if (i !== currentIdx) return l;
+        if (l.estado === 'en_progreso') {
+          return { ...fresh, tiempo_transcurrido: l.tiempo_transcurrido };
+        }
+        return fresh;
+      }));
+    } catch {
       // noop
     }
   };
@@ -53,20 +62,6 @@ export default function FightScorer({ categoria, onClose }) {
     const p2 = (current.montadas_p2 || 0) * 4 + (current.guardas_pasadas_p2 || 0) * 3 + ((current.rodillazos_p2 || 0) + (current.derribos_p2 || 0)) * 2;
     return { p1, p2 };
   }, [current]);
-
-  const addValue = async (field) => {
-    if (!current) return;
-    try {
-      setWorking(true);
-      const value = (current[field] || 0) + 1;
-      await luchaAPI.update(current.id, { [field]: value });
-      await refreshCurrent();
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setWorking(false);
-    }
-  };
 
   const addDelta = async (field, delta) => {
     if (!current) return;
@@ -98,7 +93,9 @@ export default function FightScorer({ categoria, onClose }) {
         clearInterval(timerId);
         setTimerId(null);
       }
-      if (current.estado !== 'en_progreso') {
+      // Si el estado resultante es en_progreso, arrancar tick local
+      const next = await luchaAPI.getById(current.id);
+      if (next.estado === 'en_progreso') {
         const id = setInterval(() => {
           setLuchas(prev => prev.map((l, i) => i === currentIdx ? { ...l, tiempo_transcurrido: (l.tiempo_transcurrido || 0) + 1 } : l));
         }, 1000);
@@ -113,12 +110,22 @@ export default function FightScorer({ categoria, onClose }) {
 
   const finalize = async () => {
     if (!current) return;
+    setSelectedWinnerId(null);
+    setShowFinishModal(true);
+  };
+
+  const confirmFinalize = async () => {
+    if (!current) return;
     try {
       setWorking(true);
-      await luchaAPI.finalizar(current.id, {});
+      const payload = selectedWinnerId ? { ganador_id: selectedWinnerId, tipo_victoria: 'puntos' } : {};
+      await luchaAPI.finalizar(current.id, payload);
       await load();
+      // Cerrar modal externo automáticamente al finalizar
+      if (onClose) onClose();
+      setShowFinishModal(false);
     } catch (e) {
-      setError(e.message);
+      setError(e.message || 'Error al finalizar la lucha');
     } finally {
       setWorking(false);
       if (timerId) {
@@ -227,6 +234,30 @@ export default function FightScorer({ categoria, onClose }) {
           </div>
         </div>
       </div>
+      {/* Modal seleccionar ganador */}
+      {showFinishModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-md">
+            <h4 className="text-lg font-semibold mb-4">Seleccionar ganador</h4>
+            <div className="space-y-3 mb-6">
+              <label className="flex items-center gap-2">
+                <input type="radio" name="winner" value={current.participante1}
+                  onChange={() => setSelectedWinnerId(current.participante1 || current.participante1?.id)} />
+                <span>{current.participante1_nombre || current.participante1?.nombre || 'P1'}</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="radio" name="winner" value={current.participante2}
+                  onChange={() => setSelectedWinnerId(current.participante2 || current.participante2?.id)} />
+                <span>{current.participante2_nombre || current.participante2?.nombre || 'P2'}</span>
+              </label>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button className="px-3 py-2 bg-gray-200 rounded" onClick={() => setShowFinishModal(false)}>Cancelar</button>
+              <button disabled={!selectedWinnerId || working} className="px-3 py-2 bg-indigo-600 text-white rounded" onClick={confirmFinalize}>Confirmar</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

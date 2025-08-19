@@ -108,12 +108,20 @@ def galeria_items(request):
             # ocultar unsplash
             if 'unsplash.com' in archivo_value:
                 continue
+            # Si no hay archivo asignado, saltar
+            if not archivo_value:
+                continue
             if archivo_value.startswith('http') and 'cloudinary.com' in archivo_value:
                 file_url = archivo_value
             elif hasattr(it.archivo, 'url'):
-                file_url = it.archivo.url
+                try:
+                    file_url = it.archivo.url
+                except Exception:
+                    # Si no hay archivo asociado o falla al resolver la URL, saltar
+                    continue
                 if not file_url.startswith('http'):
-                    file_url = f"https://thebadgerspage.onrender.com{file_url}"
+                    # Construir URL absoluta acorde al entorno
+                    file_url = request.build_absolute_uri(file_url)
             else:
                 continue
             data.append({
@@ -189,9 +197,14 @@ def galeria_list(request):
             print(f"DEBUG galeria_list: URL de Cloudinary desde storage encontrada: {file_url}")
         elif hasattr(item.archivo, 'url'):
             # Para otros tipos de storage, construir URL absoluta
-            file_url = item.archivo.url
+            try:
+                file_url = item.archivo.url
+            except Exception:
+                # Si el FileField no tiene archivo asociado, saltar
+                print(f"DEBUG galeria_list: Item {item.id} sin archivo asociado, saltando...")
+                continue
             if not file_url.startswith('http'):
-                file_url = f"https://thebadgerspage.onrender.com{file_url}"
+                file_url = request.build_absolute_uri(file_url)
             print(f"DEBUG galeria_list: URL construida: {file_url}")
         else:
             # Si no hay URL válida, saltar este item
@@ -1315,7 +1328,7 @@ class LuchaViewSet(viewsets.ModelViewSet):
         # Si se especifica ganador manualmente (por sumisión, etc.)
         if ganador_id:
             try:
-                ganador = Participante.objects.get(id=ganador_id)
+                ganador = Participante.objects.get(id=int(ganador_id))
                 if ganador not in [lucha.participante1, lucha.participante2]:
                     return Response(
                         {'error': 'El ganador debe ser uno de los participantes de la lucha'}, 

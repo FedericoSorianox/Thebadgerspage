@@ -362,11 +362,13 @@ class Llave(models.Model):
         if not self.estructura or 'rondas' not in self.estructura:
             return
         
-        # Buscar la lucha en la estructura
+        # Buscar la lucha en la estructura (tolerante a None)
         for ronda_idx, ronda in enumerate(self.estructura['rondas']):
             for lucha_idx, lucha_estructura in enumerate(ronda['luchas']):
-                if (lucha_estructura.get('participante1', {}).get('id') == lucha.participante1.id and
-                    lucha_estructura.get('participante2', {}).get('id') == lucha.participante2.id):
+                p1_struct = lucha_estructura.get('participante1') or {}
+                p2_struct = lucha_estructura.get('participante2') or {}
+                if (p1_struct.get('id') == lucha.participante1.id and
+                    p2_struct.get('id') == lucha.participante2.id):
                     
                     # Actualizar con el ganador
                     ganador = lucha.determinar_ganador()

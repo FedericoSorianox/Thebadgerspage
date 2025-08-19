@@ -136,8 +136,8 @@ if os.environ.get('USE_SQLITE', 'false').lower() == 'true':
         }
     }
 
-# Configuración de DEBUG basada en entorno
-DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
+# Configuración de DEBUG basada en entorno (por defecto True en local)
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
