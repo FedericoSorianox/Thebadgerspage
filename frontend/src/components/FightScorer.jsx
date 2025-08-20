@@ -6,7 +6,7 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null 
   const [currentIdx, setCurrentIdx] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [working, setWorking] = useState(false);
+  // Eliminamos bloqueos por “working” para tener UI siempre reactiva
   const [timerId, setTimerId] = useState(null);
   const [showFinishModal, setShowFinishModal] = useState(false);
   const [selectedWinnerId, setSelectedWinnerId] = useState(null);
@@ -70,46 +70,76 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null 
 
   const addDelta = async (field, delta) => {
     if (!current) return;
+    const prevValue = current[field] || 0;
+    const nextValue = Math.max(0, prevValue + delta);
+    // Actualización optimista inmediata
+    setLuchas(prev => prev.map((l, i) => i === currentIdx ? { ...l, [field]: nextValue } : l));
     try {
-      setWorking(true);
-      const value = Math.max(0, (current[field] || 0) + delta);
-      await luchaAPI.update(current.id, { [field]: value });
-      await refreshCurrent();
+      await luchaAPI.update(current.id, { [field]: nextValue });
+      // No esperamos el refresh para no trabar el UI; refresco silencioso
+      refreshCurrent();
     } catch (e) {
+      // Rollback si el servidor falla
+      setLuchas(prev => prev.map((l, i) => i === currentIdx ? { ...l, [field]: prevValue } : l));
       setError(e.message);
-    } finally {
-      setWorking(false);
     }
   };
 
   const toggleTimer = async () => {
     if (!current) return;
-    try {
-      setWorking(true);
-      if (current.estado === 'pendiente') {
-        await luchaAPI.update(current.id, { estado: 'en_progreso' });
-      } else if (current.estado === 'en_progreso') {
-        await luchaAPI.update(current.id, { estado: 'pausada', tiempo_transcurrido: current.tiempo_transcurrido });
-      } else if (current.estado === 'pausada') {
-        await luchaAPI.update(current.id, { estado: 'en_progreso' });
-      }
-      await refreshCurrent();
+    const prevEstado = current.estado;
+    const nextEstado = prevEstado === 'pendiente'
+      ? 'en_progreso'
+      : prevEstado === 'en_progreso'
+      ? 'pausada'
+      : 'en_progreso';
+
+    // Optimista: cambiar estado local de inmediato
+    setLuchas(prev => prev.map((l, i) => i === currentIdx ? { ...l, estado: nextEstado } : l));
+
+    // Gestionar timer local inmediatamente
+    if (nextEstado === 'en_progreso') {
+      if (timerId) clearInterval(timerId);
+      const id = setInterval(() => {
+        // Incrementar todas las luchas en progreso (por si cambia el índice)
+        setLuchas(prev => prev.map(l => l.estado === 'en_progreso' ? { ...l, tiempo_transcurrido: (l.tiempo_transcurrido || 0) + 1 } : l));
+      }, 1000);
+      setTimerId(id);
+    } else {
       if (timerId) {
         clearInterval(timerId);
         setTimerId(null);
       }
-      // Si el estado resultante es en_progreso, arrancar tick local
-      const next = await luchaAPI.getById(current.id);
-      if (next.estado === 'en_progreso') {
-        const id = setInterval(() => {
-          setLuchas(prev => prev.map((l, i) => i === currentIdx ? { ...l, tiempo_transcurrido: (l.tiempo_transcurrido || 0) + 1 } : l));
-        }, 1000);
-        setTimerId(id);
+    }
+
+    // Enviar al backend en segundo plano y hacer rollback si falla
+    try {
+      if (prevEstado === 'pendiente') {
+        await luchaAPI.update(current.id, { estado: 'en_progreso' });
+      } else if (prevEstado === 'en_progreso') {
+        await luchaAPI.update(current.id, { estado: 'pausada', tiempo_transcurrido: current.tiempo_transcurrido });
+      } else if (prevEstado === 'pausada') {
+        await luchaAPI.update(current.id, { estado: 'en_progreso' });
       }
+      // Refresco no bloqueante
+      refreshCurrent();
     } catch (e) {
+      // Rollback de estado y timer
+      setLuchas(prev => prev.map((l, i) => i === currentIdx ? { ...l, estado: prevEstado } : l));
+      if (prevEstado === 'en_progreso') {
+        if (!timerId) {
+          const id = setInterval(() => {
+            setLuchas(prev => prev.map(lu => lu.estado === 'en_progreso' ? { ...lu, tiempo_transcurrido: (lu.tiempo_transcurrido || 0) + 1 } : lu));
+          }, 1000);
+          setTimerId(id);
+        }
+      } else {
+        if (timerId) {
+          clearInterval(timerId);
+          setTimerId(null);
+        }
+      }
       setError(e.message);
-    } finally {
-      setWorking(false);
     }
   };
 
@@ -121,22 +151,27 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null 
 
   const confirmFinalize = async () => {
     if (!current) return;
+    // Optimista: marcar finalizada y asignar ganador localmente
+    const winnerId = selectedWinnerId ? Number(selectedWinnerId) : null;
+    setLuchas(prev => prev.map((l, i) => i === currentIdx ? {
+      ...l,
+      estado: 'finalizada',
+      ganador: winnerId || l.ganador,
+      ganador_nombre: winnerId ? (winnerId === (l.participante1?.id || l.participante1) ? (l.participante1_nombre || l.participante1?.nombre) : (l.participante2_nombre || l.participante2?.nombre)) : l.ganador_nombre
+    } : l));
+    setShowFinishModal(false);
+    if (timerId) { clearInterval(timerId); setTimerId(null); }
+
     try {
-      setWorking(true);
-      const payload = selectedWinnerId ? { ganador_id: Number(selectedWinnerId), tipo_victoria: 'puntos' } : {};
+      const payload = winnerId ? { ganador_id: winnerId, tipo_victoria: 'puntos' } : {};
       await luchaAPI.finalizar(current.id, payload);
-      await load();
-      // Cerrar modal externo automáticamente al finalizar
+      // Refrescar en background
+      load();
       if (onClose) onClose();
-      setShowFinishModal(false);
     } catch (e) {
+      // Rollback si falla
       setError(e.message || 'Error al finalizar la lucha');
-    } finally {
-      setWorking(false);
-      if (timerId) {
-        clearInterval(timerId);
-        setTimerId(null);
-      }
+      await refreshCurrent();
     }
   };
 
@@ -180,7 +215,7 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null 
         <div className="text-center mb-4">
           <div className="text-3xl font-extrabold">{fmt(current.duracion_segundos - (current.tiempo_transcurrido || 0))}</div>
           <div className="mt-2">
-            <button disabled={working} onClick={toggleTimer} className={`px-4 py-2 rounded text-white ${current.estado === 'en_progreso' ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}>
+            <button onClick={toggleTimer} className={`px-4 py-2 rounded text-white ${current.estado === 'en_progreso' ? 'bg-black hover:bg-black' : 'bg-black hover:bg-green-700'}`}>
               {current.estado === 'en_progreso' ? 'Pausar' : 'Iniciar'}
             </button>
           </div>
@@ -192,18 +227,18 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null 
             <div className="text-center text-lg font-semibold mb-2">{current.participante1_nombre || current.participante1?.nombre || 'P1'}</div>
             <div className="text-center text-4xl font-black text-blue-600 mb-4">{calcPoints.p1}</div>
             <div className="grid grid-cols-3 gap-2">
-              <button disabled={working} onClick={() => addDelta('montadas_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">+4</button>
-              <button disabled={working} onClick={() => addDelta('guardas_pasadas_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">+3</button>
-              <button disabled={working} onClick={() => addDelta('rodillazos_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">+2</button>
-              <button disabled={working} onClick={() => addDelta('derribos_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">+2</button>
-              <button disabled={working} onClick={() => addDelta('ventajas_p1', +1)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded">Vent +1</button>
-              <button disabled={working} onClick={() => addDelta('penalizaciones_p1', +1)} className="bg-red-200 hover:bg-red-200 text-white px-3 py-2 rounded">Pen -1</button>
-              <button disabled={working} onClick={() => addDelta('montadas_p1', -1)} className="bg-gray-200 px-3 py-2 rounded">-4</button>
-              <button disabled={working} onClick={() => addDelta('guardas_pasadas_p1', -1)} className="bg-gray-200 px-3 py-2 rounded">-3</button>
-              <button disabled={working} onClick={() => addDelta('rodillazos_p1', -1)} className="bg-gray-200 px-3 py-2 rounded">-2</button>
-              <button disabled={working} onClick={() => addDelta('derribos_p1', -1)} className="bg-gray-200 px-3 py-2 rounded">-2</button>
-              <button disabled={working} onClick={() => addDelta('ventajas_p1', -1)} className="bg-green-200 px-3 py-2 rounded">Ventaja -1</button>
-              <button disabled={working} onClick={() => addDelta('penalizaciones_p1', -1)} className="bg-red-200 px-3 py-2 rounded">Penal +1</button>
+              <button onClick={() => addDelta('montadas_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">+4</button>
+              <button onClick={() => addDelta('guardas_pasadas_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">+3</button>
+              <button onClick={() => addDelta('rodillazos_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">+2</button>
+              <button onClick={() => addDelta('derribos_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded">+2</button>
+              <button onClick={() => addDelta('ventajas_p1', +1)} className="bg-green-200 hover:bg-yellow-600 text-white px-3 py-2 rounded">Vent +1</button>
+              <button onClick={() => addDelta('penalizaciones_p1', +1)} className="bg-red-200 hover:bg-red-200 text-white px-3 py-2 rounded">Pen -1</button>
+              <button onClick={() => addDelta('montadas_p1', -1)} className="bg-gray-200 px-3 py-2 rounded">-4</button>
+              <button onClick={() => addDelta('guardas_pasadas_p1', -1)} className="bg-gray-200 px-3 py-2 rounded">-3</button>
+              <button onClick={() => addDelta('rodillazos_p1', -1)} className="bg-gray-200 px-3 py-2 rounded">-2</button>
+              <button onClick={() => addDelta('derribos_p1', -1)} className="bg-gray-200 px-3 py-2 rounded">-2</button>
+              <button onClick={() => addDelta('ventajas_p1', -1)} className="bg-green-200 px-3 py-2 rounded">Vent -1</button>
+              <button onClick={() => addDelta('penalizaciones_p1', -1)} className="bg-red-200 px-3 py-2 rounded">Pen +1</button>
             </div>
           </div>
 
@@ -212,18 +247,18 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null 
             <div className="text-center text-lg font-semibold mb-2">{current.participante2_nombre || current.participante2?.nombre || 'P2'}</div>
             <div className="text-center text-4xl font-black text-red-600 mb-4">{calcPoints.p2}</div>
             <div className="grid grid-cols-3 gap-2">
-              <button disabled={working} onClick={() => addDelta('montadas_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded">+4</button>
-              <button disabled={working} onClick={() => addDelta('guardas_pasadas_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded">+3</button>
-              <button disabled={working} onClick={() => addDelta('rodillazos_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded">+2</button>
-              <button disabled={working} onClick={() => addDelta('derribos_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded">+2</button>
-              <button disabled={working} onClick={() => addDelta('ventajas_p2', +1)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-2 rounded">Vent +1</button>
-              <button disabled={working} onClick={() => addDelta('penalizaciones_p2', +1)} className="bg-red-200 hover:bg-red-200 text-white px-3 py-2 rounded">Pen -1</button>
-              <button disabled={working} onClick={() => addDelta('montadas_p2', -1)} className="bg-gray-200 px-3 py-2 rounded">-4</button>
-              <button disabled={working} onClick={() => addDelta('guardas_pasadas_p2', -1)} className="bg-gray-200 px-3 py-2 rounded">-3</button>
-              <button disabled={working} onClick={() => addDelta('rodillazos_p2', -1)} className="bg-gray-200 px-3 py-2 rounded">-2</button>
-              <button disabled={working} onClick={() => addDelta('derribos_p2', -1)} className="bg-gray-200 px-3 py-2 rounded">-2</button>
-              <button disabled={working} onClick={() => addDelta('ventajas_p2', -1)} className="bg-green-200 px-3 py-2 rounded">Ventaja -1</button>
-              <button disabled={working} onClick={() => addDelta('penalizaciones_p2', -1)} className="bg-red-200 px-3 py-2 rounded">Penal +1</button>
+              <button onClick={() => addDelta('montadas_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded">+4</button>
+              <button onClick={() => addDelta('guardas_pasadas_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded">+3</button>
+              <button onClick={() => addDelta('rodillazos_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded">+2</button>
+              <button onClick={() => addDelta('derribos_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded">+2</button>
+              <button onClick={() => addDelta('ventajas_p2', +1)} className="bg-green-200 hover:bg-yellow-600 text-white px-3 py-2 rounded">Vent +1</button>
+              <button onClick={() => addDelta('penalizaciones_p2', +1)} className="bg-red-200 hover:bg-red-200 text-white px-3 py-2 rounded">Pen -1</button>
+              <button onClick={() => addDelta('montadas_p2', -1)} className="bg-gray-200 px-3 py-2 rounded">-4</button>
+              <button onClick={() => addDelta('guardas_pasadas_p2', -1)} className="bg-gray-200 px-3 py-2 rounded">-3</button>
+              <button onClick={() => addDelta('rodillazos_p2', -1)} className="bg-gray-200 px-3 py-2 rounded">-2</button>
+              <button onClick={() => addDelta('derribos_p2', -1)} className="bg-gray-200 px-3 py-2 rounded">-2</button>
+              <button onClick={() => addDelta('ventajas_p2', -1)} className="bg-green-200 px-3 py-2 rounded">Vent -1</button>
+              <button onClick={() => addDelta('penalizaciones_p2', -1)} className="bg-red-200 px-3 py-2 rounded">Pen +1</button>
             </div>
           </div>
         </div>
@@ -234,7 +269,7 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null 
             <button disabled={currentIdx >= luchas.length - 1} onClick={() => setCurrentIdx(Math.min(luchas.length - 1, currentIdx + 1))} className="px-3 py-2 bg-gray-200 rounded">Siguiente ▶︎</button>
           </div>
           <div className="flex gap-2">
-            <button disabled={working} onClick={finalize} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-semibold">Finalizar</button>
+            <button onClick={finalize} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-semibold">Finalizar</button>
             <button onClick={onClose} className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded">Cerrar</button>
           </div>
         </div>
@@ -266,7 +301,7 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null 
             </div>
             <div className="flex justify-end gap-2">
               <button className="px-3 py-2 bg-gray-200 rounded" onClick={() => setShowFinishModal(false)}>Cancelar</button>
-              <button disabled={!selectedWinnerId || working} className="px-3 py-2 bg-indigo-600 text-white rounded" onClick={confirmFinalize}>Confirmar</button>
+              <button disabled={!selectedWinnerId} className="px-3 py-2 bg-indigo-600 text-white rounded" onClick={confirmFinalize}>Confirmar</button>
             </div>
           </div>
         </div>

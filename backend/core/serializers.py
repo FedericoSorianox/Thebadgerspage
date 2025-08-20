@@ -122,7 +122,44 @@ class LlaveSerializer(serializers.ModelSerializer):
         read_only_fields = ['fecha_creacion', 'fecha_modificacion']
     
     def get_participantes_count(self, obj):
-        return len(obj.obtener_participantes())
+        # 1) Si la estructura ya guarda el número, usarlo (más barato y refleja la llave generada)
+        try:
+            if isinstance(obj.estructura, dict) and 'participantes' in obj.estructura:
+                return int(obj.estructura.get('participantes') or 0)
+        except Exception:
+            pass
+
+        # 2) Contar como en CategoriaSerializer: manuales + automáticos por cinturón/peso
+        try:
+            categoria = obj.categoria
+            participantes_asignados = categoria.participantes_asignados.filter(activo=True).count()
+
+            participantes_automaticos = 0
+            if categoria.tipo_categoria in ['blanca', 'azul', 'violeta', 'marron', 'negro']:
+                cinturon_map = {
+                    'blanca': 'blanca',
+                    'azul': 'azul',
+                    'violeta': 'violeta',
+                    'marron': 'marron',
+                    'negro': 'negro'
+                }
+                cinturon = cinturon_map.get(categoria.tipo_categoria)
+                if cinturon:
+                    qs = categoria.torneo.participantes.filter(
+                        activo=True,
+                        cinturon=cinturon,
+                        categoria_asignada__isnull=True
+                    )
+                    if categoria.peso_minimo is not None:
+                        qs = qs.filter(peso__gte=categoria.peso_minimo)
+                    if categoria.peso_maximo is not None:
+                        qs = qs.filter(peso__lte=categoria.peso_maximo)
+                    participantes_automaticos = qs.count()
+
+            return participantes_asignados + participantes_automaticos
+        except Exception:
+            # 3) Fallback a manuales únicamente
+            return len(obj.obtener_participantes())
 
 
 class LuchaSerializer(serializers.ModelSerializer):

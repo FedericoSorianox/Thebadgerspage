@@ -219,8 +219,43 @@ class Llave(models.Model):
     finalizada = models.BooleanField(default=False)
 
     def obtener_participantes(self):
-        """Obtiene únicamente los participantes asignados manualmente a la categoría"""
-        return list(self.categoria.participantes_asignados.filter(activo=True))
+        """Obtiene los participantes para la llave: asignados manualmente + automáticos por cinturón/peso.
+        Los automáticos se toman del torneo si coinciden con el tipo/peso y no están asignados manualmente.
+        """
+        categoria = self.categoria
+        asignados = list(categoria.participantes_asignados.filter(activo=True))
+
+        # Calcular automáticos solo para categorías por cinturón
+        automaticos = []
+        if categoria.tipo_categoria in ['blanca', 'azul', 'violeta', 'marron', 'negro']:
+            cinturon_map = {
+                'blanca': 'blanca',
+                'azul': 'azul',
+                'violeta': 'violeta',
+                'marron': 'marron',
+                'negro': 'negro'
+            }
+            cinturon = cinturon_map.get(categoria.tipo_categoria)
+            if cinturon:
+                qs = categoria.torneo.participantes.filter(
+                    activo=True,
+                    cinturon=cinturon,
+                    categoria_asignada__isnull=True
+                )
+                if categoria.peso_minimo is not None:
+                    qs = qs.filter(peso__gte=categoria.peso_minimo)
+                if categoria.peso_maximo is not None:
+                    qs = qs.filter(peso__lte=categoria.peso_maximo)
+                automaticos = list(qs)
+
+        # Unir evitando duplicados por id
+        vistos = set(p.id for p in asignados)
+        resultado = list(asignados)
+        for p in automaticos:
+            if p.id not in vistos:
+                resultado.append(p)
+                vistos.add(p.id)
+        return resultado
     
     def calcular_rondas_necesarias(self, num_participantes):
         """Calcula cuántas rondas son necesarias para un número de participantes"""

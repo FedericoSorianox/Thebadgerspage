@@ -154,7 +154,7 @@ export default function BracketView({ categoria, onManage }) {
                       
                       let pid = null;
                       try {
-                        pid = e.dataTransfer.getData('participant-id');
+                        pid = e.dataTransfer.getData('participant-id') || e.dataTransfer.getData('text/plain');
                       } catch {
                         return;
                       }
@@ -423,6 +423,7 @@ export default function BracketView({ categoria, onManage }) {
                         if (!dt) return;
                         const id = p1.id || p1;
                         dt.setData('participant-id', String(id));
+                        dt.setData('text/plain', String(id));
                         dt.setData('from-slot', 'participante1');
                         if (r?.id) dt.setData('from-lucha-id', String(r.id));
                         dt.effectAllowed = 'move';
@@ -460,6 +461,7 @@ export default function BracketView({ categoria, onManage }) {
                         if (!dt) return;
                         const id = p2.id || p2;
                         dt.setData('participant-id', String(id));
+                        dt.setData('text/plain', String(id));
                         dt.setData('from-slot', 'participante2');
                         if (r?.id) dt.setData('from-lucha-id', String(r.id));
                         dt.effectAllowed = 'move';
