@@ -281,13 +281,67 @@ class Llave(models.Model):
         # Mezclar participantes aleatoriamente
         import random
         random.shuffle(participantes)
-        
-        # Calcular la próxima potencia de 2
+
+        # Caso especial: 3 participantes
+        if num_participantes == 3:
+            rondas = []
+
+            # Semifinal única (llamada "Primera Ronda" para mantener consistencia UI)
+            semifinal = [{
+                'participante1': {
+                    'id': participantes[1].id,
+                    'nombre': participantes[1].nombre,
+                    'academia': participantes[1].academia
+                },
+                'participante2': {
+                    'id': participantes[2].id,
+                    'nombre': participantes[2].nombre,
+                    'academia': participantes[2].academia
+                },
+                'ganador': None,
+                'estado': 'pendiente'
+            }]
+            rondas.append({'nombre': 'Primera Ronda', 'luchas': semifinal})
+
+            # Final: el tercero pasa directo (BYE) y espera al ganador de la semifinal
+            final_lucha = [{
+                'participante1': {
+                    'id': participantes[0].id,
+                    'nombre': participantes[0].nombre,
+                    'academia': participantes[0].academia
+                },
+                'participante2': None,
+                'ganador': None,
+                'estado': 'pendiente'
+            }]
+            rondas.append({'nombre': 'Final', 'luchas': final_lucha})
+
+            # Lucha adicional por 2do/3er puesto (se completa tras la final)
+            clasificacion = [{
+                'participante1': None,
+                'participante2': None,
+                'ganador': None,
+                'estado': 'pendiente'
+            }]
+            rondas.append({'nombre': '2do/3er Puesto', 'luchas': clasificacion})
+
+            self.estructura = {
+                'tipo': 'eliminacion_simple',
+                'participantes': num_participantes,
+                'rondas': rondas,
+                'fecha_generacion': str(timezone.now().isoformat())
+            }
+
+            # Crear la única lucha real de primera ronda
+            self.crear_luchas_primera_ronda(semifinal)
+            return
+
+        # Flujo general (>=2 y distinto de 3)
         import math
         next_power_of_2 = 2 ** math.ceil(math.log2(num_participantes))
-        
+
         rondas = []
-        
+
         # Primera ronda
         primera_ronda = []
         for i in range(0, num_participantes, 2):
@@ -307,7 +361,7 @@ class Llave(models.Model):
                     'estado': 'pendiente'
                 }
             else:
-                # BYE - participante pasa directo
+                # BYE - participante pasa directo (no se crea lucha real)
                 lucha = {
                     'participante1': {
                         'id': participantes[i].id,
@@ -323,20 +377,20 @@ class Llave(models.Model):
                     'estado': 'finalizada'
                 }
             primera_ronda.append(lucha)
-        
+
         rondas.append({
             'nombre': 'Primera Ronda',
             'luchas': primera_ronda
         })
-        
+
         # Generar rondas siguientes vacías
         num_rondas = self.calcular_rondas_necesarias(num_participantes)
         nombres_rondas = self.generar_nombres_rondas(num_rondas)
-        
+
         for i in range(1, num_rondas):
             luchas_previas = rondas[i-1]['luchas']
             num_luchas_siguiente = len(luchas_previas) // 2
-            
+
             luchas_siguiente = []
             for j in range(num_luchas_siguiente):
                 luchas_siguiente.append({
@@ -345,19 +399,19 @@ class Llave(models.Model):
                     'ganador': None,
                     'estado': 'pendiente'
                 })
-            
+
             rondas.append({
                 'nombre': nombres_rondas[i],
                 'luchas': luchas_siguiente
             })
-        
+
         self.estructura = {
             'tipo': 'eliminacion_simple',
             'participantes': num_participantes,
             'rondas': rondas,
             'fecha_generacion': str(timezone.now().isoformat())
         }
-        
+
         # Crear las luchas reales para la primera ronda
         self.crear_luchas_primera_ronda(primera_ronda)
         
@@ -405,8 +459,8 @@ class Llave(models.Model):
                 if (p1_struct.get('id') == lucha.participante1.id and
                     p2_struct.get('id') == lucha.participante2.id):
                     
-                    # Actualizar con el ganador
-                    ganador = lucha.determinar_ganador()
+                    # Actualizar con el ganador (priorizar el ganador almacenado explícitamente)
+                    ganador = lucha.ganador or lucha.determinar_ganador()
                     if ganador:
                         lucha_estructura['ganador'] = {
                             'id': ganador.id,
@@ -417,6 +471,71 @@ class Llave(models.Model):
                         
                         # Promover ganador a la siguiente ronda
                         self.promover_ganador_siguiente_ronda(ronda_idx, lucha_idx, ganador)
+                        
+                        # Caso especial: 3 participantes -> crear lucha 2do/3er puesto
+                        try:
+                            if (self.estructura.get('participantes') == 3 and
+                                self.estructura['rondas'][ronda_idx]['nombre'] in ['Final', 'Finales', 'Finalísima']):
+                                # Determinar perdedor de la final
+                                final_perdedor = lucha.participante1 if ganador.id != lucha.participante1.id else lucha.participante2
+
+                                # Buscar la semifinal (única lucha de Primera Ronda)
+                                semi = None
+                                try:
+                                    semi = Lucha.objects.filter(categoria=self.categoria, ronda__in=['Primera Ronda', 'Semifinal']).order_by('id').first()
+                                except Exception:
+                                    semi = None
+                                semifinal_perdedor = None
+                                if semi and semi.estado == 'finalizada':
+                                    g = semi.determinar_ganador()
+                                    if g:
+                                        semifinal_perdedor = semi.participante1 if g.id != semi.participante1.id else semi.participante2
+                                
+                                if final_perdedor and semifinal_perdedor:
+                                    # Completar ronda de 2do/3er puesto en estructura
+                                    ronda_clas = None
+                                    for r in self.estructura['rondas']:
+                                        if r.get('nombre') == '2do/3er Puesto':
+                                            ronda_clas = r
+                                            break
+                                    if ronda_clas and ronda_clas['luchas']:
+                                        card = ronda_clas['luchas'][0]
+                                        card['participante1'] = {
+                                            'id': semifinal_perdedor.id,
+                                            'nombre': semifinal_perdedor.nombre,
+                                            'academia': semifinal_perdedor.academia
+                                        }
+                                        card['participante2'] = {
+                                            'id': final_perdedor.id,
+                                            'nombre': final_perdedor.nombre,
+                                            'academia': final_perdedor.academia
+                                        }
+                                        card['ganador'] = None
+                                        card['estado'] = 'pendiente'
+
+                                        # Crear lucha real si no existe aún
+                                        try:
+                                            existe = Lucha.objects.filter(
+                                                categoria=self.categoria,
+                                                ronda='2do/3er Puesto',
+                                                posicion_llave=0
+                                            ).first()
+                                            if not existe:
+                                                p1 = semifinal_perdedor
+                                                p2 = final_perdedor
+                                                Lucha.objects.create(
+                                                    categoria=self.categoria,
+                                                    participante1=p1,
+                                                    participante2=p2,
+                                                    ronda='2do/3er Puesto',
+                                                    posicion_llave=0,
+                                                    estado='pendiente'
+                                                )
+                                        except Exception:
+                                            pass
+                        except Exception:
+                            # No bloquear la actualización si falla el armado del 2do/3er puesto
+                            pass
                     
                     break
         

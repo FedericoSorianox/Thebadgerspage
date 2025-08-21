@@ -135,7 +135,7 @@ export default function BracketView({ categoria, onManage }) {
       <div className="llave-visualization">
         <div className="text-gray-600">No hay llave generada para esta categoría.</div>
         {onManage && (
-          <button className="btn btn-primary" style={{ marginTop: 8 }} onClick={onManage}>⚙️ Gestionar</button>
+          <button className="btn btn-primary" style={{ marginTop: 8 }} onClick={onManage}>✏️ Editar</button>
         )}
       </div>
     );
@@ -149,7 +149,7 @@ export default function BracketView({ categoria, onManage }) {
       <div className="flex items-center justify-center mb-6 relative">
         <h4 className="text-3xl font-semibold text-center">{categoria.nombre}</h4>
         {onManage && (
-          <button className="btn btn-primary absolute right-0" onClick={onManage}>⚙️ Gestionar</button>
+          <button className="btn btn-primary absolute right-0" onClick={onManage}>✏️ Editar</button>
         )}
         <button
           className="btn btn-secondary absolute left-0"
@@ -331,179 +331,6 @@ export default function BracketView({ categoria, onManage }) {
                       backgroundColor: '#ffffff',
                       transition: 'all 0.3s ease'
                     }}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      if (e.dataTransfer) {
-                        e.dataTransfer.dropEffect = 'move';
-                      }
-                      e.currentTarget.style.borderColor = 'rgba(37, 99, 235, 0.7)';
-                      e.currentTarget.style.backgroundColor = 'rgba(59, 130, 246, 0.06)';
-                    }}
-                    onDragLeave={(e) => {
-                      e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.12)';
-                      e.currentTarget.style.backgroundColor = '#ffffff';
-                    }}
-                    onDrop={async (e) => {
-                      e.preventDefault();
-                      e.currentTarget.style.borderColor = 'rgba(0, 0, 0, 0.12)';
-                      e.currentTarget.style.backgroundColor = '#ffffff';
-                      
-                      let pid = null;
-                      try {
-                        pid = e.dataTransfer.getData('participant-id') || e.dataTransfer.getData('text/plain');
-                      } catch {
-                        return;
-                      }
-                      if (!pid) return;
-                      const fromLuchaIdRaw = e.dataTransfer.getData('from-lucha-id');
-                      const fromSlot = e.dataTransfer.getData('from-slot');
-                      
-                      try {
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        const y = e.clientY - rect.top;
-                        const isTopHalf = y < rect.height / 2;
-                        const slot = isTopHalf ? 'participante1' : 'participante2';
-                        
-                        if (r) {
-                          const pidNum = Number(pid);
-                          const currentSlotParticipantId = (r[slot]?.id || r[slot]) ?? null;
-                          if (currentSlotParticipantId === pidNum) {
-                            return;
-                          }
-
-                          const previoDestino = (r[slot]?.id || r[slot]) ?? null;
-
-                          // 1) Asignar el participante arrastrado al destino
-                          await luchaAPI.update(r.id, { [slot]: pidNum });
-
-                          // 2) Si hay origen (drag desde otra casilla), completar swap
-                          if (fromLuchaIdRaw && fromSlot) {
-                            const fromLuchaId = Number(fromLuchaIdRaw);
-                            // Si había alguien en el destino, lo llevamos al origen; si no, dejamos origen vacío
-                            if (previoDestino && previoDestino !== pidNum) {
-                              const payload = {};
-                              payload[fromSlot] = previoDestino;
-                              await luchaAPI.update(fromLuchaId, payload);
-                            }
-                          }
-
-                          // 3) Mantener sincronizada la estructura de la llave para promoción automática
-                          try {
-                            const estructuraNueva = JSON.parse(JSON.stringify(llave.estructura));
-                            const dest = estructuraNueva?.rondas?.[rondaIdx]?.luchas?.[luchaIdx];
-                            if (dest) {
-                              // Obtener datos del participante arrastrado (nombre/academia) desde la lucha origen
-                              let nombre = '';
-                              let academia = '';
-                              const fromLucha = Array.isArray(luchas) ? luchas.find(lx => lx.id === Number(fromLuchaIdRaw)) : null;
-                              if (fromLucha) {
-                                if (fromSlot === 'participante1') {
-                                  nombre = fromLucha.participante1_nombre || '';
-                                  academia = fromLucha.participante1_academia || '';
-                                } else if (fromSlot === 'participante2') {
-                                  nombre = fromLucha.participante2_nombre || '';
-                                  academia = fromLucha.participante2_academia || '';
-                                }
-                              }
-                              dest[slot] = { id: pidNum, nombre, academia };
-
-                              // Si hubo swap, actualizar origen en estructura
-                              if (fromLucha) {
-                                const srcRondaIdx = estructuraNueva.rondas.findIndex(rr => rr.nombre === fromLucha.ronda);
-                                if (srcRondaIdx >= 0) {
-                                  const src = estructuraNueva.rondas[srcRondaIdx].luchas?.[fromLucha.posicion_llave];
-                                  if (src) {
-                                    if (previoDestino && previoDestino !== pidNum) {
-                                      // Datos del que estaba en destino
-                                      const prevNombre = slot === 'participante1' ? (r.participante1_nombre || '') : (r.participante2_nombre || '');
-                                      const prevAcademia = slot === 'participante1' ? (r.participante1_academia || '') : (r.participante2_academia || '');
-                                      src[fromSlot] = { id: previoDestino, nombre: prevNombre, academia: prevAcademia };
-                                    } else {
-                                      src[fromSlot] = null;
-                                    }
-                                  }
-                                }
-                              }
-                            }
-                            await llaveAPI.update(llave.id, { estructura: estructuraNueva });
-                          } catch (syncErr) {
-                            console.warn('No se pudo sincronizar estructura de llave:', syncErr);
-                          }
-                          // Refrescar datos sin recargar toda la página
-                          try {
-                            const [refLuchas, refLlave] = await Promise.all([
-                              luchaAPI.getByCategoria(categoria.id),
-                              llaveAPI.getByCategoria(categoria.id)
-                            ]);
-                            const arr = Array.isArray(refLuchas?.results) ? refLuchas.results : Array.isArray(refLuchas) ? refLuchas : [];
-                            setLuchas(arr);
-                            if (refLlave) setLlave(refLlave);
-                          } catch (eRefresh) {
-                            console.warn('Refresh DnD falló, considere recargar manualmente:', eRefresh);
-                          }
-                        } else {
-                          // Si no existe aún la Lucha de ese cuadro (p.ej., Semifinal vacía),
-                          // intentar crearla solo si ambos participantes quedan definidos.
-                          const pidNum = Number(pid);
-                          const otroId = slot === 'participante1'
-                            ? (lucha.participante2?.id || null)
-                            : (lucha.participante1?.id || null);
-                          const nuevoP1 = slot === 'participante1' ? pidNum : otroId;
-                          const nuevoP2 = slot === 'participante2' ? pidNum : otroId;
-
-                          if (nuevoP1 && nuevoP2) {
-                            await luchaAPI.create({
-                              categoria: categoria.id,
-                              participante1: nuevoP1,
-                              participante2: nuevoP2,
-                              ronda: ronda.nombre,
-                              posicion_llave: luchaIdx,
-                            });
-                            // Actualizar estructura también
-                            try {
-                              const estructuraNueva = JSON.parse(JSON.stringify(llave.estructura));
-                              const dest = estructuraNueva?.rondas?.[rondaIdx]?.luchas?.[luchaIdx];
-                              if (dest) {
-                                // Intentar obtener datos de ambos participantes desde las luchas de origen si existen
-                                let p1Nombre = '';
-                                let p1Academia = '';
-                                let p2Nombre = '';
-                                let p2Academia = '';
-                                const l1 = Array.isArray(luchas) ? luchas.find(lx => (lx.participante1 === nuevoP1 || lx.participante2 === nuevoP1)) : null;
-                                if (l1) {
-                                  if (l1.participante1 === nuevoP1) { p1Nombre = l1.participante1_nombre || ''; p1Academia = l1.participante1_academia || ''; }
-                                  if (l1.participante2 === nuevoP1) { p1Nombre = l1.participante2_nombre || ''; p1Academia = l1.participante2_academia || ''; }
-                                }
-                                const l2 = Array.isArray(luchas) ? luchas.find(lx => (lx.participante1 === nuevoP2 || lx.participante2 === nuevoP2)) : null;
-                                if (l2) {
-                                  if (l2.participante1 === nuevoP2) { p2Nombre = l2.participante1_nombre || ''; p2Academia = l2.participante1_academia || ''; }
-                                  if (l2.participante2 === nuevoP2) { p2Nombre = l2.participante2_nombre || ''; p2Academia = l2.participante2_academia || ''; }
-                                }
-                                dest.participante1 = { id: nuevoP1, nombre: p1Nombre, academia: p1Academia };
-                                dest.participante2 = { id: nuevoP2, nombre: p2Nombre, academia: p2Academia };
-                              }
-                              await llaveAPI.update(llave.id, { estructura: estructuraNueva });
-                            } catch (eSync) {
-                              console.warn('Sync semifinals/finals fallo:', eSync);
-                            }
-                            // Actualizar estados locales sin recargar
-                            try {
-                              const [refLuchas, refLlave] = await Promise.all([
-                                luchaAPI.getByCategoria(categoria.id),
-                                llaveAPI.getByCategoria(categoria.id)
-                              ]);
-                              const arr = Array.isArray(refLuchas?.results) ? refLuchas.results : Array.isArray(refLuchas) ? refLuchas : [];
-                              setLuchas(arr);
-                              if (refLlave) setLlave(refLlave);
-                            } catch (eRefresh2) {
-                              console.warn('Refresh post-create falló:', eRefresh2);
-                            }
-                          }
-                        }
-                      } catch (error) {
-                        console.error('Error al actualizar lucha:', error);
-                      }
-                    }}
                   >
                     {/* Header de acciones/estado */}
                     {r && (
@@ -515,17 +342,7 @@ export default function BracketView({ categoria, onManage }) {
                         alignItems: 'center',
                         gap: 8
                       }}>
-                        {/* Estado */}
-                        <span style={{
-                          backgroundColor: r.estado === 'finalizada' ? '#059669' : (r.estado === 'en_progreso' ? '#2563eb' : '#6b7280'),
-                          color: 'white',
-                          borderRadius: '999px',
-                          padding: '2px 8px',
-                          fontSize: '0.65rem',
-                          fontWeight: 600
-                        }}>
-                          {r.estado || 'pendiente'}
-                        </span>
+                        {/* Estado oculto: badge eliminado para dejar solo iconos */}
                         {/* Botón Comenzar solo si está pendiente */}
                         {r.estado === 'pendiente' && !hayEnProgreso && !openScorer && (
                           <button
@@ -543,14 +360,20 @@ export default function BracketView({ categoria, onManage }) {
                               background: 'linear-gradient(90deg,#4f46e5,#3b82f6)',
                               color: 'white',
                               border: 'none',
-                              borderRadius: 6,
-                              padding: '4px 8px',
-                              fontSize: '0.7rem',
+                              borderRadius: '9999px',
+                              width: 28,
+                              height: 28,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
                               cursor: 'pointer'
                             }}
                             title="Comenzar lucha"
                           >
-                            Comenzar
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                              <path d="M8 5v14l11-7z"></path>
+                            </svg>
                           </button>
                         )}
                         {/* Botón Reiniciar por lucha (también permite reiniciar si está en progreso) */}
@@ -588,17 +411,23 @@ export default function BracketView({ categoria, onManage }) {
                               }
                             }}
                             style={{
-                              background: '#e5e7eb',
+                              background: '#f3f4f6',
                               color: '#111827',
-                              border: 'none',
-                              borderRadius: 6,
-                              padding: '4px 8px',
-                              fontSize: '0.7rem',
+                              border: '1px solid #e5e7eb',
+                              borderRadius: '9999px',
+                              width: 28,
+                              height: 28,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
                               cursor: 'pointer'
                             }}
                             title="Reiniciar lucha"
                           >
-                            Reiniciar
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                              <path d="M17.65 6.35A7.95 7.95 0 0012 4V1L7 6l5 5V7a5 5 0 11-4.9 6h-2.02A7 7 0 1020 12c0-1.61-.55-3.09-1.47-4.25l-.88.6z"></path>
+                            </svg>
                           </button>
                           </>
                         )}
@@ -608,34 +437,8 @@ export default function BracketView({ categoria, onManage }) {
                       </div>
                     )}
                     <div 
-                      className="bracket-player" 
-                      data-slot="p1"
-                      draggable={!!p1}
-                      onDragStart={(e) => {
-                        if (!p1) return;
-                        const dt = e.dataTransfer;
-                        if (!dt) return;
-                        const id = p1.id || p1;
-                        dt.setData('participant-id', String(id));
-                        dt.setData('text/plain', String(id));
-                        dt.setData('from-slot', 'participante1');
-                        if (r?.id) dt.setData('from-lucha-id', String(r.id));
-                        dt.effectAllowed = 'move';
-                        e.currentTarget.style.opacity = '0.6';
-                      }}
-                      onDragEnd={(e) => {
-                        e.currentTarget.style.opacity = '1';
-                      }}
-                      style={{
-                        padding: '8px 12px',
-                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        minHeight: '40px',
-                        backgroundColor: p1 ? '#ecfdf5' : '#f9fafb',
-                        cursor: p1 ? 'grab' : 'default'
-                      }}
+                      className={`bracket-player ${p1 ? 'has-player' : 'empty'}`}
+                      style={{ padding:'8px 12px', borderBottom:'1px solid rgba(255,255,255,0.1)', display:'flex', justifyContent:'space-between', alignItems:'center', minHeight:'40px' }}
                     >
                       <span style={{ color: '#111827', fontWeight: p1 ? '600' : '400' }}>
                         {p1 ? p1.nombre : 'Arrastra participante aquí'}
@@ -646,33 +449,8 @@ export default function BracketView({ categoria, onManage }) {
                     </div>
                     
                     <div 
-                      className="bracket-player" 
-                      data-slot="p2"
-                      draggable={!!p2 && !isBye}
-                      onDragStart={(e) => {
-                        if (!p2 || isBye) return;
-                        const dt = e.dataTransfer;
-                        if (!dt) return;
-                        const id = p2.id || p2;
-                        dt.setData('participant-id', String(id));
-                        dt.setData('text/plain', String(id));
-                        dt.setData('from-slot', 'participante2');
-                        if (r?.id) dt.setData('from-lucha-id', String(r.id));
-                        dt.effectAllowed = 'move';
-                        e.currentTarget.style.opacity = '0.6';
-                      }}
-                      onDragEnd={(e) => {
-                        e.currentTarget.style.opacity = '1';
-                      }}
-                      style={{
-                        padding: '8px 12px',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        minHeight: '40px',
-                        backgroundColor: p2 ? '#ecfdf5' : '#f9fafb',
-                        cursor: p2 && !isBye ? 'grab' : 'default'
-                      }}
+                      className={`bracket-player ${p2 ? 'has-player' : 'empty'}`}
+                      style={{ padding:'8px 12px', display:'flex', justifyContent:'space-between', alignItems:'center', minHeight:'40px' }}
                     >
                       <span style={{ color: '#111827', fontWeight: p2 ? '600' : '400' }}>
                         {p2 ? (isBye ? 'BYE' : p2.nombre) : 'Arrastra participante aquí'}
@@ -712,7 +490,7 @@ export default function BracketView({ categoria, onManage }) {
         borderRadius: '8px',
         border: '1px solid rgba(0, 0, 0, 0.1)'
       }}>
-        💡 <strong>Instrucciones:</strong> Arrastra cualquier nombre de una casilla a otra en el diagrama para reordenar. Suelta en la mitad superior para P1 y en la inferior para P2.
+        💡 <strong>Instrucciones:</strong> Usa «Editar» para reacomodar luchas manualmente.
       </div>
       {openScorer && (
         <FightScorer

@@ -88,24 +88,23 @@ export default function LlaveManager({ categoria, onClose }) {
     }
   };
 
-  const formatTime = (segundos) => {
+  const UNUSED_FORMAT_TIME = (segundos) => {
     const minutos = Math.floor(segundos / 60);
     const secs = segundos % 60;
     return `${minutos}:${secs.toString().padStart(2, '0')}`;
   };
 
   const handleEditarLucha = (lucha) => {
-    // Parar cronómetro si está activo
+    // En el editor simplificado no usamos el cronómetro ni marcador
     if (cronometroInterval) {
       clearInterval(cronometroInterval);
-      setCronometroInterval(null);
-      setCronometroActivo(false);
     }
-    
+    setCronometroInterval(null);
+    setCronometroActivo(false);
     setSelectedLucha(lucha);
   };
 
-  const handleToggleCronometro = async () => {
+  const UNUSED_HANDLE_TOGGLE_CRONOMETRO = async () => {
     if (!selectedLucha) return;
     
     try {
@@ -126,10 +125,10 @@ export default function LlaveManager({ categoria, onClose }) {
         setCronometroActivo(true);
         
         // Si es la primera vez, cambiar estado a en_progreso
-        if (selectedLucha.estado === 'pendiente') {
-          await luchaAPI.update(selectedLucha.id, { estado: 'en_progreso' });
-          setSelectedLucha(prev => ({ ...prev, estado: 'en_progreso' }));
-        }
+        //if (selectedLucha.estado === 'pendiente') {
+        //  await luchaAPI.update(selectedLucha.id, { estado: 'en_progreso' });
+        //  setSelectedLucha(prev => ({ ...prev, estado: 'en_progreso' }));
+        //}
         
         const interval = setInterval(() => {
           setSelectedLucha(prev => {
@@ -153,7 +152,7 @@ export default function LlaveManager({ categoria, onClose }) {
     }
   };
 
-  const handleSumarPunto = async (tipo, participante) => {
+  const UNUSED_HANDLE_SUMAR_PUNTO = async (tipo, participante) => {
     if (!selectedLucha) return;
     
     const campo = `${tipo}_${participante}`;
@@ -167,8 +166,8 @@ export default function LlaveManager({ categoria, onClose }) {
         ...prev,
         [campo]: nuevoValor,
         [`puntos_${participante}`]: participante === 'p1' ? 
-          calcularPuntos(prev, 'p1', tipo, nuevoValor) : 
-          calcularPuntos(prev, 'p2', tipo, nuevoValor)
+          UNUSED_CALCULAR_PUNTOS(prev, 'p1', tipo, nuevoValor) : 
+          UNUSED_CALCULAR_PUNTOS(prev, 'p2', tipo, nuevoValor)
       }));
       
     } catch (err) {
@@ -177,7 +176,7 @@ export default function LlaveManager({ categoria, onClose }) {
     }
   };
 
-  const handleSumarVentaja = async (participante) => {
+  const UNUSED_HANDLE_SUMAR_VENTAJA = async (participante) => {
     if (!selectedLucha) return;
     
     const campo = `ventajas_${participante}`;
@@ -192,7 +191,7 @@ export default function LlaveManager({ categoria, onClose }) {
     }
   };
 
-  const handleSumarPenalizacion = async (participante) => {
+  const UNUSED_HANDLE_SUMAR_PENALIZACION = async (participante) => {
     if (!selectedLucha) return;
     
     const campo = `penalizaciones_${participante}`;
@@ -207,7 +206,7 @@ export default function LlaveManager({ categoria, onClose }) {
     }
   };
 
-  const calcularPuntos = (lucha, participante, tipoModificado = null, valorModificado = null) => {
+  const UNUSED_CALCULAR_PUNTOS = (lucha, participante, tipoModificado = null, valorModificado = null) => {
     const montadas = tipoModificado === 'montadas' && participante === tipoModificado.split('_')[1] ? 
       valorModificado : (lucha[`montadas_${participante}`] || 0);
     const guardas = tipoModificado === 'guardas_pasadas' && participante === tipoModificado.split('_')[1] ? 
@@ -220,7 +219,7 @@ export default function LlaveManager({ categoria, onClose }) {
     return montadas * 4 + guardas * 3 + (rodillazos + derribos) * 2;
   };
 
-  const handleFinalizarLucha = async (tipoVictoria, ganadorId = null, detalle = '') => {
+  const UNUSED_HANDLE_FINALIZAR_LUCHA = async (tipoVictoria, ganadorId = null, detalle = '') => {
     if (!selectedLucha) return;
     
     try {
@@ -238,8 +237,8 @@ export default function LlaveManager({ categoria, onClose }) {
       
       // Determinar ganador automáticamente por puntos si no se especifica
       if (!ganadorId && tipoVictoria === 'puntos') {
-        const puntosP1 = calcularPuntos(selectedLucha, 'p1');
-        const puntosP2 = calcularPuntos(selectedLucha, 'p2');
+        const puntosP1 = UNUSED_CALCULAR_PUNTOS(selectedLucha, 'p1');
+        const puntosP2 = UNUSED_CALCULAR_PUNTOS(selectedLucha, 'p2');
         
         if (puntosP1 > puntosP2) {
           ganadorId = selectedLucha.participante1.id;
@@ -377,200 +376,96 @@ export default function LlaveManager({ categoria, onClose }) {
     );
   };
 
+  // Editor simplificado: reacomodar manualmente luchas (mover/intercambiar), sin scorer
+  const moveFight = async (fromIndex, toIndex) => {
+    if (!llave || !llave.estructura) return;
+    const estructuraNueva = JSON.parse(JSON.stringify(llave.estructura));
+    const rondas = estructuraNueva.rondas || [];
+    const roundIdx = rondas.findIndex(r => r.nombre === selectedLucha.ronda);
+    if (roundIdx < 0) return;
+    const fights = rondas[roundIdx].luchas || [];
+    if (toIndex < 0 || toIndex >= fights.length) return;
+    const [removed] = fights.splice(fromIndex, 1);
+    fights.splice(toIndex, 0, removed);
+    // Actualizar posicion_llave para las luchas reales afectadas (si existen)
+    try {
+      for (let i = 0; i < fights.length; i++) {
+        const card = fights[i];
+        const real = Array.isArray(luchas) ? luchas.find(lx => {
+          const p1 = lx.participante1?.id || lx.participante1;
+          const p2 = lx.participante2?.id || lx.participante2;
+          return p1 === (card?.participante1?.id) && p2 === (card?.participante2?.id) && lx.ronda === rondas[roundIdx].nombre;
+        }) : null;
+        if (real && real.posicion_llave !== i) {
+          await luchaAPI.update(real.id, { posicion_llave: i });
+        }
+      }
+    } catch (e) {
+      console.warn('No se pudo actualizar posicion_llave:', e);
+    }
+    await llaveAPI.update(llave.id, { estructura: estructuraNueva });
+    setLlave({ ...llave, estructura: estructuraNueva });
+    await loadLlave();
+  };
+
+  const swapFights = async (indexA, indexB) => {
+    if (!llave || !llave.estructura) return;
+    const estructuraNueva = JSON.parse(JSON.stringify(llave.estructura));
+    const rondas = estructuraNueva.rondas || [];
+    const roundIdx = rondas.findIndex(r => r.nombre === selectedLucha.ronda);
+    if (roundIdx < 0) return;
+    const fights = rondas[roundIdx].luchas || [];
+    if (indexA < 0 || indexB < 0 || indexA >= fights.length || indexB >= fights.length) return;
+    const tmp = fights[indexA];
+    fights[indexA] = fights[indexB];
+    fights[indexB] = tmp;
+    try {
+      // Recalcular y persistir posicion_llave
+      for (let i = 0; i < fights.length; i++) {
+        const card = fights[i];
+        const real = Array.isArray(luchas) ? luchas.find(lx => {
+          const p1 = lx.participante1?.id || lx.participante1;
+          const p2 = lx.participante2?.id || lx.participante2;
+          return p1 === (card?.participante1?.id) && p2 === (card?.participante2?.id) && lx.ronda === rondas[roundIdx].nombre;
+        }) : null;
+        if (real && real.posicion_llave !== i) {
+          await luchaAPI.update(real.id, { posicion_llave: i });
+        }
+      }
+    } catch (e) {
+      console.warn('No se pudo actualizar posicion_llave (swap):', e);
+    }
+    await llaveAPI.update(llave.id, { estructura: estructuraNueva });
+    setLlave({ ...llave, estructura: estructuraNueva });
+    await loadLlave();
+  };
+
   const renderLuchaEditor = () => {
     if (!selectedLucha) return null;
     
-    const tiempoRestante = selectedLucha.duracion_segundos - selectedLucha.tiempo_transcurrido;
-    const puntosP1 = calcularPuntos(selectedLucha, 'p1');
-    const puntosP2 = calcularPuntos(selectedLucha, 'p2');
+    const roundFights = (llave?.estructura?.rondas?.find(r => r.nombre === selectedLucha.ronda)?.luchas) || [];
+    const idxActual = roundFights.findIndex(l => {
+      const p1 = selectedLucha.participante1?.id || selectedLucha.participante1;
+      const p2 = selectedLucha.participante2?.id || selectedLucha.participante2;
+      return l?.participante1?.id === p1 && l?.participante2?.id === p2;
+    });
     
     return (
       <div className="lucha-editor border-t-2 pt-4 mt-4">
-        <h4 className="text-lg font-semibold mb-4">
-          Editando Lucha: {selectedLucha.participante1.nombre} vs {selectedLucha.participante2.nombre}
-        </h4>
-        
-        {/* Cronómetro */}
-        <div className="cronometro mb-6 text-center">
-          <div className="text-3xl font-bold mb-2">
-            {formatTime(Math.max(0, tiempoRestante))}
-          </div>
-          <div className="space-x-2">
-            <button
-              onClick={handleToggleCronometro}
-              className={`px-4 py-2 rounded font-semibold ${
-                cronometroActivo 
-                  ? 'bg-red-500 text-white hover:bg-red-600' 
-                  : 'bg-green-500 text-white hover:bg-green-600'
-              }`}
-            >
-              {cronometroActivo ? 'PAUSAR' : 'INICIAR'}
-            </button>
-            <button
-              onClick={() => setSelectedLucha(null)}
-              className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-            >
-              Cerrar
-            </button>
-          </div>
+        <h4 className="text-lg font-semibold mb-2">Reordenar lucha</h4>
+        <p className="text-sm text-gray-600 mb-4">{selectedLucha.participante1.nombre} vs {selectedLucha.participante2.nombre} — {selectedLucha.ronda}</p>
+        <div className="flex flex-wrap gap-2 mb-4">
+          <button onClick={() => moveFight(idxActual, idxActual - 1)} className="px-3 py-2 bg-gray-200 rounded">↑ Mover arriba</button>
+          <button onClick={() => moveFight(idxActual, idxActual + 1)} className="px-3 py-2 bg-gray-200 rounded">↓ Mover abajo</button>
+          {idxActual > 0 && (
+            <button onClick={() => swapFights(idxActual, idxActual - 1)} className="px-3 py-2 bg-gray-200 rounded">⇄ Intercambiar con anterior</button>
+          )}
+          {idxActual < roundFights.length - 1 && (
+            <button onClick={() => swapFights(idxActual, idxActual + 1)} className="px-3 py-2 bg-gray-200 rounded">⇄ Intercambiar con siguiente</button>
+          )}
+          <button onClick={() => setSelectedLucha(null)} className="px-3 py-2 bg-gray-600 text-white rounded">Cerrar</button>
         </div>
-        
-        {/* Marcador */}
-        <div className="marcador grid grid-cols-2 gap-6 mb-6">
-          {/* Participante 1 */}
-          <div className="participante-1 border rounded p-4">
-            <h5 className="font-semibold text-center mb-3">{selectedLucha.participante1.nombre}</h5>
-            
-            <div className="puntos text-center mb-3">
-              <div className="text-2xl font-bold text-blue-600">{puntosP1} puntos</div>
-              <div className="text-sm text-gray-600">
-                Ventajas: {selectedLucha.ventajas_p1 || 0} | Penalizaciones: {selectedLucha.penalizaciones_p1 || 0}
-              </div>
-            </div>
-            
-            <div className="acciones space-y-2">
-              <div className="grid grid-cols-2 gap-2">
-                <button 
-                  onClick={() => handleSumarPunto('montadas', 'p1')}
-                  className="bg-blue-500 text-white px-2 py-1 rounded text-sm hover:bg-blue-600"
-                >
-                  Montada (4pts) [{selectedLucha.montadas_p1 || 0}]
-                </button>
-                <button 
-                  onClick={() => handleSumarPunto('guardas_pasadas', 'p1')}
-                  className="bg-blue-500 text-white px-2 py-1 rounded text-sm hover:bg-blue-600"
-                >
-                  Guarda (3pts) [{selectedLucha.guardas_pasadas_p1 || 0}]
-                </button>
-                <button 
-                  onClick={() => handleSumarPunto('rodillazos', 'p1')}
-                  className="bg-blue-500 text-white px-2 py-1 rounded text-sm hover:bg-blue-600"
-                >
-                  Rodillazo (2pts) [{selectedLucha.rodillazos_p1 || 0}]
-                </button>
-                <button 
-                  onClick={() => handleSumarPunto('derribos', 'p1')}
-                  className="bg-blue-500 text-white px-2 py-1 rounded text-sm hover:bg-blue-600"
-                >
-                  Derribo (2pts) [{selectedLucha.derribos_p1 || 0}]
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2">
-                <button 
-                  onClick={() => handleSumarVentaja('p1')}
-                  className="bg-yellow-500 text-white px-2 py-1 rounded text-sm hover:bg-yellow-600"
-                >
-                  Ventaja
-                </button>
-                <button 
-                  onClick={() => handleSumarPenalizacion('p1')}
-                  className="bg-red-500 text-white px-2 py-1 rounded text-sm hover:bg-red-600"
-                >
-                  Penalización
-                </button>
-              </div>
-            </div>
-          </div>
-          
-          {/* Participante 2 */}
-          <div className="participante-2 border rounded p-4">
-            <h5 className="font-semibold text-center mb-3">{selectedLucha.participante2.nombre}</h5>
-            
-            <div className="puntos text-center mb-3">
-              <div className="text-2xl font-bold text-green-600">{puntosP2} puntos</div>
-              <div className="text-sm text-gray-600">
-                Ventajas: {selectedLucha.ventajas_p2 || 0} | Penalizaciones: {selectedLucha.penalizaciones_p2 || 0}
-              </div>
-            </div>
-            
-            <div className="acciones space-y-2">
-              <div className="grid grid-cols-2 gap-2">
-                <button 
-                  onClick={() => handleSumarPunto('montadas', 'p2')}
-                  className="bg-green-500 text-white px-2 py-1 rounded text-sm hover:bg-green-600"
-                >
-                  Montada (4pts) [{selectedLucha.montadas_p2 || 0}]
-                </button>
-                <button 
-                  onClick={() => handleSumarPunto('guardas_pasadas', 'p2')}
-                  className="bg-green-500 text-white px-2 py-1 rounded text-sm hover:bg-green-600"
-                >
-                  Guarda (3pts) [{selectedLucha.guardas_pasadas_p2 || 0}]
-                </button>
-                <button 
-                  onClick={() => handleSumarPunto('rodillazos', 'p2')}
-                  className="bg-green-500 text-white px-2 py-1 rounded text-sm hover:bg-green-600"
-                >
-                  Rodillazo (2pts) [{selectedLucha.rodillazos_p2 || 0}]
-                </button>
-                <button 
-                  onClick={() => handleSumarPunto('derribos', 'p2')}
-                  className="bg-green-500 text-white px-2 py-1 rounded text-sm hover:bg-green-600"
-                >
-                  Derribo (2pts) [{selectedLucha.derribos_p2 || 0}]
-                </button>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-2">
-                <button 
-                  onClick={() => handleSumarVentaja('p2')}
-                  className="bg-yellow-500 text-white px-2 py-1 rounded text-sm hover:bg-yellow-600"
-                >
-                  Ventaja
-                </button>
-                <button 
-                  onClick={() => handleSumarPenalizacion('p2')}
-                  className="bg-red-500 text-white px-2 py-1 rounded text-sm hover:bg-red-600"
-                >
-                  Penalización
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Finalizar lucha */}
-        <div className="finalizar-lucha">
-          <h6 className="font-medium mb-2">Finalizar Lucha:</h6>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-            <button
-              onClick={() => handleFinalizarLucha('puntos')}
-              className="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700"
-            >
-              Por Puntos
-            </button>
-            <button
-              onClick={() => {
-                const detalle = prompt('¿Qué tipo de sumisión?');
-                if (detalle) {
-                  const ganador = prompt('¿Quién ganó? 1 o 2') === '1' ? 
-                    selectedLucha.participante1.id : selectedLucha.participante2.id;
-                  handleFinalizarLucha('sumision', ganador, detalle);
-                }
-              }}
-              className="bg-purple-600 text-white px-3 py-2 rounded hover:bg-purple-700"
-            >
-              Por Sumisión
-            </button>
-            <button
-              onClick={() => handleFinalizarLucha('ventajas')}
-              className="bg-yellow-600 text-white px-3 py-2 rounded hover:bg-yellow-700"
-            >
-              Por Ventajas
-            </button>
-            <button
-              onClick={() => {
-                const ganador = prompt('¿Quién ganó por penalización? 1 o 2') === '1' ? 
-                  selectedLucha.participante1.id : selectedLucha.participante2.id;
-                handleFinalizarLucha('penalizacion', ganador);
-              }}
-              className="bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700"
-            >
-              Por Penalización
-            </button>
-          </div>
-        </div>
+        <div className="text-xs text-gray-500">Al reordenar se actualiza la posición en la llave y se sincronizan las luchas reales vinculadas.</div>
       </div>
     );
   };

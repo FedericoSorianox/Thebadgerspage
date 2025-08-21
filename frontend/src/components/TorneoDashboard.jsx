@@ -839,6 +839,7 @@ export default function TorneoDashboard() {
                               await handleDeleteTorneo(t.id);
                               lastActionRef.current = null;
                             } catch (e) {
+                              console.error(e);
                               // handleDeleteTorneo ya setea error; solo guardamos retry
                             } finally {
                               lastActionRef.current = doDelete;
@@ -913,6 +914,7 @@ export default function TorneoDashboard() {
                                   await handleDeleteCategoria(c.id);
                                   lastActionRef.current = null;
                                 } catch (e) {
+                                  console.error(e);
                                   // handleDeleteCategoria ya setea error
                                 } finally {
                                   lastActionRef.current = doDeleteCat;
@@ -933,6 +935,7 @@ export default function TorneoDashboard() {
                                     await handleCerrarInscripciones(c.id);
                                     lastActionRef.current = null;
                                   } catch (e) {
+                                    console.error(e);
                                   } finally {
                                     lastActionRef.current = doClose;
                                   }
@@ -948,7 +951,7 @@ export default function TorneoDashboard() {
                             disabled={isWorking}
                             onClick={async () => {
                               const doGen = async () => {
-                                try { await generateLlaves(c.id); lastActionRef.current = null; } catch (e) { } finally { lastActionRef.current = doGen; }
+                                try { await generateLlaves(c.id); lastActionRef.current = null; } catch (e) { console.error(e); } finally { lastActionRef.current = doGen; }
                               };
                               await doGen();
                             }}
@@ -1007,7 +1010,7 @@ export default function TorneoDashboard() {
                       <button
                         disabled={isWorking}
                         onClick={async () => {
-                          const doDel = async () => { try { await handleDeleteParticipante(p.id); lastActionRef.current = null; } catch (e) {} finally { lastActionRef.current = doDel; } };
+                          const doDel = async () => { try { await handleDeleteParticipante(p.id); lastActionRef.current = null; } catch (e) { console.error(e); } finally { lastActionRef.current = doDel; } };
                           await doDel();
                         }}
                         className="btn-action btn-eliminar"
@@ -1032,7 +1035,7 @@ export default function TorneoDashboard() {
               <div className="form-container">
                 <div className="form-group">
                   <button 
-                    onClick={async () => { const doGenAuto = async () => { try { await generateLlaves(activeCategoria.id); lastActionRef.current = null; } catch(e) {} finally { lastActionRef.current = doGenAuto; } }; await doGenAuto(); }}
+                    onClick={async () => { const doGenAuto = async () => { try { await generateLlaves(activeCategoria.id); lastActionRef.current = null; } catch(e) { console.error(e); } finally { lastActionRef.current = doGenAuto; } }; await doGenAuto(); }}
                     disabled={isWorking || participantes.length < 2}
                     className="btn-primary"
                   >
@@ -1124,7 +1127,7 @@ export default function TorneoDashboard() {
                                       <div className="fight-actions">
                                         <button 
                                           className="btn-small btn-iniciar"
-                                          onClick={async () => { const doStart = async () => { try { await iniciarLucha(lucha); lastActionRef.current = null; } catch (e) {} finally { lastActionRef.current = doStart; } }; await doStart(); }}
+                                          onClick={async () => { const doStart = async () => { try { await iniciarLucha(lucha); lastActionRef.current = null; } catch (e) { console.error(e); } finally { lastActionRef.current = doStart; } }; await doStart(); }}
                                         >
                                           Iniciar Lucha
                                         </button>

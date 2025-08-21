@@ -31,11 +31,12 @@
     display: flex;
     justify-content: space-between;
     padding: 6px 8px;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
+    background: #8bcde8;
+    border: 1px solid #020815;
     border-radius: 6px;
     margin-bottom: 6px;
     font-weight: 600;
+    background-color: #afc5ce;
 }
 .bracket-actions {
     display: flex;
