@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext.jsx';
 import { llaveAPI, luchaAPI } from '../services/api-new.js';
 import FightScorer from './FightScorer.jsx';
 
 export default function BracketView({ categoria, onManage }) {
+  const auth = useAuth();
+  const isAdmin = auth?.isAdmin ? auth.isAdmin() : false;
   const [llave, setLlave] = useState(null);
   const [luchas, setLuchas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -10,6 +13,22 @@ export default function BracketView({ categoria, onManage }) {
   const [openScorer, setOpenScorer] = useState(false);
   const [scorerLuchaId, setScorerLuchaId] = useState(null);
   // Sin bandeja: no mantenemos catálogo de participantes
+
+  const reload = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const l = await llaveAPI.getByCategoria(categoria.id);
+      const lu = await luchaAPI.getByCategoria(categoria.id);
+      setLlave(l);
+      const luchasArray = Array.isArray(lu?.results) ? lu.results : Array.isArray(lu) ? lu : [];
+      setLuchas(luchasArray);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -37,8 +56,29 @@ export default function BracketView({ categoria, onManage }) {
 
   const hayEnProgreso = Array.isArray(luchas) && luchas.some(l => l.estado === 'en_progreso');
 
-  if (loading) return <div className="text-sm text-gray-500">Cargando llave…</div>;
-  if (error) return <div className="text-sm text-red-600">{error}</div>;
+  if (loading) return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '24px',
+      minHeight: 160,
+      border: '1px dashed rgba(0,0,0,0.1)',
+      borderRadius: 12,
+      background: '#fafafa'
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, color: '#374151', fontSize: 16 }}>
+        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <span>Cargando llave y luchas…</span>
+      </div>
+    </div>
+  );
+  if (error) return (
+    <div className="text-sm text-red-600" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+      <span>❌ {error}</span>
+      <button className="btn btn-primary" onClick={reload}>Reintentar</button>
+    </div>
+  );
   if (!llave || !llave.estructura || !llave.estructura.rondas) {
     return (
       <div className="llave-visualization">
@@ -85,14 +125,119 @@ export default function BracketView({ categoria, onManage }) {
               };
               const ids = Array.isArray(luchas) ? luchas.map(l => l.id) : [];
               await Promise.all(ids.map(id => luchaAPI.update(id, payloadBase)));
-              const refreshed = await luchaAPI.getByCategoria(categoria.id);
-              const arr = Array.isArray(refreshed?.results) ? refreshed.results : Array.isArray(refreshed) ? refreshed : [];
+              // Refrescar luchas y llave
+              const [refLuchas, refLlave] = await Promise.all([
+                luchaAPI.getByCategoria(categoria.id),
+                llaveAPI.getByCategoria(categoria.id)
+              ]);
+              const arr = Array.isArray(refLuchas?.results) ? refLuchas.results : Array.isArray(refLuchas) ? refLuchas : [];
               setLuchas(arr);
+              // Sincronizar estructura con participantes actuales de luchas y limpiar ganadores
+              if (refLlave && refLlave.estructura && Array.isArray(refLlave.estructura.rondas)) {
+                const estructuraNueva = JSON.parse(JSON.stringify(refLlave.estructura));
+                estructuraNueva.rondas.forEach((r, rondaIdx) => {
+                  const luchasRonda = r.luchas || [];
+                  luchasRonda.forEach((card, luchaIdx) => {
+                    // Buscar lucha real por ronda y posicion_llave
+                    let real = Array.isArray(arr) ? arr.find(lx => lx.ronda === r.nombre && lx.posicion_llave === luchaIdx) : null;
+                    if (!real && Array.isArray(arr)) {
+                      // Fallback por participantes
+                      real = arr.find(lx => {
+                        const p1 = lx.participante1?.id || lx.participante1;
+                        const p2 = lx.participante2?.id || lx.participante2;
+                        const e1 = card?.participante1?.id;
+                        const e2 = card?.participante2?.id;
+                        return p1 === e1 && p2 === e2 && lx.ronda === r.nombre;
+                      }) || null;
+                    }
+                    // Limpiar ganador siempre
+                    if (card && 'ganador' in card) {
+                      card.ganador = null;
+                    }
+                    if (real) {
+                      const p1Id = real.participante1?.id || real.participante1 || null;
+                      const p2Id = real.participante2?.id || real.participante2 || null;
+                      const p1Nombre = real.participante1_nombre || real.participante1?.nombre || '';
+                      const p2Nombre = real.participante2_nombre || real.participante2?.nombre || '';
+                      const p1Academia = real.participante1_academia || '';
+                      const p2Academia = real.participante2_academia || '';
+                      card.participante1 = p1Id ? { id: p1Id, nombre: p1Nombre, academia: p1Academia } : null;
+                      card.participante2 = p2Id ? { id: p2Id, nombre: p2Nombre, academia: p2Academia } : null;
+                    } else if (rondaIdx > 0) {
+                      // Si no hay lucha real, limpiar tarjetas de rondas siguientes
+                      if (card) {
+                        // Mantener BYE si existía explícito
+                        const isBye1 = card?.participante1?.bye === true;
+                        const isBye2 = card?.participante2?.bye === true;
+                        card.participante1 = isBye1 ? card.participante1 : null;
+                        card.participante2 = isBye2 ? card.participante2 : null;
+                      }
+                    }
+                  });
+                });
+                await llaveAPI.update(refLlave.id, { estructura: estructuraNueva });
+                setLlave({ ...refLlave, estructura: estructuraNueva });
+              } else if (refLlave) {
+                setLlave(refLlave);
+              }
             } catch (e) {
               console.error('Error al reiniciar luchas:', e);
             }
           }}
         >↺ Reiniciar luchas</button>
+        {isAdmin && (
+          <button
+            className="btn btn-secondary absolute left-40"
+            onClick={async () => {
+              try {
+                // Forzar recalculo/sincronización de estructura desde luchas actuales
+                const [refLuchas, refLlave] = await Promise.all([
+                  luchaAPI.getByCategoria(categoria.id),
+                  llaveAPI.getByCategoria(categoria.id)
+                ]);
+                const arr = Array.isArray(refLuchas?.results) ? refLuchas.results : Array.isArray(refLuchas) ? refLuchas : [];
+                if (refLlave && refLlave.estructura && Array.isArray(refLlave.estructura.rondas)) {
+                  const estructuraNueva = JSON.parse(JSON.stringify(refLlave.estructura));
+                  estructuraNueva.rondas.forEach((r, rondaIdx) => {
+                    (r.luchas || []).forEach((card, luchaIdx) => {
+                      let real = Array.isArray(arr) ? arr.find(lx => lx.ronda === r.nombre && lx.posicion_llave === luchaIdx) : null;
+                      if (!real && Array.isArray(arr)) {
+                        real = arr.find(lx => {
+                          const p1 = lx.participante1?.id || lx.participante1;
+                          const p2 = lx.participante2?.id || lx.participante2;
+                          const e1 = card?.participante1?.id;
+                          const e2 = card?.participante2?.id;
+                          return p1 === e1 && p2 === e2 && lx.ronda === r.nombre;
+                        }) || null;
+                      }
+                      if (card && 'ganador' in card) card.ganador = null;
+                      if (real) {
+                        const p1Id = real.participante1?.id || real.participante1 || null;
+                        const p2Id = real.participante2?.id || real.participante2 || null;
+                        const p1Nombre = real.participante1_nombre || real.participante1?.nombre || '';
+                        const p2Nombre = real.participante2_nombre || real.participante2?.nombre || '';
+                        const p1Academia = real.participante1_academia || '';
+                        const p2Academia = real.participante2_academia || '';
+                        card.participante1 = p1Id ? { id: p1Id, nombre: p1Nombre, academia: p1Academia } : null;
+                        card.participante2 = p2Id ? { id: p2Id, nombre: p2Nombre, academia: p2Academia } : null;
+                      } else if (rondaIdx > 0) {
+                        const isBye1 = card?.participante1?.bye === true;
+                        const isBye2 = card?.participante2?.bye === true;
+                        card.participante1 = isBye1 ? card.participante1 : null;
+                        card.participante2 = isBye2 ? card.participante2 : null;
+                      }
+                    });
+                  });
+                  await llaveAPI.update(refLlave.id, { estructura: estructuraNueva });
+                  setLlave({ ...refLlave, estructura: estructuraNueva });
+                  setLuchas(arr);
+                }
+              } catch (e) {
+                console.warn('Recalcular estructura falló:', e);
+              }
+            }}
+          >⟳ Recalcular estructura</button>
+        )}
       </div>
       
       {/* Bandeja de participantes eliminada */}

@@ -18,6 +18,13 @@ export default function TorneoDashboardSimple() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [isWorking, setIsWorking] = useState(false);
+  // Estados de carga/errores por sección
+  const [isLoadingTorneos, setIsLoadingTorneos] = useState(false);
+  const [isLoadingCategorias, setIsLoadingCategorias] = useState(false);
+  const [isLoadingParticipantes, setIsLoadingParticipantes] = useState(false);
+  const [errorTorneos, setErrorTorneos] = useState(null);
+  const [errorCategorias, setErrorCategorias] = useState(null);
+  const [errorParticipantes, setErrorParticipantes] = useState(null);
   
   // Estados para controlar secciones expandidas
   const [expandedSections, setExpandedSections] = useState({
@@ -60,6 +67,8 @@ export default function TorneoDashboardSimple() {
   const loadTorneos = useCallback(async () => {
     try {
       setError(null);
+      setErrorTorneos(null);
+      setIsLoadingTorneos(true);
       const data = await torneoAPI.getAll();
       const torneosArray = Array.isArray(data) ? data : [];
       setTorneos(torneosArray);
@@ -70,25 +79,35 @@ export default function TorneoDashboardSimple() {
     } catch (e) {
       console.error('[TorneoDashboard] Error al cargar torneos:', e);
       setError(e.message);
+      setErrorTorneos(e.message);
+    } finally {
+      setIsLoadingTorneos(false);
     }
   }, [activeTorneo]);
 
   const loadCategorias = useCallback(async (torneoId) => {
     try {
       setError(null);
+      setErrorCategorias(null);
+      setIsLoadingCategorias(true);
       const data = await categoriaAPI.getAll(torneoId);
       const categoriasArray = Array.isArray(data) ? data : [];
       setCategorias(categoriasArray);
     } catch (e) {
       console.error('[TorneoDashboard] Error al cargar categorías:', e);
       setError(e.message);
+      setErrorCategorias(e.message);
       setCategorias([]);
+    } finally {
+      setIsLoadingCategorias(false);
     }
   }, []);
 
   const loadParticipantes = useCallback(async (categoriaId) => {
     try {
       setError(null);
+      setErrorParticipantes(null);
+      setIsLoadingParticipantes(true);
       console.log('[TorneoDashboard] Cargando participantes para categoría ID:', categoriaId);
       const data = await participanteAPI.getAll(categoriaId);
       console.log('[TorneoDashboard] Datos recibidos del API:', data);
@@ -97,20 +116,28 @@ export default function TorneoDashboardSimple() {
     } catch (e) {
       console.error('[TorneoDashboard] Error al cargar participantes:', e);
       setError(e.message);
+      setErrorParticipantes(e.message);
       setParticipantes([]);
+    } finally {
+      setIsLoadingParticipantes(false);
     }
   }, []);
 
   const loadParticipantesTorneo = useCallback(async (torneoId) => {
     try {
       setError(null);
+      setErrorParticipantes(null);
+      setIsLoadingParticipantes(true);
       const data = await participanteAPI.getAll(null, torneoId);
       const participantesArray = Array.isArray(data) ? data : [];
       setParticipantes(participantesArray);
     } catch (e) {
       console.error('[TorneoDashboard] Error al cargar participantes del torneo:', e);
       setError(e.message);
+      setErrorParticipantes(e.message);
       setParticipantes([]);
+    } finally {
+      setIsLoadingParticipantes(false);
     }
   }, []);
 
@@ -528,34 +555,55 @@ export default function TorneoDashboardSimple() {
                 </div>
 
                 <div className="participants-list">
-                  {participantes.map(p => (
-                    <div key={p.id} className="participant-card" style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                      <div className="participant-info">
-                        <h4>{p.nombre}</h4>
-                        <p>🏛️ {p.academia} • 🥋 {p.cinturon}{p.peso?` • ⚖️ ${p.peso}kg`:''}</p>
-                      </div>
-                      <div className="torneo-actions" style={{ display:'flex', gap:8 }}>
-                        <button className="btn btn-action" onClick={() => openParticipanteModal(p)}>Editar</button>
-                        <button className="btn btn-action btn-eliminar" onClick={async (e)=>{
-                          e.preventDefault();
-                          if (!confirm('¿Eliminar participante?')) return;
-                          try {
-                            setIsWorking(true);
-                            const ok = await participanteAPI.delete(p.id);
-                            if (!ok) throw new Error('No se pudo eliminar');
-                            await loadParticipantes(activeCategoria.id);
-                            setSuccess('Participante eliminado');
-                          } catch (err) {
-                            setError(err.message);
-                          } finally {
-                            setIsWorking(false);
-                          }
-                        }}>Eliminar</button>
-                      </div>
+                  {isLoadingParticipantes ? (
+                    <div className="empty-state" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                      <span>Cargando participantes...</span>
                     </div>
-                  ))}
-                  {participantes.length === 0 && (
-                    <p className="empty-state">No hay participantes asignados a esta categoría</p>
+                  ) : errorParticipantes ? (
+                    <div className="alert alert-error" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div>❌ {errorParticipantes}</div>
+                      {activeCategoria && (
+                        <button className="btn" onClick={() => loadParticipantes(activeCategoria.id)}>Reintentar</button>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      {participantes.map(p => (
+                        <div key={p.id} className="participant-card" style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                          <div className="participant-info">
+                            <h4>{p.nombre}</h4>
+                            <p>🏛️ {p.academia} • 🥋 {p.cinturon}{p.peso?` • ⚖️ ${p.peso}kg`:''}</p>
+                          </div>
+                          <div className="torneo-actions" style={{ display:'flex', gap:8 }}>
+                            <button className="btn btn-action" onClick={() => openParticipanteModal(p)}>Editar</button>
+                            <button className="btn btn-action btn-eliminar" onClick={async (e)=>{
+                              e.preventDefault();
+                              if (!confirm('¿Eliminar participante?')) return;
+                              const doDel = async () => {
+                                try {
+                                  setIsWorking(true);
+                                  const ok = await participanteAPI.delete(p.id);
+                                  if (!ok) throw new Error('No se pudo eliminar');
+                                  await loadParticipantes(activeCategoria.id);
+                                  setSuccess('Participante eliminado');
+                                  lastActionRef.current = null;
+                                } catch (err) {
+                                  setError(err.message);
+                                  lastActionRef.current = doDel;
+                                } finally {
+                                  setIsWorking(false);
+                                }
+                              };
+                              await doDel();
+                            }}>Eliminar</button>
+                          </div>
+                        </div>
+                      ))}
+                      {participantes.length === 0 && (
+                        <p className="empty-state">No hay participantes asignados a esta categoría</p>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -600,8 +648,11 @@ export default function TorneoDashboardSimple() {
       )}
 
       {error && (
-        <div className="alert alert-error">
-          ❌ {error}
+        <div className="alert alert-error" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <span>❌ {error}</span>
+          {lastActionRef.current && (
+            <button className="btn" onClick={() => { const fn = lastActionRef.current; fn && fn(); }}>Reintentar</button>
+          )}
         </div>
       )}
 
@@ -635,25 +686,39 @@ export default function TorneoDashboardSimple() {
               <div className="content-column">
                 <h3>Torneos Existentes</h3>
                 <div className="items-list">
-                  {torneos.map(torneo => (
-                    <div
-                      key={torneo.id}
-                      className={`item-card ${activeTorneo?.id === torneo.id ? 'active' : ''}`}
-                      onClick={() => handleSelectTorneo(torneo)}
-                    >
-                      <h4>{torneo.nombre}</h4>
-                      <p>{torneo.fecha_inicio || torneo.fecha_fin || ''}</p>
-                      <span className={`status status-${torneo.estado}`}>
-                        {torneo.estado}
-                      </span>
-                      <div className="torneo-actions" style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-                        <button className="btn btn-action" onClick={(e) => { e.stopPropagation(); handleEditTorneo(torneo); }}>Editar</button>
-                        <button className="btn btn-action btn-eliminar" onClick={(e) => { e.stopPropagation(); handleDeleteTorneo(torneo.id); }}>Eliminar</button>
-                      </div>
+                  {isLoadingTorneos ? (
+                    <div className="empty-state" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                      <span>Cargando torneos...</span>
                     </div>
-                  ))}
-                  {torneos.length === 0 && (
-                    <p className="empty-state">No hay torneos creados</p>
+                  ) : errorTorneos ? (
+                    <div className="alert alert-error" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div>❌ {errorTorneos}</div>
+                      <button className="btn" onClick={() => loadTorneos()}>Reintentar</button>
+                    </div>
+                  ) : (
+                    <>
+                      {torneos.map(torneo => (
+                        <div
+                          key={torneo.id}
+                          className={`item-card ${activeTorneo?.id === torneo.id ? 'active' : ''}`}
+                          onClick={() => handleSelectTorneo(torneo)}
+                        >
+                          <h4>{torneo.nombre}</h4>
+                          <p>{torneo.fecha_inicio || torneo.fecha_fin || ''}</p>
+                          <span className={`status status-${torneo.estado}`}>
+                            {torneo.estado}
+                          </span>
+                          <div className="torneo-actions" style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                            <button className="btn btn-action" onClick={(e) => { e.stopPropagation(); handleEditTorneo(torneo); }}>Editar</button>
+                            <button className="btn btn-action btn-eliminar" onClick={async (e) => { e.stopPropagation(); const doDel = async () => { try { await handleDeleteTorneo(torneo.id); lastActionRef.current = null; } catch (e) {} finally { lastActionRef.current = doDel; } }; await doDel(); }}>Eliminar</button>
+                          </div>
+                        </div>
+                      ))}
+                      {torneos.length === 0 && (
+                        <p className="empty-state">No hay torneos creados</p>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -682,7 +747,19 @@ export default function TorneoDashboardSimple() {
               </div>
               
               <div className="categories-grid">
-                {categorias.map(categoria => (
+                {isLoadingCategorias ? (
+                  <div className="empty-state" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                    <span>Cargando categorías...</span>
+                  </div>
+                ) : errorCategorias ? (
+                  <div className="alert alert-error" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>❌ {errorCategorias}</div>
+                    {activeTorneo && (
+                      <button className="btn" onClick={() => loadCategorias(activeTorneo.id)}>Reintentar</button>
+                    )}
+                  </div>
+                ) : categorias.map(categoria => (
                   <div
                     key={categoria.id}
                     className={`category-card ${activeCategoria?.id === categoria.id ? 'active' : ''}`}
@@ -786,37 +863,53 @@ export default function TorneoDashboardSimple() {
                 <div className="content-column">
                   <h3>Participantes del Torneo</h3>
                   <div className="participants-list">
-                    {participantes.map(p => (
-                      <div key={p.id} className="participant-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => openParticipanteModal(p)}>
-                        <div className="participant-info">
-                          <h4>{p.nombre}</h4>
-                          <p>🏛️ {p.academia} • 🥋 {p.cinturon}{p.peso ? ` • ⚖️ ${p.peso}kg` : ''}</p>
-                        </div>
-                        <div className="torneo-actions" style={{ display: 'flex', gap: 8 }}>
-                          <button className="btn btn-action" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openParticipanteModal(p); }}>Editar</button>
-                          <button className="btn btn-action btn-eliminar" onClick={async (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            if (!confirm('¿Eliminar participante?')) return;
-                            try {
-                              setIsWorking(true);
-                              const ok = await participanteAPI.delete(p.id);
-                              if (!ok) throw new Error('No se pudo eliminar');
-                              await loadParticipantesTorneo(activeTorneo.id);
-                              setSuccess('Participante eliminado');
-                            } catch (err) {
-                              setError(err.message);
-                            } finally {
-                              setIsWorking(false);
-                            }
-                          }}>Eliminar</button>
-                        </div>
+                    {isLoadingParticipantes ? (
+                      <div className="empty-state" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                        <span>Cargando participantes...</span>
                       </div>
-                    ))}
-                    {participantes.length === 0 && (
-                      <p className="empty-state">
-                        No hay participantes en este torneo
-                      </p>
+                    ) : errorParticipantes ? (
+                      <div className="alert alert-error" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+                        <span>❌ {errorParticipantes}</span>
+                        {activeTorneo && (
+                          <button className="btn" onClick={() => loadParticipantesTorneo(activeTorneo.id)}>Reintentar</button>
+                        )}
+                      </div>
+                    ) : (
+                      <>
+                        {participantes.map(p => (
+                          <div key={p.id} className="participant-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }} onClick={() => openParticipanteModal(p)}>
+                            <div className="participant-info">
+                              <h4>{p.nombre}</h4>
+                              <p>🏛️ {p.academia} • 🥋 {p.cinturon}{p.peso ? ` • ⚖️ ${p.peso}kg` : ''}</p>
+                            </div>
+                            <div className="torneo-actions" style={{ display: 'flex', gap: 8 }}>
+                              <button className="btn btn-action" onClick={(e) => { e.preventDefault(); e.stopPropagation(); openParticipanteModal(p); }}>Editar</button>
+                              <button className="btn btn-action btn-eliminar" onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (!confirm('¿Eliminar participante?')) return;
+                                try {
+                                  setIsWorking(true);
+                                  const ok = await participanteAPI.delete(p.id);
+                                  if (!ok) throw new Error('No se pudo eliminar');
+                                  await loadParticipantesTorneo(activeTorneo.id);
+                                  setSuccess('Participante eliminado');
+                                } catch (err) {
+                                  setError(err.message);
+                                } finally {
+                                  setIsWorking(false);
+                                }
+                              }}>Eliminar</button>
+                            </div>
+                          </div>
+                        ))}
+                        {participantes.length === 0 && (
+                          <p className="empty-state">
+                            No hay participantes en este torneo
+                          </p>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

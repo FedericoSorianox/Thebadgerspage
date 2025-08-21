@@ -184,7 +184,12 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null 
   if (loading) {
     return (
       <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-        <div className="bg-white rounded-xl p-6 w-full max-w-3xl text-center">Cargando…</div>
+        <div className="bg-white rounded-xl p-6 w-full max-w-3xl text-center">
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap: 8 }}>
+            <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+            <span>Cargando…</span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -209,7 +214,10 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null 
         </div>
 
         {error && (
-          <div className="mb-3 text-red-600">{error}</div>
+          <div className="mb-3 text-red-600" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap: 8 }}>
+            <span>{error}</span>
+            <button className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded" onClick={load}>Reintentar</button>
+          </div>
         )}
 
         <div className="text-center mb-4">

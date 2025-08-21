@@ -263,6 +263,56 @@ export default function LlaveManager({ categoria, onClose }) {
       await luchaAPI.finalizar(selectedLucha.id, payloadFinalizar);
       setSuccess('¡Lucha finalizada exitosamente!');
       
+      // Promocionar automáticamente al ganador a la siguiente ronda en la estructura de la llave
+      try {
+        if (!ganadorId && tipoVictoria !== 'puntos') {
+          // Si no se calculó ganador por puntos, intentar deducirlo desde selectedLucha.ganador
+          ganadorId = selectedLucha.ganador?.id || selectedLucha.ganador || null;
+        }
+        if (ganadorId && llave && llave.estructura && Array.isArray(llave.estructura.rondas)) {
+          const estructuraNueva = JSON.parse(JSON.stringify(llave.estructura));
+          const rondas = estructuraNueva.rondas || [];
+          const currentRoundIdx = rondas.findIndex(r => r.nombre === selectedLucha.ronda);
+          const nextRoundIdx = currentRoundIdx >= 0 ? currentRoundIdx + 1 : -1;
+          if (nextRoundIdx >= 0 && nextRoundIdx < rondas.length) {
+            const luchasRondaActual = rondas[currentRoundIdx]?.luchas || [];
+            // Intentar localizar posición por campo posicion_llave o por coincidencia de IDs
+            let pos = typeof selectedLucha.posicion_llave === 'number' ? selectedLucha.posicion_llave : -1;
+            if (pos < 0) {
+              const p1Id = selectedLucha.participante1?.id || selectedLucha.participante1;
+              const p2Id = selectedLucha.participante2?.id || selectedLucha.participante2;
+              pos = luchasRondaActual.findIndex(l => {
+                const e1 = l?.participante1?.id;
+                const e2 = l?.participante2?.id;
+                return e1 === p1Id && e2 === p2Id;
+              });
+            }
+            if (pos >= 0) {
+              const destFightIdx = Math.floor(pos / 2);
+              const destSlot = (pos % 2 === 0) ? 'participante1' : 'participante2';
+              const nextRound = rondas[nextRoundIdx];
+              const nextFight = nextRound?.luchas?.[destFightIdx];
+              if (nextFight) {
+                // Construir objeto de ganador con info visible
+                let ganadorNombre = '';
+                let ganadorAcademia = '';
+                if (ganadorId === (selectedLucha.participante1?.id || selectedLucha.participante1)) {
+                  ganadorNombre = selectedLucha.participante1_nombre || selectedLucha.participante1?.nombre || '';
+                  ganadorAcademia = selectedLucha.participante1_academia || '';
+                } else {
+                  ganadorNombre = selectedLucha.participante2_nombre || selectedLucha.participante2?.nombre || '';
+                  ganadorAcademia = selectedLucha.participante2_academia || '';
+                }
+                nextFight[destSlot] = { id: Number(ganadorId), nombre: ganadorNombre, academia: ganadorAcademia };
+                await llaveAPI.update(llave.id, { estructura: estructuraNueva });
+              }
+            }
+          }
+        }
+      } catch (promErr) {
+        console.warn('No se pudo promocionar automáticamente al ganador:', promErr);
+      }
+
       // Recargar datos
       await loadLlave();
       setSelectedLucha(null);
@@ -553,8 +603,9 @@ export default function LlaveManager({ categoria, onClose }) {
       </div>
       
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          {error}
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <span>{error}</span>
+          <button onClick={loadLlave} className="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">Reintentar</button>
         </div>
       )}
       

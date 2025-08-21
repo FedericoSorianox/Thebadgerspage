@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { torneoAPI, categoriaAPI, participanteAPI, llaveAPI, luchaAPI } from '../services/api-new.js';
 import './TorneoDashboard.css';
 
@@ -15,6 +15,18 @@ export default function TorneoDashboard() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [isWorking, setIsWorking] = useState(false);
+  // Carga por sección
+  const [isLoadingTorneos, setIsLoadingTorneos] = useState(false);
+  const [isLoadingCategorias, setIsLoadingCategorias] = useState(false);
+  const [isLoadingParticipantes, setIsLoadingParticipantes] = useState(false);
+  const [isLoadingLlaves, setIsLoadingLlaves] = useState(false);
+  // Errores por sección
+  const [errorTorneos, setErrorTorneos] = useState(null);
+  const [errorCategorias, setErrorCategorias] = useState(null);
+  const [errorParticipantes, setErrorParticipantes] = useState(null);
+  const [errorLlaves, setErrorLlaves] = useState(null);
+  // Última acción para reintentar
+  const lastActionRef = useRef(null);
   
   // Estados para controlar secciones expandidas
   const [expandedSections, setExpandedSections] = useState({
@@ -54,6 +66,8 @@ export default function TorneoDashboard() {
   const loadTorneos = useCallback(async () => {
     try {
       setError(null);
+      setErrorTorneos(null);
+      setIsLoadingTorneos(true);
       const data = await torneoAPI.getAll();
       const torneosArray = Array.isArray(data) ? data : [];
       setTorneos(torneosArray);
@@ -64,25 +78,35 @@ export default function TorneoDashboard() {
     } catch (e) {
       console.error('[TorneoDashboard] Error al cargar torneos:', e);
       setError(e.message);
+      setErrorTorneos(e.message);
+    } finally {
+      setIsLoadingTorneos(false);
     }
   }, [activeTorneo]);
 
   const loadCategorias = useCallback(async (torneoId) => {
     try {
       setError(null);
+      setErrorCategorias(null);
+      setIsLoadingCategorias(true);
       const data = await categoriaAPI.getAll(torneoId);
       const categoriasArray = Array.isArray(data) ? data : [];
       setCategorias(categoriasArray);
     } catch (e) {
       console.error('[TorneoDashboard] Error al cargar categorías:', e);
       setError(e.message);
+      setErrorCategorias(e.message);
       setCategorias([]); // Asegurar que siempre sea un array
+    } finally {
+      setIsLoadingCategorias(false);
     }
   }, []);
 
   const loadParticipantes = useCallback(async (categoriaId) => {
     try {
       setError(null);
+      setErrorParticipantes(null);
+      setIsLoadingParticipantes(true);
       console.log('[TorneoDashboard] Cargando participantes para categoría ID:', categoriaId);
       const data = await participanteAPI.getAll(categoriaId);
       console.log('[TorneoDashboard] Datos recibidos del API:', data);
@@ -98,20 +122,28 @@ export default function TorneoDashboard() {
     } catch (e) {
       console.error('[TorneoDashboard] Error al cargar participantes:', e);
       setError(e.message);
+      setErrorParticipantes(e.message);
       setParticipantes([]); // Asegurar que siempre sea un array
+    } finally {
+      setIsLoadingParticipantes(false);
     }
   }, []);
 
   const loadLlaves = useCallback(async (categoriaId) => {
     try {
       setError(null);
+      setErrorLlaves(null);
+      setIsLoadingLlaves(true);
       const data = await llaveAPI.getAll(categoriaId);
       const llavesArray = Array.isArray(data) ? data : [];
       setLlaves(llavesArray);
     } catch (e) {
       console.error('[TorneoDashboard] Error al cargar llaves:', e);
       setError(e.message);
+      setErrorLlaves(e.message);
       setLlaves([]); // Asegurar que siempre sea un array
+    } finally {
+      setIsLoadingLlaves(false);
     }
   }, []);
 
@@ -697,7 +729,12 @@ export default function TorneoDashboard() {
         {error && (
           <div className="alert alert-error">
             <strong>Error:</strong> {error}
-            <button onClick={() => setError(null)} className="btn-close">×</button>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              {lastActionRef.current && (
+                <button onClick={() => { const fn = lastActionRef.current; fn && fn(); }} className="btn-action">Reintentar</button>
+              )}
+              <button onClick={() => { setError(null); lastActionRef.current = null; }} className="btn-close">×</button>
+            </div>
           </div>
         )}
         
@@ -717,7 +754,19 @@ export default function TorneoDashboard() {
             
             <div className="torneo-list">
               <h4>Torneos Existentes ({torneos.length})</h4>
-              {torneos.length === 0 ? (
+              {isLoadingTorneos ? (
+                <div className="empty-state" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                  <span>Cargando torneos...</span>
+                </div>
+              ) : errorTorneos ? (
+                <div className="alert alert-error" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <strong>Error:</strong> {errorTorneos}
+                  </div>
+                  <button className="btn-action" onClick={() => loadTorneos()}>Reintentar</button>
+                </div>
+              ) : torneos.length === 0 ? (
                 <div className="empty-state">
                   <p>No hay torneos creados aún</p>
                 </div>
@@ -735,20 +784,25 @@ export default function TorneoDashboard() {
                         <button
                           disabled={isWorking}
                           onClick={async ()=>{ 
-                            try{ 
-                              setIsWorking(true); 
-                              await torneoAPI.activar(t.id); 
-                              await loadTorneos(); 
-                              setSuccess('Torneo activado exitosamente');
-                            } catch(e){ 
-                              setError(e.message);
-                            } finally{ 
-                              setIsWorking(false);
-                            } 
+                            const doActivate = async () => { 
+                              try{ 
+                                setIsWorking(true); 
+                                await torneoAPI.activar(t.id); 
+                                await loadTorneos(); 
+                                setSuccess('Torneo activado exitosamente');
+                                lastActionRef.current = null;
+                              } catch(e){ 
+                                setError(e.message);
+                                lastActionRef.current = doActivate;
+                              } finally{ 
+                                setIsWorking(false);
+                              } 
+                            };
+                            await doActivate();
                           }}
                           className="btn-action btn-activar"
                         >
-                          Activar
+                          {isWorking ? '⏳' : 'Activar'}
                         </button>
                       )}
                       {t.estado !== 'finalizado' && (
@@ -756,28 +810,45 @@ export default function TorneoDashboard() {
                           disabled={isWorking}
                           onClick={async ()=>{ 
                             if(!confirm('¿Finalizar este torneo?')) return; 
-                            try{ 
-                              setIsWorking(true); 
-                              await torneoAPI.finalizar(t.id); 
-                              await loadTorneos(); 
-                              setSuccess('Torneo finalizado exitosamente');
-                            } catch(e){ 
-                              setError(e.message);
-                            } finally{ 
-                              setIsWorking(false);
-                            } 
+                            const doFinalize = async () => {
+                              try{ 
+                                setIsWorking(true); 
+                                await torneoAPI.finalizar(t.id); 
+                                await loadTorneos(); 
+                                setSuccess('Torneo finalizado exitosamente');
+                                lastActionRef.current = null;
+                              } catch(e){ 
+                                setError(e.message);
+                                lastActionRef.current = doFinalize;
+                              } finally{ 
+                                setIsWorking(false);
+                              } 
+                            };
+                            await doFinalize();
                           }}
                           className="btn-action btn-finalizar"
                         >
-                          Finalizar
+                          {isWorking ? '⏳' : 'Finalizar'}
                         </button>
                       )}
                       <button
                         disabled={isWorking}
-                        onClick={() => handleDeleteTorneo(t.id)}
+                        onClick={async () => {
+                          const doDelete = async () => {
+                            try {
+                              await handleDeleteTorneo(t.id);
+                              lastActionRef.current = null;
+                            } catch (e) {
+                              // handleDeleteTorneo ya setea error; solo guardamos retry
+                            } finally {
+                              lastActionRef.current = doDelete;
+                            }
+                          };
+                          await doDelete();
+                        }}
                         className="btn-action btn-eliminar"
                       >
-                        Eliminar
+                        {isWorking ? '⏳' : 'Eliminar'}
                       </button>
                     </div>
                   </div>
@@ -798,7 +869,21 @@ export default function TorneoDashboard() {
               
               <div className="categoria-list">
                 <h4>Categorías Existentes ({categorias.length})</h4>
-                {categorias.length === 0 ? (
+                {isLoadingCategorias ? (
+                  <div className="empty-state" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                    <span>Cargando categorías...</span>
+                  </div>
+                ) : errorCategorias ? (
+                  <div className="alert alert-error" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <strong>Error:</strong> {errorCategorias}
+                    </div>
+                    {activeTorneo && (
+                      <button className="btn-action" onClick={() => loadCategorias(activeTorneo.id)}>Reintentar</button>
+                    )}
+                  </div>
+                ) : categorias.length === 0 ? (
                   <div className="empty-state">
                     <p>No hay categorías creadas para este torneo</p>
                   </div>
@@ -822,26 +907,54 @@ export default function TorneoDashboard() {
                         <div className="torneo-actions">
                           <button
                             disabled={isWorking}
-                            onClick={() => handleDeleteCategoria(c.id)}
+                            onClick={async () => {
+                              const doDeleteCat = async () => {
+                                try {
+                                  await handleDeleteCategoria(c.id);
+                                  lastActionRef.current = null;
+                                } catch (e) {
+                                  // handleDeleteCategoria ya setea error
+                                } finally {
+                                  lastActionRef.current = doDeleteCat;
+                                }
+                              };
+                              await doDeleteCat();
+                            }}
                             className="btn-action btn-eliminar"
                           >
-                            Eliminar
+                            {isWorking ? '⏳' : 'Eliminar'}
                           </button>
                           {c.estado === 'abierta' && (
                             <button
                               disabled={isWorking}
-                              onClick={() => handleCerrarInscripciones(c.id)}
+                              onClick={async () => {
+                                const doClose = async () => {
+                                  try {
+                                    await handleCerrarInscripciones(c.id);
+                                    lastActionRef.current = null;
+                                  } catch (e) {
+                                  } finally {
+                                    lastActionRef.current = doClose;
+                                  }
+                                };
+                                await doClose();
+                              }}
                               className="btn-action btn-cerrar"
                             >
-                              Cerrar
+                              {isWorking ? '⏳' : 'Cerrar'}
                             </button>
                           )}
                           <button
                             disabled={isWorking}
-                            onClick={() => generateLlaves(c.id)}
+                            onClick={async () => {
+                              const doGen = async () => {
+                                try { await generateLlaves(c.id); lastActionRef.current = null; } catch (e) { } finally { lastActionRef.current = doGen; }
+                              };
+                              await doGen();
+                            }}
                             className="btn-action btn-generar"
                           >
-                            Generar Llaves
+                            {isWorking ? '⏳' : 'Generar Llaves'}
                           </button>
                         </div>
                       </div>
@@ -864,7 +977,21 @@ export default function TorneoDashboard() {
               
               <div className="participantes-list">
                 <h4>Participantes Registrados ({participantes.length})</h4>
-                {participantes.length === 0 ? (
+                {isLoadingParticipantes ? (
+                  <div className="empty-state" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                    <span>Cargando participantes...</span>
+                  </div>
+                ) : errorParticipantes ? (
+                  <div className="alert alert-error" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <strong>Error:</strong> {errorParticipantes}
+                    </div>
+                    {activeCategoria && (
+                      <button className="btn-action" onClick={() => loadParticipantes(activeCategoria.id)}>Reintentar</button>
+                    )}
+                  </div>
+                ) : participantes.length === 0 ? (
                   <div className="empty-state">
                     <p>No hay participantes registrados en esta categoría</p>
                   </div>
@@ -879,10 +1006,13 @@ export default function TorneoDashboard() {
                       </div>
                       <button
                         disabled={isWorking}
-                        onClick={() => handleDeleteParticipante(p.id)}
+                        onClick={async () => {
+                          const doDel = async () => { try { await handleDeleteParticipante(p.id); lastActionRef.current = null; } catch (e) {} finally { lastActionRef.current = doDel; } };
+                          await doDel();
+                        }}
                         className="btn-action btn-eliminar"
                       >
-                        Eliminar
+                        {isWorking ? '⏳' : 'Eliminar'}
                       </button>
                     </div>
                   ))
@@ -902,7 +1032,7 @@ export default function TorneoDashboard() {
               <div className="form-container">
                 <div className="form-group">
                   <button 
-                    onClick={() => generateLlaves(activeCategoria.id)}
+                    onClick={async () => { const doGenAuto = async () => { try { await generateLlaves(activeCategoria.id); lastActionRef.current = null; } catch(e) {} finally { lastActionRef.current = doGenAuto; } }; await doGenAuto(); }}
                     disabled={isWorking || participantes.length < 2}
                     className="btn-primary"
                   >
@@ -916,7 +1046,21 @@ export default function TorneoDashboard() {
               
               <div className="llaves-list">
                 <h4>Llaves Generadas ({llaves.length})</h4>
-                {llaves.length === 0 ? (
+                {isLoadingLlaves ? (
+                  <div className="empty-state" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                    <span>Cargando llaves...</span>
+                  </div>
+                ) : errorLlaves ? (
+                  <div className="alert alert-error" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div>
+                      <strong>Error:</strong> {errorLlaves}
+                    </div>
+                    {activeCategoria && (
+                      <button className="btn-action" onClick={() => loadLlaves(activeCategoria.id)}>Reintentar</button>
+                    )}
+                  </div>
+                ) : llaves.length === 0 ? (
                   <div className="empty-state">
                     <p>No hay llaves generadas para esta categoría</p>
                   </div>
@@ -980,7 +1124,7 @@ export default function TorneoDashboard() {
                                       <div className="fight-actions">
                                         <button 
                                           className="btn-small btn-iniciar"
-                                          onClick={() => iniciarLucha(lucha)}
+                                          onClick={async () => { const doStart = async () => { try { await iniciarLucha(lucha); lastActionRef.current = null; } catch (e) {} finally { lastActionRef.current = doStart; } }; await doStart(); }}
                                         >
                                           Iniciar Lucha
                                         </button>

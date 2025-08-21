@@ -291,9 +291,9 @@ export const llaveAPI = {
         return handleResponse(response);
     },
 
-    // Actualizar llave
+    // Actualizar llave (parcial)
     update: async (id, llaveData) => {
-        const response = await fetch(`${TORNEO_API_URL}/llaves/${id}/`, createApiConfig('PUT', llaveData));
+        const response = await fetch(`${TORNEO_API_URL}/llaves/${id}/`, createApiConfig('PATCH', llaveData));
         return handleResponse(response);
     },
 
