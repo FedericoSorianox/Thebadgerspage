@@ -14,6 +14,57 @@ export default function BracketView({ categoria, onManage }) {
   const [scorerLuchaId, setScorerLuchaId] = useState(null);
   // Sin bandeja: no mantenemos catálogo de participantes
 
+  // Recalcula y sincroniza la estructura de la llave a partir de las luchas actuales
+  const recalcEstructura = async () => {
+    try {
+      const [refLuchas, refLlave] = await Promise.all([
+        luchaAPI.getByCategoria(categoria.id),
+        llaveAPI.getByCategoria(categoria.id)
+      ]);
+      const arr = Array.isArray(refLuchas?.results) ? refLuchas.results : Array.isArray(refLuchas) ? refLuchas : [];
+      if (refLlave && refLlave.estructura && Array.isArray(refLlave.estructura.rondas)) {
+        const estructuraNueva = JSON.parse(JSON.stringify(refLlave.estructura));
+        estructuraNueva.rondas.forEach((r, rondaIdx) => {
+          (r.luchas || []).forEach((card, luchaIdx) => {
+            let real = Array.isArray(arr) ? arr.find(lx => lx.ronda === r.nombre && lx.posicion_llave === luchaIdx) : null;
+            if (!real && Array.isArray(arr)) {
+              real = arr.find(lx => {
+                const p1 = lx.participante1?.id || lx.participante1;
+                const p2 = lx.participante2?.id || lx.participante2;
+                const e1 = card?.participante1?.id;
+                const e2 = card?.participante2?.id;
+                return p1 === e1 && p2 === e2 && lx.ronda === r.nombre;
+              }) || null;
+            }
+            if (card && 'ganador' in card) card.ganador = null;
+            if (real) {
+              const p1Id = real.participante1?.id || real.participante1 || null;
+              const p2Id = real.participante2?.id || real.participante2 || null;
+              const p1Nombre = real.participante1_nombre || real.participante1?.nombre || '';
+              const p2Nombre = real.participante2_nombre || real.participante2?.nombre || '';
+              const p1Academia = real.participante1_academia || '';
+              const p2Academia = real.participante2_academia || '';
+              card.participante1 = p1Id ? { id: p1Id, nombre: p1Nombre, academia: p1Academia } : null;
+              card.participante2 = p2Id ? { id: p2Id, nombre: p2Nombre, academia: p2Academia } : null;
+            } else if (rondaIdx > 0) {
+              const isBye1 = card?.participante1?.bye === true;
+              const isBye2 = card?.participante2?.bye === true;
+              card.participante1 = isBye1 ? card.participante1 : null;
+              card.participante2 = isBye2 ? card.participante2 : null;
+            }
+          });
+        });
+        await llaveAPI.update(refLlave.id, { estructura: estructuraNueva });
+        setLlave({ ...refLlave, estructura: estructuraNueva });
+      } else if (refLlave) {
+        setLlave(refLlave);
+      }
+      setLuchas(arr);
+    } catch (e) {
+      console.warn('Recalc estructura falló:', e);
+    }
+  };
+
   const reload = async () => {
     try {
       setLoading(true);
@@ -531,9 +582,7 @@ export default function BracketView({ categoria, onManage }) {
                                 await luchaAPI.update(r.id, payload);
                                 // Cerrar el marcador si está abierto
                                 setOpenScorer(false);
-                                const refreshed = await luchaAPI.getByCategoria(categoria.id);
-                                const arr = Array.isArray(refreshed?.results) ? refreshed.results : Array.isArray(refreshed) ? refreshed : [];
-                                setLuchas(arr);
+                                await recalcEstructura();
                               } catch (err) {
                                 console.error('Error al reiniciar lucha:', err);
                               }
@@ -672,15 +721,8 @@ export default function BracketView({ categoria, onManage }) {
           onClose={() => {
             setOpenScorer(false);
             setScorerLuchaId(null);
-            // Recargar estado de luchas para reflejar cierre o finalización
-            Promise.all([
-              luchaAPI.getByCategoria(categoria.id),
-              llaveAPI.getByCategoria(categoria.id)
-            ]).then(([data, l]) => {
-              const arr = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
-              setLuchas(arr);
-              if (l) setLlave(l);
-            }).catch(() => {});
+            // Recalcular para sincronizar cambios posteriores a finalizar o reiniciar
+            recalcEstructura();
           }}
         />
       )}
