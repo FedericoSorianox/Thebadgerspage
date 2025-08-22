@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { torneoAPI, categoriaAPI, participanteAPI, llaveAPI } from '../services/api-new.js';
 import LlaveManager from './LlaveManager.jsx';
 import FightScorer from './FightScorer.jsx';
@@ -47,6 +47,7 @@ export default function TorneoDashboardSimple() {
     peso: '',
     categoria_asignada: ''
   });
+  const lastActionRef = useRef(null);
   
   // Estados para formularios
   const [torneoForm, setTorneoForm] = useState({
