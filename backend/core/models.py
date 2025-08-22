@@ -117,6 +117,39 @@ class Torneo(models.Model):
         ordering = ['-fecha_creacion']
 
 
+class Atleta(models.Model):
+    """Persona única a través de todos los torneos.
+    Sirve para no volver a cargar los mismos datos y para acumular puntos.
+    """
+    nombre = models.CharField(max_length=200)
+    academia = models.CharField(max_length=200, blank=True)
+    cinturon_actual = models.CharField(max_length=20, choices=[
+        ('blanca', 'Blanca'),
+        ('azul', 'Azul'),
+        ('violeta', 'Violeta'),
+        ('marron', 'Marrón'),
+        ('negro', 'Negro'),
+    ], blank=True)
+    activo = models.BooleanField(default=True)
+    fecha_alta = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        academia = f" - {self.academia}" if self.academia else ""
+        return f"{self.nombre}{academia}"
+
+    @property
+    def puntos_totales(self):
+        total = getattr(self, '_puntos_cache', None)
+        if total is not None:
+            return total
+        try:
+            total = sum(p.puntos for p in self.puntos.all())
+        except Exception:
+            total = 0
+        self._puntos_cache = total
+        return total
+
+
 class Categoria(models.Model):
     TIPO_CATEGORIA_CHOICES = [
         ('principiante_gi', 'Principiante GI'),
@@ -161,6 +194,7 @@ class Participante(models.Model):
         ('negro', 'Negro'),
     ]
     
+    atleta = models.ForeignKey('Atleta', on_delete=models.SET_NULL, null=True, blank=True, related_name='participaciones')
     nombre = models.CharField(max_length=200)
     cinturon = models.CharField(max_length=20, choices=CINTURON_CHOICES)
     academia = models.CharField(max_length=200, default='The Badgers')
@@ -698,3 +732,26 @@ class Lucha(models.Model):
 
     class Meta:
         ordering = ['-fecha_creacion']
+
+
+class AtletaPunto(models.Model):
+    """Registro de puntos obtenidos por un atleta."""
+    ORIGEN_CHOICES = [
+        ('categoria', 'Ganador de categoría'),
+        ('lucha', 'Ganador de lucha'),
+        ('bonus', 'Bonus manual'),
+    ]
+
+    atleta = models.ForeignKey(Atleta, on_delete=models.CASCADE, related_name='puntos')
+    torneo = models.ForeignKey(Torneo, on_delete=models.CASCADE, related_name='puntos', null=True, blank=True)
+    categoria = models.ForeignKey(Categoria, on_delete=models.SET_NULL, related_name='puntos', null=True, blank=True)
+    origen = models.CharField(max_length=20, choices=ORIGEN_CHOICES)
+    puntos = models.IntegerField(default=0)
+    detalle = models.CharField(max_length=200, blank=True)
+    fecha = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.atleta.nombre} +{self.puntos} ({self.origen})"
+
+    class Meta:
+        ordering = ['-fecha']

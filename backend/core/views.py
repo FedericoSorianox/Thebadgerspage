@@ -17,10 +17,11 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, AllowAny
 from django.shortcuts import get_object_or_404
-from .models import Torneo, Categoria, Participante, Llave, Lucha
+from .models import Torneo, Categoria, Participante, Llave, Lucha, Atleta, AtletaPunto
 from .serializers import (
     TorneoSerializer, CategoriaSerializer, ParticipanteSerializer,
-    LlaveSerializer, LuchaSerializer, LuchaSimpleSerializer
+    LlaveSerializer, LuchaSerializer, LuchaSimpleSerializer,
+    AtletaSerializer, AtletaPuntoSerializer
 )
 from datetime import datetime
 from rest_framework.authtoken.models import Token
@@ -999,6 +1000,46 @@ class ParticipanteViewSet(viewsets.ModelViewSet):
         print(f"[ParticipanteViewSet] Queryset count: {queryset.count()}")
         
         return queryset
+
+    def perform_create(self, serializer):
+        data = self.request.data or {}
+        atleta = None
+        atleta_id = data.get('atleta')
+        nombre = (data.get('nombre') or '').strip()
+        academia = (data.get('academia') or '').strip()
+        cinturon = data.get('cinturon')
+        if atleta_id:
+            try:
+                atleta = Atleta.objects.get(id=atleta_id)
+            except Atleta.DoesNotExist:
+                atleta = None
+        if not atleta and nombre:
+            atleta, _ = Atleta.objects.get_or_create(
+                nombre=nombre,
+                academia=academia,
+                defaults={'cinturon_actual': cinturon}
+            )
+        serializer.save(atleta=atleta)
+
+    def perform_update(self, serializer):
+        data = self.request.data or {}
+        atleta = None
+        atleta_id = data.get('atleta')
+        nombre = (data.get('nombre') or '').strip()
+        academia = (data.get('academia') or '').strip()
+        cinturon = data.get('cinturon')
+        if atleta_id:
+            try:
+                atleta = Atleta.objects.get(id=atleta_id)
+            except Atleta.DoesNotExist:
+                atleta = None
+        if not atleta and nombre:
+            atleta, _ = Atleta.objects.get_or_create(
+                nombre=nombre,
+                academia=academia,
+                defaults={'cinturon_actual': cinturon}
+            )
+        serializer.save(atleta=atleta)
     
     @action(detail=True, methods=['post'])
     def desactivar(self, request, pk=None):
@@ -1266,6 +1307,22 @@ class LuchaViewSet(viewsets.ModelViewSet):
         lucha.fecha_inicio = timezone.now()
         lucha.cronometro_activo = True
         lucha.save()
+
+        # Otorgar puntos por ganar una final
+        try:
+            if lucha.ganador and lucha.ronda and 'final' in (lucha.ronda or '').lower():
+                atleta = getattr(lucha.ganador, 'atleta', None)
+                if atleta:
+                    AtletaPunto.objects.create(
+                        atleta=atleta,
+                        torneo=lucha.categoria.torneo,
+                        categoria=lucha.categoria,
+                        origen='categoria',
+                        puntos=10,
+                        detalle='Ganador de la Final'
+                    )
+        except Exception:
+            pass
         
         return Response({'message': 'Lucha iniciada'})
     
@@ -1480,6 +1537,32 @@ class LuchaViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(lucha)
         return Response(serializer.data)
+
+
+class AtletaViewSet(viewsets.ModelViewSet):
+    queryset = Atleta.objects.all()
+    serializer_class = AtletaSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        qs = Atleta.objects.all()
+        q = self.request.query_params.get('q')
+        if q:
+            qs = qs.filter(nombre__icontains=q)
+        return qs
+
+
+class AtletaPuntoViewSet(viewsets.ModelViewSet):
+    queryset = AtletaPunto.objects.all()
+    serializer_class = AtletaPuntoSerializer
+    permission_classes = [AllowAny]
+
+    def get_queryset(self):
+        qs = AtletaPunto.objects.all()
+        atleta_id = self.request.query_params.get('atleta')
+        if atleta_id:
+            qs = qs.filter(atleta_id=atleta_id)
+        return qs
 
 # Vista adicional para obtener luchas disponibles para judging
 @csrf_exempt

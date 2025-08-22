@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import GaleriaItem, Torneo, Categoria, Participante, Llave, Lucha
+from .models import GaleriaItem, Torneo, Categoria, Participante, Llave, Lucha, Atleta, AtletaPunto
 
 
 @admin.register(GaleriaItem)
@@ -76,7 +76,7 @@ class CategoriaAdmin(admin.ModelAdmin):
 
 @admin.register(Participante)
 class ParticipanteAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'academia', 'categoria_actual_nombre', 'cinturon', 'peso', 'activo']
+    list_display = ['nombre', 'academia', 'categoria_actual_nombre', 'cinturon', 'peso', 'activo', 'atleta']
     list_filter = ['torneo', 'cinturon', 'activo', 'academia']
     search_fields = ['nombre', 'academia']
     readonly_fields = ['fecha_inscripcion', 'categoria_sugerida_nombre']
@@ -107,6 +107,19 @@ class ParticipanteAdmin(admin.ModelAdmin):
         })
     )
 
+
+@admin.register(Atleta)
+class AtletaAdmin(admin.ModelAdmin):
+    list_display = ['nombre', 'academia', 'cinturon_actual', 'puntos_totales', 'activo', 'fecha_alta']
+    list_filter = ['cinturon_actual', 'activo', 'academia']
+    search_fields = ['nombre', 'academia']
+
+
+@admin.register(AtletaPunto)
+class AtletaPuntoAdmin(admin.ModelAdmin):
+    list_display = ['atleta', 'puntos', 'origen', 'torneo', 'categoria', 'fecha']
+    list_filter = ['origen', 'torneo', 'categoria']
+    search_fields = ['atleta__nombre', 'detalle']
 
 @admin.register(Llave)
 class LlaveAdmin(admin.ModelAdmin):

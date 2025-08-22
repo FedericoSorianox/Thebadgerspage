@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Torneo, Categoria, Participante, Llave, Lucha
+from .models import Torneo, Categoria, Participante, Llave, Lucha, Atleta, AtletaPunto
 
 
 class TorneoSerializer(serializers.ModelSerializer):
@@ -91,12 +91,13 @@ class CategoriaSerializer(serializers.ModelSerializer):
 
 
 class ParticipanteSerializer(serializers.ModelSerializer):
+    atleta = serializers.PrimaryKeyRelatedField(queryset=Atleta.objects.all(), allow_null=True, required=False)
     categoria_sugerida_nombre = serializers.SerializerMethodField()
     categoria_actual_nombre = serializers.SerializerMethodField()
     
     class Meta:
         model = Participante
-        fields = ['id', 'nombre', 'cinturon', 'academia', 'peso', 'torneo', 
+        fields = ['id', 'nombre', 'cinturon', 'academia', 'peso', 'torneo', 'atleta',
                  'categoria_asignada', 'categoria_sugerida_nombre', 'categoria_actual_nombre',
                  'fecha_inscripcion', 'activo']
         read_only_fields = ['fecha_inscripcion']
@@ -217,3 +218,24 @@ class LuchaSimpleSerializer(serializers.ModelSerializer):
     def get_tiempo_restante(self, obj):
         """Calcula el tiempo restante en segundos"""
         return max(0, obj.duracion_segundos - obj.tiempo_transcurrido)
+
+
+# Serializers para Atleta y puntos
+class AtletaSerializer(serializers.ModelSerializer):
+    puntos_totales = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = Atleta
+        fields = ['id', 'nombre', 'academia', 'cinturon_actual', 'activo', 'fecha_alta', 'puntos_totales']
+        read_only_fields = ['fecha_alta']
+
+
+class AtletaPuntoSerializer(serializers.ModelSerializer):
+    atleta_nombre = serializers.CharField(source='atleta.nombre', read_only=True)
+    torneo_nombre = serializers.CharField(source='torneo.nombre', read_only=True)
+    categoria_nombre = serializers.CharField(source='categoria.nombre', read_only=True)
+
+    class Meta:
+        model = AtletaPunto
+        fields = ['id', 'atleta', 'atleta_nombre', 'torneo', 'torneo_nombre', 'categoria', 'categoria_nombre', 'origen', 'puntos', 'detalle', 'fecha']
+        read_only_fields = ['fecha']
