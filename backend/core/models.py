@@ -376,38 +376,52 @@ class Llave(models.Model):
 
         rondas = []
 
-        # Primera ronda
+        # Primera ronda: completar hasta potencia de 2 con BYEs
+        participantes_ext = list(participantes)
+        while len(participantes_ext) < next_power_of_2:
+            participantes_ext.append(None)
+
         primera_ronda = []
-        for i in range(0, num_participantes, 2):
-            if i + 1 < num_participantes:
+        for i in range(0, len(participantes_ext), 2):
+            p1 = participantes_ext[i]
+            p2 = participantes_ext[i + 1] if i + 1 < len(participantes_ext) else None
+            if p1 and p2:
                 lucha = {
                     'participante1': {
-                        'id': participantes[i].id,
-                        'nombre': participantes[i].nombre,
-                        'academia': participantes[i].academia
+                        'id': p1.id,
+                        'nombre': p1.nombre,
+                        'academia': p1.academia
                     },
                     'participante2': {
-                        'id': participantes[i + 1].id,
-                        'nombre': participantes[i + 1].nombre,
-                        'academia': participantes[i + 1].academia
+                        'id': p2.id,
+                        'nombre': p2.nombre,
+                        'academia': p2.academia
                     },
                     'ganador': None,
                     'estado': 'pendiente'
                 }
-            else:
-                # BYE - participante pasa directo (no se crea lucha real)
+            elif p1 and not p2:
+                # BYE - p1 pasa directo (no se crea lucha real)
                 lucha = {
                     'participante1': {
-                        'id': participantes[i].id,
-                        'nombre': participantes[i].nombre,
-                        'academia': participantes[i].academia
+                        'id': p1.id,
+                        'nombre': p1.nombre,
+                        'academia': p1.academia
                     },
                     'participante2': {'bye': True},
                     'ganador': {
-                        'id': participantes[i].id,
-                        'nombre': participantes[i].nombre,
-                        'academia': participantes[i].academia
+                        'id': p1.id,
+                        'nombre': p1.nombre,
+                        'academia': p1.academia
                     },
+                    'estado': 'finalizada'
+                }
+            else:
+                # Ambos vacíos (solo por seguridad, no debería ocurrir)
+                lucha = {
+                    'participante1': None,
+                    'participante2': {'bye': True},
+                    'ganador': None,
                     'estado': 'finalizada'
                 }
             primera_ronda.append(lucha)
@@ -418,7 +432,7 @@ class Llave(models.Model):
         })
 
         # Generar rondas siguientes vacías
-        num_rondas = self.calcular_rondas_necesarias(num_participantes)
+        num_rondas = self.calcular_rondas_necesarias(next_power_of_2)
         nombres_rondas = self.generar_nombres_rondas(num_rondas)
 
         for i in range(1, num_rondas):
