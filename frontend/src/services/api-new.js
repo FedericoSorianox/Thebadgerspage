@@ -1,7 +1,8 @@
 // Servicios API para el sistema de torneo BJJ (simplificado sin autenticación)
 
-// Base API: producción Render o backend local en 8000 para desarrollo
-const API_BASE_URL = import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : 'http://127.0.0.1:8000';
+// Base API: FORZADO a desarrollo local mientras trabajamos
+const API_BASE_URL = 'http://127.0.0.1:8000'; // TEMPORAL: Forzar desarrollo local
+// const API_BASE_URL = import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : 'http://127.0.0.1:8000';
 
 const TORNEO_API_URL = `${API_BASE_URL}/api/torneo`;
 

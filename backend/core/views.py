@@ -925,6 +925,58 @@ class LlaveViewSet(viewsets.ModelViewSet):
         
         return Response({'message': 'Llave regenerada exitosamente'})
     
+    @action(detail=False, methods=['post'], url_path='regenerar/(?P<categoria_id>[^/.]+)')
+    def regenerar_por_categoria(self, request, categoria_id=None):
+        """Regenerar llave usando ID de categoría (para compatibilidad frontend)"""
+        if not categoria_id:
+            return Response(
+                {'error': 'categoria_id es requerido'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            categoria = Categoria.objects.get(id=categoria_id)
+        except Categoria.DoesNotExist:
+            return Response(
+                {'error': 'Categoría no encontrada'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        try:
+            llave = categoria.llave
+        except Llave.DoesNotExist:
+            return Response(
+                {'error': 'No hay llave creada para esta categoría'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        if llave.bloqueada:
+            return Response(
+                {'error': 'La llave está bloqueada y no se puede regenerar'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        participantes = llave.obtener_participantes()
+        
+        if len(participantes) < 2:
+            return Response(
+                {'error': f'Se necesitan al menos 2 participantes. Actualmente hay {len(participantes)}'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Eliminar luchas existentes de esta categoría
+        Lucha.objects.filter(categoria=llave.categoria).delete()
+        
+        # Regenerar la llave
+        llave.generar_llave_simple()
+        llave.save()
+        
+        return Response({
+            'message': 'Llave regenerada exitosamente',
+            'llave_id': llave.id,
+            'categoria_id': categoria.id
+        })
+    
     @action(detail=True, methods=['post'])
     def bloquear(self, request, pk=None):
         """Bloquear la edición de la llave"""
