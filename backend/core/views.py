@@ -975,6 +975,43 @@ class LlaveViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
     
+    @action(detail=True, methods=['post'])
+    def sincronizar_luchas_finalizadas(self, request, pk=None):
+        """TEMPORAL: Sincronizar todas las luchas finalizadas con la estructura de la llave"""
+        llave = self.get_object()
+        
+        try:
+            # Obtener todas las luchas finalizadas de esta categoría
+            luchas_finalizadas = Lucha.objects.filter(
+                categoria=llave.categoria,
+                estado='finalizada'
+            )
+            
+            sincronizadas = 0
+            for lucha in luchas_finalizadas:
+                # Forzar actualización de la llave con cada lucha finalizada
+                llave.actualizar_llave_con_resultado(lucha)
+                sincronizadas += 1
+            
+            # Verificar promociones después de sincronizar
+            llave.verificar_promociones_automaticas()
+            llave.save()
+            
+            # Contar luchas totales después de sincronización
+            luchas_totales = Lucha.objects.filter(categoria=llave.categoria).count()
+            
+            return Response({
+                'message': f'Sincronización completada: {sincronizadas} luchas sincronizadas',
+                'luchas_sincronizadas': sincronizadas,
+                'luchas_totales': luchas_totales,
+                'estructura_actualizada': llave.estructura
+            })
+        except Exception as e:
+            return Response(
+                {'error': f'Error sincronizando luchas: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+    
 class LuchaViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar luchas con sistema de puntuación BJJ"""
     queryset = Lucha.objects.all()
@@ -1109,7 +1146,13 @@ class LuchaViewSet(viewsets.ModelViewSet):
         try:
             llave = lucha.categoria.llave
             llave.actualizar_llave_con_resultado(lucha)
+            
+            # CRÍTICO: Verificar y crear automáticamente luchas de siguientes rondas
+            llave.verificar_promociones_automaticas()
+            llave.save()
+            
             print(f"DEBUG: Llave actualizada para lucha {lucha.id}, ganador: {lucha.ganador}")
+            print(f"DEBUG: Promociones automáticas verificadas y luchas creadas")
         except Llave.DoesNotExist:
             print(f"DEBUG: No hay llave generada para categoría {lucha.categoria.id}")
             pass  # No hay llave generada
