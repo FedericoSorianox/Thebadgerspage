@@ -673,8 +673,42 @@ class ParticipanteViewSet(viewsets.ModelViewSet):
         if categoria_id is not None:
             try:
                 categoria = Categoria.objects.get(id=categoria_id)
-                # Solo los asignados manualmente
-                queryset = queryset.filter(categoria_asignada=categoria)
+                
+                # SOLUCIÓN DEL BUG: Incluir tanto participantes asignados manualmente 
+                # como aquellos que califican automáticamente
+                
+                # 1. Participantes asignados manualmente a esta categoría
+                asignados_manualmente = queryset.filter(categoria_asignada=categoria)
+                
+                # 2. Participantes que califican automáticamente (sin asignación manual)
+                automaticos = queryset.none()  # Inicializar QuerySet vacío
+                
+                if categoria.tipo_categoria in ['blanca', 'azul', 'violeta', 'marron', 'negro']:
+                    # Es una categoría por cinturón - aplicar lógica automática
+                    cinturon_map = {
+                        'blanca': 'blanca',
+                        'azul': 'azul', 
+                        'violeta': 'violeta',
+                        'marron': 'marron',
+                        'negro': 'negro'
+                    }
+                    cinturon = cinturon_map.get(categoria.tipo_categoria)
+                    
+                    if cinturon:
+                        automaticos = queryset.filter(
+                            cinturon=cinturon,
+                            categoria_asignada__isnull=True  # Solo los no asignados manualmente
+                        )
+                        
+                        # Aplicar filtros de peso si están definidos
+                        if categoria.peso_minimo is not None:
+                            automaticos = automaticos.filter(peso__gte=categoria.peso_minimo)
+                        if categoria.peso_maximo is not None:
+                            automaticos = automaticos.filter(peso__lte=categoria.peso_maximo)
+                
+                # Combinar ambos querysets (asignados manualmente + automáticos)
+                queryset = asignados_manualmente.union(automaticos)
+                
             except Categoria.DoesNotExist:
                 queryset = queryset.none()
         
