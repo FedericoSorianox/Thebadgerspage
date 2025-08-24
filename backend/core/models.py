@@ -499,13 +499,33 @@ class Llave(models.Model):
         if not self.estructura or 'rondas' not in self.estructura:
             return
         
-        # Buscar la lucha en la estructura (tolerante a None)
+        # Buscar la lucha en la estructura de manera más robusta
         for ronda_idx, ronda in enumerate(self.estructura['rondas']):
             for lucha_idx, lucha_estructura in enumerate(ronda['luchas']):
                 p1_struct = lucha_estructura.get('participante1') or {}
                 p2_struct = lucha_estructura.get('participante2') or {}
-                if (p1_struct.get('id') == lucha.participante1.id and
-                    p2_struct.get('id') == lucha.participante2.id):
+                
+                # Verificar si esta es la lucha correcta usando múltiples criterios
+                match_found = False
+                
+                # Caso 1: Ambos participantes coinciden
+                if (p1_struct.get('id') == lucha.participante1.id and 
+                    p2_struct.get('id') == getattr(lucha.participante2, 'id', None)):
+                    match_found = True
+                
+                # Caso 2: Coincidir por posición y ronda si los IDs no funcionan
+                elif (lucha.posicion_llave is not None and 
+                      lucha_idx == lucha.posicion_llave and 
+                      ronda.get('nombre') == lucha.ronda):
+                    match_found = True
+                
+                # Caso 3: Solo participante1 coincide y participante2 es BYE
+                elif (p1_struct.get('id') == lucha.participante1.id and 
+                      p2_struct.get('bye') and 
+                      lucha.participante2 is None):
+                    match_found = True
+                
+                if match_found:
                     
                     # Actualizar con el ganador (priorizar el ganador almacenado explícitamente)
                     ganador = lucha.ganador or lucha.determinar_ganador()
@@ -587,6 +607,8 @@ class Llave(models.Model):
                     
                     break
         
+        # Verificar promociones automáticas después de actualizar
+        self.verificar_promociones_automaticas()
         self.save()
     
     def promover_ganador_siguiente_ronda(self, ronda_idx, lucha_idx, ganador):
@@ -606,25 +628,92 @@ class Llave(models.Model):
                 'academia': ganador.academia
             }
             
+            # Verificar si ya está asignado para evitar duplicados
+            p1_current = lucha_siguiente.get('participante1')
+            p2_current = lucha_siguiente.get('participante2')
+            
+            if p1_current and p1_current.get('id') == ganador.id:
+                return  # Ya está asignado como participante1
+            if p2_current and p2_current.get('id') == ganador.id:
+                return  # Ya está asignado como participante2
+            
+            # Asignar al primer slot disponible
             if lucha_siguiente['participante1'] is None:
                 lucha_siguiente['participante1'] = ganador_data
             elif lucha_siguiente['participante2'] is None:
                 lucha_siguiente['participante2'] = ganador_data
                 
-                # Si ambos participantes están listos, crear la lucha
-                p1 = Participante.objects.get(id=lucha_siguiente['participante1']['id'])
-                p2 = Participante.objects.get(id=lucha_siguiente['participante2']['id'])
+                # Si ambos participantes están listos, crear la lucha física
+                try:
+                    p1 = Participante.objects.get(id=lucha_siguiente['participante1']['id'])
+                    p2 = Participante.objects.get(id=lucha_siguiente['participante2']['id'])
+                    
+                    nombre_ronda = self.estructura['rondas'][ronda_idx + 1]['nombre']
+                    
+                    # Verificar que no exista ya la lucha para evitar duplicados
+                    lucha_existente = Lucha.objects.filter(
+                        categoria=self.categoria,
+                        ronda=nombre_ronda,
+                        posicion_llave=posicion_siguiente
+                    ).first()
+                    
+                    if not lucha_existente:
+                        Lucha.objects.create(
+                            categoria=self.categoria,
+                            participante1=p1,
+                            participante2=p2,
+                            ronda=nombre_ronda,
+                            posicion_llave=posicion_siguiente,
+                            estado='pendiente'
+                        )
+                except Participante.DoesNotExist:
+                    # Si hay error al buscar participantes, no crear la lucha
+                    pass
+            else:
+                # Ambos slots están ocupados, no se puede asignar
+                pass
+    
+    def verificar_promociones_automaticas(self):
+        """Verifica y crea automáticamente las luchas que estén listas después de promociones"""
+        if not self.estructura or 'rondas' not in self.estructura:
+            return
+        
+        for ronda_idx, ronda in enumerate(self.estructura['rondas']):
+            if ronda_idx == 0:  # Saltar primera ronda
+                continue
                 
-                nombre_ronda = self.estructura['rondas'][ronda_idx + 1]['nombre']
+            for lucha_idx, lucha_estructura in enumerate(ronda['luchas']):
+                p1 = lucha_estructura.get('participante1')
+                p2 = lucha_estructura.get('participante2')
                 
-                Lucha.objects.create(
-                    categoria=self.categoria,
-                    participante1=p1,
-                    participante2=p2,
-                    ronda=nombre_ronda,
-                    posicion_llave=posicion_siguiente,
-                    estado='pendiente'
-                )
+                # Si ambos participantes están asignados pero no hay lucha física
+                if (p1 and p1.get('id') and 
+                    p2 and p2.get('id') and 
+                    not p2.get('bye') and 
+                    lucha_estructura.get('estado') == 'pendiente'):
+                    
+                    # Verificar si ya existe la lucha física
+                    lucha_existente = Lucha.objects.filter(
+                        categoria=self.categoria,
+                        ronda=ronda.get('nombre'),
+                        posicion_llave=lucha_idx
+                    ).first()
+                    
+                    if not lucha_existente:
+                        try:
+                            participante1 = Participante.objects.get(id=p1['id'])
+                            participante2 = Participante.objects.get(id=p2['id'])
+                            
+                            Lucha.objects.create(
+                                categoria=self.categoria,
+                                participante1=participante1,
+                                participante2=participante2,
+                                ronda=ronda.get('nombre'),
+                                posicion_llave=lucha_idx,
+                                estado='pendiente'
+                            )
+                        except Participante.DoesNotExist:
+                            pass
 
     def __str__(self):
         return f"Llave - {self.categoria.nombre}"

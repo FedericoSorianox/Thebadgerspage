@@ -223,47 +223,6 @@ def galeria_list(request):
     
     print(f"DEBUG galeria_list: Respuesta final: {data}")
     return JsonResponse(data, safe=False)
-
-def galeria_list_temp(request):
-    """Endpoint temporal que devuelve URLs de Unsplash directamente"""
-    # URLs de ejemplo de Unsplash (imágenes de artes marciales)
-    unsplash_urls = [
-        'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1519864600265-abb23847ef2c?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=800&q=80',
-        'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=800&q=80'
-    ]
-    
-    # Nombres de ejemplo
-    nombres = [
-        'Academia The Badgers',
-        'Clase de Muay Thai',
-        'Tatami de entrenamiento',
-        'Academia vista general',
-        'Academia',
-        'Test Cloudinary',
-        'Tatami',
-        'BJJ Gi'
-    ]
-    
-    data = []
-    for i in range(8):
-        data.append({
-            'id': 76 + i,  # IDs secuenciales
-            'url': unsplash_urls[i],
-            'nombre': nombres[i],
-            'fecha': '2025-07-18',
-            'tipo': 'img',
-            'usuario': 'federico_soriano',
-        })
-    
-    print(f"DEBUG galeria_list_temp: Respuesta con URLs de Unsplash: {data}")
-    return JsonResponse(data, safe=False)
-
 @csrf_exempt
 def galeria_upload(request):
     print(f"DEBUG: Método de la petición: {request.method}")
@@ -528,182 +487,6 @@ def setup_usuarios(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 @csrf_exempt
-def migrate_to_cloudinary_endpoint(request):
-    """Endpoint temporal para migrar archivos a Cloudinary"""
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Método no permitido'}, status=405)
-    
-    # Verificar autenticación básica
-    if not request.META.get('HTTP_AUTHORIZATION'):
-        return JsonResponse({'error': 'No autenticado'}, status=401)
-    
-    auth = request.META['HTTP_AUTHORIZATION']
-    if not auth.startswith('Basic '):
-        return JsonResponse({'error': 'Tipo de autenticación no soportado'}, status=401)
-    
-    try:
-        userpass = base64.b64decode(auth.split(' ')[1]).decode('utf-8')
-        username, password = userpass.split(':', 1)
-        user = authenticate(username=username, password=password)
-        if not user:
-            return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
-    except Exception as e:
-        return JsonResponse({'error': 'Error en autenticación'}, status=401)
-    
-    try:
-        # Configurar Cloudinary
-        cloudinary.config(
-            cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
-            api_key=os.environ.get('CLOUDINARY_API_KEY'),
-            api_secret=os.environ.get('CLOUDINARY_API_SECRET')
-        )
-        
-        # Verificar configuración
-        if not all([os.environ.get('CLOUDINARY_CLOUD_NAME'), 
-                   os.environ.get('CLOUDINARY_API_KEY'), 
-                   os.environ.get('CLOUDINARY_API_SECRET')]):
-            return JsonResponse({'error': 'Cloudinary no está configurado correctamente'}, status=500)
-        
-        # Obtener todos los items de la galería
-        items = GaleriaItem.objects.all()
-        migrated_count = 0
-        errors = []
-        
-        for item in items:
-            try:
-                # Verificar si el archivo existe localmente
-                if item.archivo and hasattr(item.archivo, 'path'):
-                    local_path = item.archivo.path
-                    if os.path.exists(local_path):
-                        # Subir a Cloudinary
-                        with open(local_path, 'rb') as f:
-                            result = cloudinary.uploader.upload(
-                                f,
-                                public_id=f"galeria/{item.nombre}_{item.id}",
-                                resource_type="auto"
-                            )
-                        
-                        # Actualizar el modelo con la nueva URL
-                        item.archivo.name = f"galeria/{item.nombre}_{item.id}"
-                        item.save()
-                        
-                        migrated_count += 1
-                    else:
-                        errors.append(f"Archivo no encontrado para item {item.id}: {local_path}")
-                else:
-                    errors.append(f"Item {item.id} no tiene archivo válido")
-                    
-            except Exception as e:
-                errors.append(f"Error migrando item {item.id}: {str(e)}")
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Migración completada. {migrated_count} archivos migrados.',
-            'migrated_count': migrated_count,
-            'total_items': items.count(),
-            'errors': errors
-        })
-        
-    except Exception as e:
-        return JsonResponse({'error': f'Error en migración: {str(e)}'}, status=500)
-
-@csrf_exempt
-def migrate_existing_images_endpoint(request):
-    """Endpoint temporal para migrar imágenes existentes a Cloudinary"""
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Método no permitido'}, status=405)
-    
-    # Verificar autenticación básica
-    if not request.META.get('HTTP_AUTHORIZATION'):
-        return JsonResponse({'error': 'No autenticado'}, status=401)
-    
-    auth = request.META['HTTP_AUTHORIZATION']
-    if not auth.startswith('Basic '):
-        return JsonResponse({'error': 'Tipo de autenticación no soportado'}, status=401)
-    
-    try:
-        userpass = base64.b64decode(auth.split(' ')[1]).decode('utf-8')
-        username, password = userpass.split(':', 1)
-        user = authenticate(username=username, password=password)
-        if not user:
-            return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
-    except Exception as e:
-        return JsonResponse({'error': 'Error en autenticación'}, status=401)
-    
-    try:
-        # Configurar Cloudinary
-        cloudinary.config(
-            cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
-            api_key=os.environ.get('CLOUDINARY_API_KEY'),
-            api_secret=os.environ.get('CLOUDINARY_API_SECRET')
-        )
-        
-        # Verificar configuración
-        if not all([os.environ.get('CLOUDINARY_CLOUD_NAME'), 
-                   os.environ.get('CLOUDINARY_API_KEY'), 
-                   os.environ.get('CLOUDINARY_API_SECRET')]):
-            return JsonResponse({'error': 'Cloudinary no está configurado correctamente'}, status=500)
-        
-        # Obtener todos los items de la galería
-        items = GaleriaItem.objects.all()
-        migrated_count = 0
-        errors = []
-        
-        for item in items:
-            try:
-                print(f'Procesando item {item.id}: {item.nombre}')
-                
-                # Verificar si ya es una URL de Cloudinary
-                if item.archivo.url.startswith('http'):
-                    print(f'  Item {item.id} ya es una URL de Cloudinary, saltando...')
-                    continue
-                
-                # Verificar si el archivo existe localmente
-                if item.archivo and hasattr(item.archivo, 'path'):
-                    local_path = item.archivo.path
-                    if os.path.exists(local_path):
-                        print(f'  Subiendo archivo local: {local_path}')
-                        
-                        # Subir a Cloudinary
-                        with open(local_path, 'rb') as f:
-                            result = cloudinary.uploader.upload(
-                                f,
-                                public_id=f"galeria/{item.nombre}_{item.id}",
-                                resource_type="auto"
-                            )
-                        
-                        # Actualizar el modelo con la nueva URL
-                        item.archivo = result['secure_url']
-                        item.save()
-                        
-                        migrated_count += 1
-                        print(f'  ✅ Migrado exitosamente: {result["secure_url"]}')
-                    else:
-                        error_msg = f"Archivo no encontrado para item {item.id}: {local_path}"
-                        print(f'  ⚠️ {error_msg}')
-                        errors.append(error_msg)
-                else:
-                    error_msg = f"Item {item.id} no tiene archivo válido"
-                    print(f'  ⚠️ {error_msg}')
-                    errors.append(error_msg)
-                    
-            except Exception as e:
-                error_msg = f"Error migrando item {item.id}: {str(e)}"
-                print(f'  ❌ {error_msg}')
-                errors.append(error_msg)
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Migración completada. {migrated_count} archivos migrados.',
-            'migrated_count': migrated_count,
-            'total_items': items.count(),
-            'errors': errors
-        })
-        
-    except Exception as e:
-        return JsonResponse({'error': f'Error en migración: {str(e)}'}, status=500)
-
-@csrf_exempt
 def update_item_cloudinary_url(request):
     """Endpoint para actualizar un item específico con URL de Cloudinary"""
     if request.method != 'POST':
@@ -774,102 +557,6 @@ class FrontendAppView(View):
         # Si no se encuentra, devolver un error 404
         from django.http import HttpResponse
         return HttpResponse("Frontend build not found. Please run 'npm run build' in the frontend directory.", status=404)
-
-# Agregar este endpoint temporal para probar Cloudinary
-@csrf_exempt
-def test_cloudinary(request):
-    """Endpoint para probar la configuración de Cloudinary"""
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Método no permitido'}, status=405)
-    
-    try:
-        # Configurar Cloudinary
-        cloudinary.config(
-            cloud_name=os.environ.get('CLOUDINARY_CLOUD_NAME'),
-            api_key=os.environ.get('CLOUDINARY_API_KEY'),
-            api_secret=os.environ.get('CLOUDINARY_API_SECRET')
-        )
-        
-        # Verificar configuración
-        config_status = {
-            'cloud_name': bool(os.environ.get('CLOUDINARY_CLOUD_NAME')),
-            'api_key': bool(os.environ.get('CLOUDINARY_API_KEY')),
-            'api_secret': bool(os.environ.get('CLOUDINARY_API_SECRET'))
-        }
-        
-        if not all(config_status.values()):
-            return JsonResponse({
-                'success': False,
-                'error': 'Cloudinary no está configurado correctamente',
-                'config_status': config_status
-            }, status=500)
-        
-        # Test básico de API
-        result = cloudinary.api.ping()
-        
-        return JsonResponse({
-            'success': True,
-            'message': 'Cloudinary configurado correctamente',
-            'config_status': config_status,
-            'api_test': result
-        })
-        
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': f'Error probando Cloudinary: {str(e)}',
-            'config_status': config_status if 'config_status' in locals() else None
-        }, status=500)
-
-@csrf_exempt 
-def cleanup_unsplash_images(request):
-    """Eliminar imágenes con URLs de Unsplash de la base de datos"""
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Método no permitido'}, status=405)
-    
-    # Verificar autenticación básica
-    if not request.META.get('HTTP_AUTHORIZATION'):
-        return JsonResponse({'error': 'No autenticado'}, status=401)
-    
-    auth = request.META['HTTP_AUTHORIZATION']
-    if not auth.startswith('Basic '):
-        return JsonResponse({'error': 'Tipo de autenticación no soportado'}, status=401)
-    
-    try:
-        userpass = base64.b64decode(auth.split(' ')[1]).decode('utf-8')
-        username, password = userpass.split(':', 1)
-        user = authenticate(username=username, password=password)
-        if not user:
-            return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
-    except Exception as e:
-        return JsonResponse({'error': 'Error en autenticación'}, status=401)
-    
-    try:
-        # Eliminar items que tengan URLs de Unsplash en el campo archivo
-        deleted_items = []
-        items_to_delete = GaleriaItem.objects.filter(archivo__icontains='unsplash.com')
-        
-        for item in items_to_delete:
-            deleted_items.append({
-                'id': item.id,
-                'nombre': item.nombre,
-                'url': str(item.archivo)
-            })
-        
-        deleted_count = items_to_delete.delete()[0]
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Se eliminaron {deleted_count} imágenes de Unsplash',
-            'deleted_count': deleted_count,
-            'deleted_items': deleted_items
-        })
-        
-    except Exception as e:
-        return JsonResponse({
-            'success': False,
-            'error': f'Error eliminando imágenes: {str(e)}'
-        }, status=500)
 
 @csrf_exempt
 def productos_proxy(request):
@@ -1173,105 +860,29 @@ class LlaveViewSet(viewsets.ModelViewSet):
         serializer = LuchaSerializer(luchas, many=True)
         return Response(serializer.data)
     
-    @action(detail=False, methods=['post'], url_path='generar/(?P<categoria_id>[^/.]+)')
-    def generar(self, request, categoria_id=None):
-        """Generar llave para una categoría específica (endpoint simplificado)"""
-        if not categoria_id:
-            return Response(
-                {'error': 'categoria_id es requerido'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
+    @action(detail=True, methods=['post'])
+    def verificar_promociones(self, request, pk=None):
+        """Verificar y crear automáticamente las luchas pendientes por promociones"""
+        llave = self.get_object()
         
         try:
-            categoria = Categoria.objects.get(id=categoria_id)
-        except Categoria.DoesNotExist:
+            llave.verificar_promociones_automaticas()
+            llave.save()
+            
+            # Obtener luchas actualizadas
+            luchas = Lucha.objects.filter(categoria=llave.categoria).order_by('ronda', 'posicion_llave')
+            luchas_count = luchas.count()
+            
+            return Response({
+                'message': 'Promociones verificadas exitosamente',
+                'luchas_totales': luchas_count,
+                'estructura_actualizada': llave.estructura
+            })
+        except Exception as e:
             return Response(
-                {'error': 'Categoría no encontrada'}, 
-                status=status.HTTP_404_NOT_FOUND
+                {'error': f'Error verificando promociones: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        
-        # Verificar si ya existe una llave para esta categoría
-        llave, created = Llave.objects.get_or_create(
-            categoria=categoria,
-            defaults={
-                'tipo_eliminacion': 'simple',
-                'estructura': {}
-            }
-        )
-        
-        if not created and llave.bloqueada:
-            return Response(
-                {'error': 'La llave ya está bloqueada y no se puede regenerar'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Generar la llave automáticamente
-        participantes = llave.obtener_participantes()
-        
-        if len(participantes) < 2:
-            return Response(
-                {'error': f'Se necesitan al menos 2 participantes. Actualmente hay {len(participantes)}'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        llave.generar_llave_simple()
-        llave.save()
-        
-        serializer = self.get_serializer(llave)
-        return Response({
-            'message': f'Llave generada exitosamente para {len(participantes)} participantes',
-            'llave': serializer.data
-        })
-
-    @action(detail=False, methods=['post'], url_path='regenerar/(?P<categoria_id>[^/.]+)')
-    def regenerar_by_categoria(self, request, categoria_id=None):
-        """Regenerar llave para una categoría específica (endpoint simplificado)"""
-        if not categoria_id:
-            return Response(
-                {'error': 'categoria_id es requerido'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        try:
-            categoria = Categoria.objects.get(id=categoria_id)
-            llave = Llave.objects.get(categoria=categoria)
-        except Categoria.DoesNotExist:
-            return Response(
-                {'error': 'Categoría no encontrada'}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
-        except Llave.DoesNotExist:
-            return Response(
-                {'error': 'No existe llave para esta categoría'}, 
-                status=status.HTTP_404_NOT_FOUND
-            )
-        
-        if llave.bloqueada:
-            return Response(
-                {'error': 'La llave está bloqueada y no se puede regenerar'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        participantes = llave.obtener_participantes()
-        
-        if len(participantes) < 2:
-            return Response(
-                {'error': f'Se necesitan al menos 2 participantes. Actualmente hay {len(participantes)}'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Eliminar luchas existentes de esta categoría
-        Lucha.objects.filter(categoria=llave.categoria).delete()
-        
-        # Regenerar la llave
-        llave.generar_llave_simple()
-        llave.save()
-        
-        serializer = self.get_serializer(llave)
-        return Response({
-            'message': f'Llave regenerada exitosamente para {len(participantes)} participantes',
-            'llave': serializer.data
-        })
     
 class LuchaViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar luchas con sistema de puntuación BJJ"""
@@ -1367,7 +978,7 @@ class LuchaViewSet(viewsets.ModelViewSet):
         
         if lucha.estado not in ['en_progreso', 'pausada', 'pendiente']:
             return Response(
-                {'error': 'Solo se pueden finalizar luchas en progreso o pausadas'}, 
+                {'error': 'Solo se pueden finalizar luchas en progreso, pausadas o pendientes'}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
         
@@ -1407,63 +1018,17 @@ class LuchaViewSet(viewsets.ModelViewSet):
         try:
             llave = lucha.categoria.llave
             llave.actualizar_llave_con_resultado(lucha)
+            print(f"DEBUG: Llave actualizada para lucha {lucha.id}, ganador: {lucha.ganador}")
         except Llave.DoesNotExist:
+            print(f"DEBUG: No hay llave generada para categoría {lucha.categoria.id}")
             pass  # No hay llave generada
+        except Exception as e:
+            print(f"ERROR: Error actualizando llave: {e}")
         
         return Response({
             'message': 'Lucha finalizada',
-            'ganador': lucha.ganador.nombre if lucha.ganador else 'Empate'
-        })
-    
-    @action(detail=True, methods=['post'])
-    def actualizar_puntos(self, request, pk=None):
-        """Actualizar puntos de una lucha"""
-        lucha = self.get_object()
-        
-        if lucha.estado not in ['en_progreso', 'pausada']:
-            return Response(
-                {'error': 'Solo se pueden actualizar puntos en luchas activas'}, 
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Actualizar puntos del participante 1
-        if 'montadas_p1' in request.data:
-            lucha.montadas_p1 = max(0, int(request.data.get('montadas_p1', 0)))
-        if 'guardas_pasadas_p1' in request.data:
-            lucha.guardas_pasadas_p1 = max(0, int(request.data.get('guardas_pasadas_p1', 0)))
-        if 'rodillazos_p1' in request.data:
-            lucha.rodillazos_p1 = max(0, int(request.data.get('rodillazos_p1', 0)))
-        if 'derribos_p1' in request.data:
-            lucha.derribos_p1 = max(0, int(request.data.get('derribos_p1', 0)))
-        if 'ventajas_p1' in request.data:
-            lucha.ventajas_p1 = max(0, int(request.data.get('ventajas_p1', 0)))
-        if 'penalizaciones_p1' in request.data:
-            lucha.penalizaciones_p1 = max(0, int(request.data.get('penalizaciones_p1', 0)))
-        
-        # Actualizar puntos del participante 2
-        if 'montadas_p2' in request.data:
-            lucha.montadas_p2 = max(0, int(request.data.get('montadas_p2', 0)))
-        if 'guardas_pasadas_p2' in request.data:
-            lucha.guardas_pasadas_p2 = max(0, int(request.data.get('guardas_pasadas_p2', 0)))
-        if 'rodillazos_p2' in request.data:
-            lucha.rodillazos_p2 = max(0, int(request.data.get('rodillazos_p2', 0)))
-        if 'derribos_p2' in request.data:
-            lucha.derribos_p2 = max(0, int(request.data.get('derribos_p2', 0)))
-        if 'ventajas_p2' in request.data:
-            lucha.ventajas_p2 = max(0, int(request.data.get('ventajas_p2', 0)))
-        if 'penalizaciones_p2' in request.data:
-            lucha.penalizaciones_p2 = max(0, int(request.data.get('penalizaciones_p2', 0)))
-        
-        # Actualizar tiempo
-        if 'tiempo_transcurrido' in request.data:
-            lucha.tiempo_transcurrido = max(0, int(request.data.get('tiempo_transcurrido', 0)))
-        
-        lucha.save()  # Esto calculará automáticamente los puntos totales
-        
-        return Response({
-            'message': 'Puntos actualizados',
-            'puntos_p1': lucha.puntos_p1,
-            'puntos_p2': lucha.puntos_p2
+            'ganador': lucha.ganador.nombre if lucha.ganador else 'Empate',
+            'ganador_id': lucha.ganador.id if lucha.ganador else None
         })
     
     @action(detail=True, methods=['post'])
@@ -1484,60 +1049,6 @@ class LuchaViewSet(viewsets.ModelViewSet):
             'message': 'Cronómetro pausado' if not lucha.cronometro_activo else 'Cronómetro reanudado',
             'cronometro_activo': lucha.cronometro_activo
         })
-        # Fin de método toggle_cronometro
-    
-    @action(detail=True, methods=['post'])
-    def actualizar_puntuacion(self, request, pk=None):
-        """Actualizar puntuación en tiempo real durante la lucha"""
-        lucha = self.get_object()
-        data = request.data
-        
-        # Actualizar puntuación directa
-        if 'puntos_p1' in data:
-            lucha.puntos_p1 = max(0, data['puntos_p1'])
-        if 'ventajas_p1' in data:
-            lucha.ventajas_p1 = max(0, data['ventajas_p1'])
-        if 'penalizaciones_p1' in data:
-            lucha.penalizaciones_p1 = max(0, data['penalizaciones_p1'])
-            
-        if 'puntos_p2' in data:
-            lucha.puntos_p2 = max(0, data['puntos_p2'])
-        if 'ventajas_p2' in data:
-            lucha.ventajas_p2 = max(0, data['ventajas_p2'])
-        if 'penalizaciones_p2' in data:
-            lucha.penalizaciones_p2 = max(0, data['penalizaciones_p2'])
-        
-        # Actualizar puntuación detallada P1
-        if 'montadas_p1' in data:
-            lucha.montadas_p1 = max(0, data['montadas_p1'])
-        if 'guardas_pasadas_p1' in data:
-            lucha.guardas_pasadas_p1 = max(0, data['guardas_pasadas_p1'])
-        if 'rodillazos_p1' in data:
-            lucha.rodillazos_p1 = max(0, data['rodillazos_p1'])
-        if 'derribos_p1' in data:
-            lucha.derribos_p1 = max(0, data['derribos_p1'])
-            
-        # Actualizar puntuación detallada P2
-        if 'montadas_p2' in data:
-            lucha.montadas_p2 = max(0, data['montadas_p2'])
-        if 'guardas_pasadas_p2' in data:
-            lucha.guardas_pasadas_p2 = max(0, data['guardas_pasadas_p2'])
-        if 'rodillazos_p2' in data:
-            lucha.rodillazos_p2 = max(0, data['rodillazos_p2'])
-        if 'derribos_p2' in data:
-            lucha.derribos_p2 = max(0, data['derribos_p2'])
-        
-        if 'tiempo_transcurrido' in data:
-            lucha.tiempo_transcurrido = data['tiempo_transcurrido']
-        
-        # Calcular puntos automáticamente basado en las técnicas
-        lucha.calcular_puntos()
-        
-        lucha.save()
-        
-        serializer = self.get_serializer(lucha)
-        return Response(serializer.data)
-
 
 class AtletaViewSet(viewsets.ModelViewSet):
     queryset = Atleta.objects.all()
@@ -1550,8 +1061,6 @@ class AtletaViewSet(viewsets.ModelViewSet):
         if q:
             qs = qs.filter(nombre__icontains=q)
         return qs
-
-
 class AtletaPuntoViewSet(viewsets.ModelViewSet):
     queryset = AtletaPunto.objects.all()
     serializer_class = AtletaPuntoSerializer

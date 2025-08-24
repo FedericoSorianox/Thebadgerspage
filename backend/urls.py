@@ -62,7 +62,7 @@ urlpatterns = [
     path('api/create-user/', views.create_user),
     path('api/galeria/', views.galeria_list),
     path('api/galeria/items/', views.galeria_items),
-    path('api/galeria/temp/', views.galeria_list_temp),
+
     path('api/galeria/upload/', views.galeria_upload),
     path('api/productos/', views.productos_proxy),
    
@@ -70,14 +70,11 @@ urlpatterns = [
     path('api/torneo/', include(router.urls)),
     path('api/torneo/luchas-disponibles/', views.luchas_disponibles),
    
-    path('api/migrate-to-cloudinary/', views.migrate_to_cloudinary_endpoint),
-    path('api/migrate-existing-images/', views.migrate_existing_images_endpoint),
     path('api/update-item-cloudinary/', views.update_item_cloudinary_url),
     path('api/usuarios/crear/', views.crear_usuario),
     path('api/usuarios/cambiar-password/', views.cambiar_password),
     path('api/usuarios/setup/', views.setup_usuarios),
-    path('api/test-cloudinary/', views.test_cloudinary, name='test_cloudinary'),
-    path('api/cleanup-unsplash/', views.cleanup_unsplash_images, name='cleanup_unsplash'),
+
     
     # Servir archivos estáticos con MIME types correctos
     re_path(r'^static/(?P<path>.*)$', serve, {'document_root': settings.STATIC_ROOT}),

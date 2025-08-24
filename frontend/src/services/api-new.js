@@ -308,6 +308,12 @@ export const llaveAPI = {
         const response = await fetch(`${TORNEO_API_URL}/llaves/regenerar/${categoriaId}/`, createApiConfig('POST'));
         return handleResponse(response);
     },
+    
+    // Verificar promociones automáticas
+    verificarPromociones: async (llaveId) => {
+        const response = await fetch(`${TORNEO_API_URL}/llaves/${llaveId}/verificar_promociones/`, createApiConfig('POST'));
+        return handleResponse(response);
+    },
 };
 
 // =================== SERVICIOS DE LUCHAS ===================
@@ -365,6 +371,12 @@ export const luchaAPI = {
     // Finalizar lucha con resultados
     finalizar: async (id, resultados) => {
         const response = await fetch(`${TORNEO_API_URL}/luchas/${id}/finalizar/`, createApiConfig('POST', resultados));
+        return handleResponse(response);
+    },
+    
+    // Obtener luchas por categoría
+    getByCategoria: async (categoriaId) => {
+        const response = await fetch(`${TORNEO_API_URL}/luchas/?categoria=${categoriaId}`, createApiConfig());
         return handleResponse(response);
     },
 };
