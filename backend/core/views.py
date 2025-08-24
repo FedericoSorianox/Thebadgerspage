@@ -840,6 +840,63 @@ class LlaveViewSet(viewsets.ModelViewSet):
             'llave': serializer.data
         })
     
+    @action(detail=False, methods=['post'], url_path='generar/(?P<categoria_id>[^/.]+)')
+    def generar(self, request, categoria_id=None):
+        """Generar llave para una categoría específica (endpoint personalizado)"""
+        if not categoria_id:
+            return Response(
+                {'error': 'categoria_id es requerido'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            # Obtener la categoría usando categoria_id
+            categoria = Categoria.objects.get(id=categoria_id)
+        except Categoria.DoesNotExist:
+            return Response(
+                {'error': 'Categoría no encontrada'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Verificar si ya existe una llave para esta categoría
+        llave, created = Llave.objects.get_or_create(
+            categoria=categoria,
+            defaults={
+                'tipo_eliminacion': 'simple',
+                'estructura': {}
+            }
+        )
+        
+        if not created and llave.bloqueada:
+            return Response(
+                {'error': 'La llave ya está bloqueada y no se puede regenerar'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Obtener participantes de la categoría
+        participantes = llave.obtener_participantes()
+        
+        if len(participantes) < 2:
+            return Response(
+                {'error': f'Se necesitan al menos 2 participantes. Actualmente hay {len(participantes)}'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Si la llave ya existía, eliminar luchas previas antes de regenerar
+        if not created:
+            Lucha.objects.filter(categoria=llave.categoria).delete()
+        
+        # Generar la llave automáticamente
+        llave.generar_llave_simple()
+        llave.save()
+        
+        serializer = self.get_serializer(llave)
+        return Response({
+            'message': f'Llave generada exitosamente para {len(participantes)} participantes',
+            'created': created,
+            'llave': serializer.data
+        })
+    
     @action(detail=True, methods=['post'])
     def regenerar(self, request, pk=None):
         """Regenerar llave (solo si no está bloqueada)"""
