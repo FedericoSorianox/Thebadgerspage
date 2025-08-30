@@ -38,12 +38,15 @@ WHITENOISE_MIMETYPES = {
     '.ico': 'image/x-icon',
 }
 
-# Configuración de base de datos SQLite
+# Configuración de base de datos PostgreSQL para Render
+import dj_database_url
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
+    'default': dj_database_url.config(
+        default='sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3'),
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 # Configuración de seguridad
@@ -53,4 +56,16 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # Configuración de archivos estáticos adicional
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media') 
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Configuración para migraciones automáticas en Render
+import os
+if os.environ.get('RENDER'):
+    # Ejecutar migraciones automáticamente en Render
+    import subprocess
+    try:
+        subprocess.run(['python', 'manage.py', 'migrate', '--noinput'], check=True)
+        print("✅ Migraciones ejecutadas automáticamente")
+    except subprocess.CalledProcessError as e:
+        print(f"⚠️ Error ejecutando migraciones: {e}")
+        # Continuar sin fallar el deploy 

@@ -3,11 +3,11 @@ services:
     name: thebadgerspage
     env: python
     plan: free
-    buildCommand: ./deploy_production.sh
-    startCommand: cd backend && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --settings=core.settings_production
+    buildCommand: ./deploy.sh
+    startCommand: cd backend && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --settings=core.settings_render
     envVars:
       - key: DJANGO_SETTINGS_MODULE
-        value: core.settings_production
+        value: core.settings_render
       - key: SECRET_KEY
         generateValue: true
       - key: ADMIN_USERNAME
@@ -16,15 +16,12 @@ services:
         value: admin@thebadgers.uy
       - key: ADMIN_PASSWORD
         value: admin123bjj2025
-    customDomains:
-      - name: the-badgers.com
-      - name: www.the-badgers.com
-    envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
-      - key: DJANGO_SETTINGS_MODULE
-        value: core.settings
       - key: DEBUG
         value: false
       - key: ALLOWED_HOSTS
-        value: the-badgers.com,www.the-badgers.com,thebadgerspage.onrender.com,localhost,127.0.0.1 
+        value: the-badgers.com,www.the-badgers.com,thebadgerspage.onrender.com,localhost,127.0.0.1
+    customDomains:
+      - name: the-badgers.com
+      - name: www.the-badgers.com 
