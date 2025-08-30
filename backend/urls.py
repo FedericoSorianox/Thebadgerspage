@@ -6,6 +6,7 @@ from django.views.static import serve
 import os
 from core import views
 from core.views import FrontendAppView
+from core import dev_views
 from rest_framework.routers import DefaultRouter
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -65,6 +66,11 @@ urlpatterns = [
 
     path('api/galeria/upload/', views.galeria_upload),
     path('api/productos/', views.productos_proxy),
+    
+    # Endpoints de desarrollo (solo disponibles cuando DEBUG=True)
+    path('api/dev/galeria/upload/', dev_views.dev_galeria_upload),
+    path('api/dev/auth/status/', dev_views.dev_auth_status),
+    path('api/dev/auth/login/', dev_views.dev_login),
    
     # APIs del sistema de torneo BJJ
     path('api/torneo/', include(router.urls)),

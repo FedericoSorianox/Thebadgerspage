@@ -1,0 +1,58 @@
+/* Estilos específicos para el FightScorer */
+
+/* Modo pantalla completa real */
+.fight-scorer-fullscreen {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999 !important;
+  background: white !important;
+  overflow: hidden !important;
+}
+
+/* Ocultar scroll en modo pantalla completa */
+.fight-scorer-fullscreen * {
+  overflow: hidden !important;
+}
+
+/* Asegurar que el contenido se ajuste perfectamente */
+.fight-scorer-fullscreen .fight-scorer-content {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+/* Botón de pantalla completa mejorado */
+.fullscreen-toggle {
+  transition: all 0.2s ease;
+}
+
+.fullscreen-toggle:hover {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+  transform: scale(1.1);
+}
+
+/* Asegurar que los botones sean accesibles en pantalla completa */
+.fight-scorer-fullscreen button {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Optimizar el layout para pantallas grandes */
+@media (min-width: 1920px) {
+  .fight-scorer-fullscreen .timer {
+    font-size: 8rem !important;
+  }
+  
+  .fight-scorer-fullscreen .score {
+    font-size: 9rem !important;
+  }
+  
+  .fight-scorer-fullscreen .fighter-name {
+    font-size: 3rem !important;
+  }
+}

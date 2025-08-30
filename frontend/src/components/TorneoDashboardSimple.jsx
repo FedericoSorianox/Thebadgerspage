@@ -3,6 +3,7 @@ import { torneoAPI, categoriaAPI, participanteAPI, llaveAPI } from '../services/
 import LlaveManager from './LlaveManager.jsx';
 import FightScorer from './FightScorer.jsx';
 import BracketView from './BracketView.jsx';
+import IndependentFightScorer from './IndependentFightScorer.jsx';
 import './TorneoDashboard.css';
 import './TorneoDashboard-llaves.css';
 
@@ -31,12 +32,14 @@ export default function TorneoDashboardSimple() {
     torneos: true,
     categorias: false,
     participantes: false,
-    llaves: false
+    llaves: false,
+    independent: false
   });
   
   // Estados para el gestor de llaves
   const [showLlaveManager, setShowLlaveManager] = useState(false);
   const [showScorer, setShowScorer] = useState(false);
+  const [showIndependentScorer, setShowIndependentScorer] = useState(false);
   // Estado para modal de edición de participante
   const [showParticipanteModal, setShowParticipanteModal] = useState(false);
   const [participanteEdit, setParticipanteEdit] = useState(null);
@@ -512,9 +515,10 @@ export default function TorneoDashboardSimple() {
           <div className="content-grid" style={{ gridTemplateColumns: '1fr' }}>
             <div className="content-column">
               <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid #e5e7eb' }}>
-                <button className={`btn ${expandedSections.torneos ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ torneos: true, categorias: false, participantes: false, llaves: false })}>🏆 Torneos</button>
-                <button className={`btn ${expandedSections.participantes ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ torneos: false, categorias: false, participantes: true, llaves: false })}>👥 Participantes</button>
-                <button className={`btn ${expandedSections.llaves ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ torneos: false, categorias: false, participantes: false, llaves: true })}>🗂️ Llaves / Luchas</button>
+                <button className={`btn ${expandedSections.torneos ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ torneos: true, categorias: false, participantes: false, llaves: false, independent: false })}>🏆 Torneos</button>
+                <button className={`btn ${expandedSections.participantes ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ torneos: false, categorias: false, participantes: true, llaves: false, independent: false })}>👥 Participantes</button>
+                <button className={`btn ${expandedSections.llaves ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ torneos: false, categorias: false, participantes: false, llaves: true, independent: false })}>🗂️ Llaves / Luchas</button>
+                <button className={`btn ${expandedSections.independent ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ torneos: false, categorias: false, participantes: false, llaves: false, independent: true })}>🥊 Lucha Independiente</button>
               </div>
             </div>
           </div>
@@ -920,6 +924,84 @@ export default function TorneoDashboardSimple() {
         </div>
       )}
 
+      {/* SECCIÓN LUCHA INDEPENDIENTE (solo tab Lucha Independiente) */}
+      {expandedSections.independent && (
+        <div className="section">
+          <div className="section-header" onClick={() => toggleSection('independent')}>
+            <h2>🥊 Lucha Independiente</h2>
+            <span className={`expand-icon ${expandedSections.independent ? 'expanded' : ''}`}>
+              ▼
+            </span>
+          </div>
+
+          {expandedSections.independent && (
+            <div className="section-content">
+              <div className="content-grid">
+                <div className="content-column">
+                  <h3>Marcador Independiente</h3>
+                  <p className="form-description">
+                    Usa el marcador de forma independiente, sin estar vinculado a ningún torneo. 
+                    Perfecto para luchas de entrenamiento, exhibiciones o eventos informales.
+                  </p>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <h4 className="font-semibold text-blue-800 mb-2">✨ Características:</h4>
+                    <ul className="text-blue-700 text-sm space-y-1">
+                      <li>• Ingresa manualmente los nombres de los luchadores</li>
+                      <li>• Selecciona la duración de la lucha (3, 5, 7, 10 o 15 minutos)</li>
+                      <li>• Marcador completo con todos los puntos del BJJ</li>
+                      <li>• Cronómetro en tiempo real</li>
+                      <li>• Los resultados no se guardan en la base de datos</li>
+                    </ul>
+                  </div>
+
+                  <button 
+                    className="btn btn-primary btn-prominent-large"
+                    onClick={() => setShowIndependentScorer(true)}
+                    style={{ fontSize: '1.1rem', padding: '12px 24px' }}
+                  >
+                    🥊 Iniciar Lucha Independiente
+                  </button>
+                </div>
+
+                <div className="content-column">
+                  <h3>Información del Marcador</h3>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-800 mb-3">📊 Sistema de Puntos BJJ:</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="font-medium">Montada:</span>
+                        <span className="text-green-600 font-bold">+4 puntos</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Guardia pasada:</span>
+                        <span className="text-green-600 font-bold">+3 puntos</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Rodillazo:</span>
+                        <span className="text-green-600 font-bold">+2 puntos</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Derribo:</span>
+                        <span className="text-green-600 font-bold">+2 puntos</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Ventaja:</span>
+                        <span className="text-yellow-600 font-bold">+1 punto</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Penalización:</span>
+                        <span className="text-red-600 font-bold">-1 punto</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* GESTOR DE LLAVES Y LUCHAS */}
       {showLlaveManager && activeCategoria && (
         <div className="overlay">
@@ -933,6 +1015,11 @@ export default function TorneoDashboardSimple() {
       {/* MARCADOR (FightScorer) */}
       {showScorer && activeCategoria && (
         <FightScorer categoria={activeCategoria} onClose={() => setShowScorer(false)} />
+      )}
+
+      {/* FIGHTSCORER INDEPENDIENTE */}
+      {showIndependentScorer && (
+        <IndependentFightScorer onClose={() => setShowIndependentScorer(false)} />
       )}
 
       {/* MODAL EDICIÓN PARTICIPANTE */}

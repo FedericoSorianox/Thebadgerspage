@@ -242,31 +242,36 @@ def galeria_upload(request):
     print(f"DEBUG: CLOUDINARY_API_KEY: {os.environ.get('CLOUDINARY_API_KEY', 'No configurado')}")
     print(f"DEBUG: CLOUDINARY_API_SECRET: {'Configurado' if os.environ.get('CLOUDINARY_API_SECRET') else 'No configurado'}")
     
-    # Verificar autenticación para todos los métodos
-    if not request.META.get('HTTP_AUTHORIZATION'):
-        return JsonResponse({'error': 'No autenticado'}, status=401)
-    
-    auth = request.META['HTTP_AUTHORIZATION']
-    if not auth.startswith('Basic '):
-        return JsonResponse({'error': 'Tipo de autenticación no soportado'}, status=401)
-    
-    try:
-        userpass = base64.b64decode(auth.split(' ')[1]).decode('utf-8')
-        username, password = userpass.split(':', 1)
-        print(f"DEBUG: Intentando autenticar usuario: {username}")
-        user = authenticate(username=username, password=password)
-        if not user:
-            print(f"DEBUG: Autenticación fallida para usuario: {username}")
-            return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
-        print(f"DEBUG: Usuario autenticado exitosamente: {username}")
+    # En desarrollo local, permitir acceso sin autenticación
+    if settings.DEBUG:
+        print("DEBUG: Modo desarrollo - saltando autenticación")
+        user = None
+    else:
+        # Verificar autenticación para todos los métodos en producción
+        if not request.META.get('HTTP_AUTHORIZATION'):
+            return JsonResponse({'error': 'No autenticado'}, status=401)
+        
+        auth = request.META['HTTP_AUTHORIZATION']
+        if not auth.startswith('Basic '):
+            return JsonResponse({'error': 'Tipo de autenticación no soportado'}, status=401)
+        
+        try:
+            userpass = base64.b64decode(auth.split(' ')[1]).decode('utf-8')
+            username, password = userpass.split(':', 1)
+            print(f"DEBUG: Intentando autenticar usuario: {username}")
+            user = authenticate(username=username, password=password)
+            if not user:
+                print(f"DEBUG: Autenticación fallida para usuario: {username}")
+                return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
+            print(f"DEBUG: Usuario autenticado exitosamente: {username}")
 
-        # Solo admins pueden subir
-        if not (user.is_staff or user.is_superuser):
-            print(f"DEBUG: Usuario sin permisos de admin: {username}")
-            return JsonResponse({'error': 'Permisos insuficientes'}, status=403)
-    except Exception as e:
-        print(f"DEBUG: Error en autenticación: {e}")
-        return JsonResponse({'error': 'Error en autenticación'}, status=401)
+            # Solo admins pueden subir
+            if not (user.is_staff or user.is_superuser):
+                print(f"DEBUG: Usuario sin permisos de admin: {username}")
+                return JsonResponse({'error': 'Permisos insuficientes'}, status=403)
+        except Exception as e:
+            print(f"DEBUG: Error en autenticación: {e}")
+            return JsonResponse({'error': 'Error en autenticación'}, status=401)
     
     # Si es un GET request, solo verificar credenciales y devolver OK
     if request.method == 'GET':
@@ -343,9 +348,10 @@ def galeria_upload(request):
             )
             
             # Subir a Cloudinary
+            username = user.username if user else 'dev'
             result = cloudinary.uploader.upload(
                 archivo,
-                public_id=f"galeria/{nombre}_{user.username}",
+                public_id=f"galeria/{nombre}_{username}",
                 resource_type="auto"
             )
             
@@ -355,7 +361,7 @@ def galeria_upload(request):
             item = GaleriaItem.objects.create(
                 nombre=nombre, 
                 archivo=result['secure_url'],  # Guardar la URL completa de Cloudinary
-                usuario=user
+                usuario=user if user else None
             )
             
             # Para Cloudinary, devolver directamente la URL sin procesar
@@ -369,7 +375,7 @@ def galeria_upload(request):
             if not os.path.exists(media_dir):
                 os.makedirs(media_dir, exist_ok=True)
             
-            item = GaleriaItem.objects.create(nombre=nombre, archivo=archivo, usuario=user)
+            item = GaleriaItem.objects.create(nombre=nombre, archivo=archivo, usuario=user if user else None)
             
             # Para almacenamiento local, construir URL absoluta
             file_url = request.build_absolute_uri(item.archivo.url).replace('http://', 'https://')
