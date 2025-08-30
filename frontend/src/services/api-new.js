@@ -1,14 +1,14 @@
 // Servicios API para el sistema de torneo BJJ (simplificado sin autenticación)
 
-// Base API: FORZADO a desarrollo local mientras trabajamos
-const API_BASE_URL = 'http://127.0.0.1:8000'; // TEMPORAL: Forzar desarrollo local
-// const API_BASE_URL = import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : 'http://127.0.0.1:8000';
+// Base API: Configuración dinámica para desarrollo y producción
+const API_BASE_URL = import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : 'http://127.0.0.1:8000';
 
 const TORNEO_API_URL = `${API_BASE_URL}/api/torneo`;
 
 // Log de configuración para debug
-console.log('[API Config - HARDCODED RENDER]', {
+console.log('[API Config]', {
     hostname: typeof window !== 'undefined' ? window.location.hostname : 'SSR',
+    isProduction: import.meta.env.PROD,
     API_BASE_URL,
     TORNEO_API_URL
 });
@@ -46,6 +46,52 @@ async function fetchWithFallback(endpoint, config) {
 */
 
 
+
+// =================== SERVICIOS DE TORNEOS ===================
+
+export const torneoAPI = {
+    // Obtener todos los torneos
+    getAll: async () => {
+        const response = await fetch(`${TORNEO_API_URL}/torneos/`, createApiConfig());
+        return handleResponse(response);
+    },
+
+    // Obtener un torneo específico
+    getById: async (id) => {
+        const response = await fetch(`${TORNEO_API_URL}/torneos/${id}/`, createApiConfig());
+        return handleResponse(response);
+    },
+
+    // Crear nuevo torneo
+    create: async (torneoData) => {
+        const response = await fetch(`${TORNEO_API_URL}/torneos/`, createApiConfig('POST', torneoData));
+        return handleResponse(response);
+    },
+
+    // Actualizar torneo
+    update: async (id, torneoData) => {
+        const response = await fetch(`${TORNEO_API_URL}/torneos/${id}/`, createApiConfig('PUT', torneoData));
+        return handleResponse(response);
+    },
+
+    // Eliminar torneo
+    delete: async (id) => {
+        const response = await fetch(`${TORNEO_API_URL}/torneos/${id}/`, createApiConfig('DELETE'));
+        return response.ok;
+    },
+
+    // Activar torneo
+    activar: async (id) => {
+        const response = await fetch(`${TORNEO_API_URL}/torneos/${id}/activar/`, createApiConfig('POST'));
+        return handleResponse(response);
+    },
+
+    // Finalizar torneo
+    finalizar: async (id) => {
+        const response = await fetch(`${TORNEO_API_URL}/torneos/${id}/finalizar/`, createApiConfig('POST'));
+        return handleResponse(response);
+    },
+};
 
 // =================== SERVICIOS DE CATEGORÍAS ===================
 
