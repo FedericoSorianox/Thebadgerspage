@@ -41,9 +41,8 @@ def global_options_handler(request):
     
     return response
 
-# Router para las APIs del sistema de torneo
+# Router para las APIs del sistema de gestión BJJ
 router = DefaultRouter()
-router.register(r'torneos', views.TorneoViewSet)
 router.register(r'categorias', views.CategoriaViewSet)
 router.register(r'participantes', views.ParticipanteViewSet)
 router.register(r'llaves', views.LlaveViewSet)
@@ -72,7 +71,7 @@ urlpatterns = [
     path('api/dev/auth/status/', dev_views.dev_auth_status),
     path('api/dev/auth/login/', dev_views.dev_login),
    
-    # APIs del sistema de torneo BJJ
+    # APIs del sistema de gestión BJJ
     path('api/torneo/', include(router.urls)),
     path('api/torneo/luchas-disponibles/', views.luchas_disponibles),
    

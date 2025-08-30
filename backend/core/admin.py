@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import GaleriaItem, Torneo, Categoria, Participante, Llave, Lucha, Atleta, AtletaPunto
+from .models import GaleriaItem, Categoria, Participante, Llave, Lucha, Atleta, AtletaPunto
 
 
 @admin.register(GaleriaItem)
@@ -10,36 +10,14 @@ class GaleriaItemAdmin(admin.ModelAdmin):
     date_hierarchy = 'fecha_subida'
 
 
-@admin.register(Torneo)
-class TorneoAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'fecha_inicio', 'fecha_fin', 'estado', 'usuario_creador', 'fecha_creacion']
-    list_filter = ['estado', 'fecha_inicio', 'fecha_creacion']
-    search_fields = ['nombre', 'descripcion', 'ubicacion']
-    date_hierarchy = 'fecha_inicio'
-    readonly_fields = ['fecha_creacion']
-    
-    fieldsets = (
-        ('Información Básica', {
-            'fields': ('nombre', 'descripcion', 'ubicacion')
-        }),
-        ('Fechas', {
-            'fields': ('fecha_inicio', 'fecha_fin')
-        }),
-        ('Estado', {
-            'fields': ('estado',)
-        }),
-        ('Metadatos', {
-            'fields': ('usuario_creador', 'fecha_creacion'),
-            'classes': ('collapse',)
-        })
-    )
+
 
 
 @admin.register(Categoria)
 class CategoriaAdmin(admin.ModelAdmin):
-    list_display = ['nombre', 'torneo', 'tipo_categoria', 'peso_rango', 'estado', 'participantes_count']
-    list_filter = ['torneo', 'tipo_categoria', 'estado']
-    search_fields = ['nombre', 'torneo__nombre']
+    list_display = ['nombre', 'tipo_categoria', 'peso_rango', 'estado', 'participantes_count']
+    list_filter = ['tipo_categoria', 'estado']
+    search_fields = ['nombre']
     readonly_fields = ['fecha_creacion']
     
     def peso_rango(self, obj):
@@ -59,7 +37,8 @@ class CategoriaAdmin(admin.ModelAdmin):
         
         automaticos = 0
         if obj.tipo_categoria in ['blanca', 'azul', 'violeta', 'marron', 'negro']:
-            queryset = obj.torneo.participantes.filter(
+            from .models import Participante
+            queryset = Participante.objects.filter(
                 activo=True,
                 cinturon=obj.tipo_categoria,
                 categoria_asignada__isnull=True
@@ -77,7 +56,7 @@ class CategoriaAdmin(admin.ModelAdmin):
 @admin.register(Participante)
 class ParticipanteAdmin(admin.ModelAdmin):
     list_display = ['nombre', 'academia', 'categoria_actual_nombre', 'cinturon', 'peso', 'activo', 'atleta']
-    list_filter = ['torneo', 'cinturon', 'activo', 'academia']
+    list_filter = ['cinturon', 'activo', 'academia']
     search_fields = ['nombre', 'academia']
     readonly_fields = ['fecha_inscripcion', 'categoria_sugerida_nombre']
     
@@ -96,7 +75,7 @@ class ParticipanteAdmin(admin.ModelAdmin):
             'fields': ('nombre', 'academia', 'cinturon')
         }),
         ('Información Deportiva', {
-            'fields': ('peso', 'torneo')
+            'fields': ('peso',)
         }),
         ('Categorización', {
             'fields': ('categoria_sugerida_nombre', 'categoria_asignada'),
@@ -117,22 +96,22 @@ class AtletaAdmin(admin.ModelAdmin):
 
 @admin.register(AtletaPunto)
 class AtletaPuntoAdmin(admin.ModelAdmin):
-    list_display = ['atleta', 'puntos', 'origen', 'torneo', 'categoria', 'fecha']
-    list_filter = ['origen', 'torneo', 'categoria']
+    list_display = ['atleta', 'puntos', 'origen', 'categoria', 'fecha']
+    list_filter = ['origen', 'categoria']
     search_fields = ['atleta__nombre', 'detalle']
 
 @admin.register(Llave)
 class LlaveAdmin(admin.ModelAdmin):
     list_display = ['categoria', 'fecha_creacion', 'fecha_modificacion', 'bloqueada']
-    list_filter = ['categoria__torneo', 'bloqueada', 'fecha_creacion']
-    search_fields = ['categoria__nombre', 'categoria__torneo__nombre']
+    list_filter = ['bloqueada', 'fecha_creacion']
+    search_fields = ['categoria__nombre']
     readonly_fields = ['fecha_creacion', 'fecha_modificacion']
 
 
 @admin.register(Lucha)
 class LuchaAdmin(admin.ModelAdmin):
     list_display = ['__str__', 'categoria', 'ronda', 'estado', 'ganador', 'fecha_inicio']
-    list_filter = ['categoria__torneo', 'categoria', 'ronda', 'estado', 'fecha_inicio']
+    list_filter = ['categoria', 'ronda', 'estado', 'fecha_inicio']
     search_fields = ['participante1__nombre', 'participante2__nombre', 'categoria__nombre']
     readonly_fields = ['fecha_creacion']
     

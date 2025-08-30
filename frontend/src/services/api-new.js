@@ -45,113 +45,14 @@ async function fetchWithFallback(endpoint, config) {
 }
 */
 
-// =================== SERVICIOS DE TORNEOS ===================
 
-export const torneoAPI = {
-    // Obtener todos los torneos
-    getAll: async () => {
-        const url = `${API_BASE_URL}/api/torneo/torneos/`;
-        console.log(`[torneoAPI.getAll] 🚀 INICIANDO - URL: ${url}`);
-        console.log(`[torneoAPI.getAll] 📋 Headers:`, createApiConfig().headers);
-        
-        try {
-            console.log(`[torneoAPI.getAll] 📡 Haciendo fetch...`);
-            const response = await fetch(url, createApiConfig());
-            console.log(`[torneoAPI.getAll] 📨 Response status: ${response.status}`);
-            console.log(`[torneoAPI.getAll] 📋 Response headers:`, Object.fromEntries(response.headers.entries()));
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error(`[torneoAPI.getAll] ❌ Error response:`, errorText);
-                throw new Error(`HTTP ${response.status}: ${errorText}`);
-            }
-            
-            console.log(`[torneoAPI.getAll] 🔄 Parseando JSON...`);
-            const data = await response.json();
-            console.log(`[torneoAPI.getAll] 📦 Raw data received:`, data);
-            console.log(`[torneoAPI.getAll] 🔍 Data type:`, typeof data);
-            console.log(`[torneoAPI.getAll] 📊 Data keys:`, Object.keys(data || {}));
-            
-            // La API devuelve {count, results}, pero necesitamos solo los resultados
-            if (data && data.results) {
-                console.log(`[torneoAPI.getAll] ✅ Found results array:`, data.results);
-                console.log(`[torneoAPI.getAll] 📏 Results length:`, data.results.length);
-                return data.results;
-            } else if (Array.isArray(data)) {
-                console.log(`[torneoAPI.getAll] ✅ Data is already array:`, data);
-                return data;
-            } else {
-                console.log(`[torneoAPI.getAll] ⚠️ Unexpected format, returning empty array`);
-                console.log(`[torneoAPI.getAll] 🔍 Actual data structure:`, JSON.stringify(data, null, 2));
-                return [];
-            }
-            
-        } catch (error) {
-            console.error(`[torneoAPI.getAll] 💥 FETCH ERROR:`, error);
-            console.error(`[torneoAPI.getAll] 📍 Error name:`, error.name);
-            console.error(`[torneoAPI.getAll] 📝 Error message:`, error.message);
-            console.error(`[torneoAPI.getAll] 📚 Error stack:`, error.stack);
-            throw error;
-        }
-    },
-
-    // Obtener un torneo específico
-    getById: async (id) => {
-        const url = `${API_BASE_URL}/api/torneo/torneos/${id}/`;
-        console.log(`[torneoAPI.getById] URL: ${url}`);
-        const response = await fetch(url, createApiConfig());
-        return handleResponse(response);
-    },
-
-    // Crear nuevo torneo
-    create: async (torneoData) => {
-        const url = `${API_BASE_URL}/api/torneo/torneos/`;
-        console.log(`[torneoAPI.create] URL: ${url}`);
-        const response = await fetch(url, createApiConfig('POST', torneoData));
-        return handleResponse(response);
-    },
-
-    // Actualizar torneo
-    update: async (id, torneoData) => {
-        const url = `${API_BASE_URL}/api/torneo/torneos/${id}/`;
-        console.log(`[torneoAPI.update] URL: ${url}`);
-        const response = await fetch(url, createApiConfig('PUT', torneoData));
-        return handleResponse(response);
-    },
-
-    // Eliminar torneo
-    delete: async (id) => {
-        const url = `${API_BASE_URL}/api/torneo/torneos/${id}/`;
-        console.log(`[torneoAPI.delete] URL: ${url}`);
-        const response = await fetch(url, createApiConfig('DELETE'));
-        return response.ok;
-    },
-
-    // Activar torneo
-    activar: async (id) => {
-        const url = `${API_BASE_URL}/api/torneo/torneos/${id}/activar/`;
-        console.log(`[torneoAPI.activar] URL: ${url}`);
-        const response = await fetch(url, createApiConfig('POST'));
-        return handleResponse(response);
-    },
-
-    // Finalizar torneo
-    finalizar: async (id) => {
-        const url = `${API_BASE_URL}/api/torneo/torneos/${id}/finalizar/`;
-        console.log(`[torneoAPI.finalizar] URL: ${url}`);
-        const response = await fetch(url, createApiConfig('POST'));
-        return handleResponse(response);
-    },
-};
 
 // =================== SERVICIOS DE CATEGORÍAS ===================
 
 export const categoriaAPI = {
-    // Obtener todas las categorías o filtradas por torneo
-    getAll: async (torneoId = null) => {
-        const url = torneoId 
-            ? `${TORNEO_API_URL}/categorias/?torneo=${torneoId}`
-            : `${TORNEO_API_URL}/categorias/`;
+    // Obtener todas las categorías
+    getAll: async () => {
+        const url = `${TORNEO_API_URL}/categorias/`;
         console.log(`[categoriaAPI.getAll] 📡 URL: ${url}`);
         const response = await fetch(url, createApiConfig());
         
@@ -208,17 +109,14 @@ export const categoriaAPI = {
 // =================== SERVICIOS DE PARTICIPANTES ===================
 
 export const participanteAPI = {
-    // Obtener participantes (por categoría o torneo)
-    getAll: async (categoriaId = null, torneoId = null) => {
+    // Obtener participantes (por categoría)
+    getAll: async (categoriaId = null) => {
         let url = `${TORNEO_API_URL}/participantes/`;
         if (categoriaId) {
             url = `${TORNEO_API_URL}/participantes/?categoria=${categoriaId}`;
-        } else if (torneoId) {
-            url = `${TORNEO_API_URL}/participantes/?torneo=${torneoId}`;
         }
         console.log('[participanteAPI.getAll] URL construida:', url);
         console.log('[participanteAPI.getAll] Categoria ID recibido:', categoriaId);
-        console.log('[participanteAPI.getAll] Torneo ID recibido:', torneoId);
         const response = await fetch(url, createApiConfig());
         console.log('[participanteAPI.getAll] Response status:', response.status);
         const data = await handleResponse(response);

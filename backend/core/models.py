@@ -27,98 +27,11 @@ class GaleriaItem(models.Model):
     def __str__(self):
         return f"{self.nombre} ({self.tipo}) - {self.fecha_subida}"
 
-# Modelos para el sistema de torneo BJJ
-class Torneo(models.Model):
-    nombre = models.CharField(max_length=200)
-    descripcion = models.TextField(blank=True)
-    fecha_inicio = models.DateField()
-    fecha_fin = models.DateField()
-    ubicacion = models.CharField(max_length=200, blank=True)
-    estado = models.CharField(max_length=20, choices=[
-        ('planificacion', 'Planificación'),
-        ('activo', 'Activo'),
-        ('finalizado', 'Finalizado'),
-        ('cancelado', 'Cancelado')
-    ], default='planificacion')
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
-    usuario_creador = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
-    
-    def create_default_categories(self):
-        """Crea las categorías fijas predefinidas para este torneo"""
-        # Definir las categorías fijas
-        categorias_fijas = [
-            # Principiante GI
-            ('Principiante GI - Hasta 70kg', 'principiante_gi', None, 70.0),
-            ('Principiante GI - Hasta 80kg', 'principiante_gi', 70.1, 80.0),
-            ('Principiante GI - Más de 80kg', 'principiante_gi', 80.1, None),
-            
-            # Intermedio GI
-            ('Intermedio GI - Hasta 70kg', 'intermedio_gi', None, 70.0),
-            ('Intermedio GI - Hasta 80kg', 'intermedio_gi', 70.1, 80.0),
-            ('Intermedio GI - Más de 80kg', 'intermedio_gi', 80.1, None),
-            
-            # Avanzado GI
-            ('Avanzado GI - Hasta 70kg', 'avanzado_gi', None, 70.0),
-            ('Avanzado GI - Hasta 80kg', 'avanzado_gi', 70.1, 80.0),
-            ('Avanzado GI - Más de 80kg', 'avanzado_gi', 80.1, None),
-            
-            # Principiante No GI
-            ('Principiante No GI - Hasta 70kg', 'principiante_nogi', None, 70.0),
-            ('Principiante No GI - Hasta 80kg', 'principiante_nogi', 70.1, 80.0),
-            ('Principiante No GI - Más de 80kg', 'principiante_nogi', 80.1, None),
-            
-            # Intermedio No GI
-            ('Intermedio No GI - Hasta 70kg', 'intermedio_nogi', None, 70.0),
-            ('Intermedio No GI - Hasta 80kg', 'intermedio_nogi', 70.1, 80.0),
-            ('Intermedio No GI - Más de 80kg', 'intermedio_nogi', 80.1, None),
-            
-            # Avanzado No GI
-            ('Avanzado No GI - Hasta 70kg', 'avanzado_nogi', None, 70.0),
-            ('Avanzado No GI - Hasta 80kg', 'avanzado_nogi', 70.1, 80.0),
-            ('Avanzado No GI - Más de 80kg', 'avanzado_nogi', 80.1, None),
-            
-            # Por cinturones
-            ('Blanca - Hasta 70kg', 'blanca', None, 70.0),
-            ('Blanca - Hasta 80kg', 'blanca', 70.1, 80.0),
-            ('Blanca - Más de 80kg', 'blanca', 80.1, None),
-            
-            ('Azul - Hasta 70kg', 'azul', None, 70.0),
-            ('Azul - Hasta 80kg', 'azul', 70.1, 80.0),
-            ('Azul - Más de 80kg', 'azul', 80.1, None),
-            
-            ('Violeta - Hasta 70kg', 'violeta', None, 70.0),
-            ('Violeta - Hasta 80kg', 'violeta', 70.1, 80.0),
-            ('Violeta - Más de 80kg', 'violeta', 80.1, None),
-            
-            ('Marrón - Hasta 70kg', 'marron', None, 70.0),
-            ('Marrón - Hasta 80kg', 'marron', 70.1, 80.0),
-            ('Marrón - Más de 80kg', 'marron', 80.1, None),
-            
-            ('Negro - Hasta 70kg', 'negro', None, 70.0),
-            ('Negro - Hasta 80kg', 'negro', 70.1, 80.0),
-            ('Negro - Más de 80kg', 'negro', 80.1, None),
-        ]
-        
-        for nombre, tipo_categoria, peso_min, peso_max in categorias_fijas:
-            Categoria.objects.get_or_create(
-                torneo=self,
-                nombre=nombre,
-                defaults={
-                    'tipo_categoria': tipo_categoria,
-                    'peso_minimo': peso_min,
-                    'peso_maximo': peso_max,
-                }
-            )
-
-    def __str__(self):
-        return f"{self.nombre} - {self.fecha_inicio}"
-
-    class Meta:
-        ordering = ['-fecha_creacion']
+# Modelos para el sistema de gestión BJJ (sin torneos)
 
 
 class Atleta(models.Model):
-    """Persona única a través de todos los torneos.
+    """Persona única en el sistema de gestión BJJ.
     Sirve para no volver a cargar los mismos datos y para acumular puntos.
     """
     nombre = models.CharField(max_length=200)
@@ -165,7 +78,6 @@ class Categoria(models.Model):
         ('negro', 'Negro'),
     ]
     
-    torneo = models.ForeignKey(Torneo, on_delete=models.CASCADE, related_name='categorias')
     nombre = models.CharField(max_length=200)
     tipo_categoria = models.CharField(max_length=30, choices=TIPO_CATEGORIA_CHOICES, default='blanca')
     peso_minimo = models.FloatField(help_text="Peso mínimo en kg", null=True, blank=True)
@@ -179,7 +91,7 @@ class Categoria(models.Model):
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.nombre} - {self.torneo.nombre}"
+        return f"{self.nombre}"
 
     class Meta:
         ordering = ['tipo_categoria', 'peso_minimo']
@@ -199,7 +111,6 @@ class Participante(models.Model):
     cinturon = models.CharField(max_length=20, choices=CINTURON_CHOICES)
     academia = models.CharField(max_length=200, default='The Badgers')
     peso = models.FloatField(help_text="Peso en kg", null=True, blank=True)  # Opcional para que se asigne automáticamente
-    torneo = models.ForeignKey(Torneo, on_delete=models.CASCADE, related_name='participantes', null=True)
     fecha_inscripcion = models.DateTimeField(auto_now_add=True)
     activo = models.BooleanField(default=True)
     
@@ -224,7 +135,7 @@ class Participante(models.Model):
         nombre_categoria = f"{self.get_cinturon_display()}{sufijo_peso}"
         
         try:
-            return self.torneo.categorias.get(nombre=nombre_categoria)
+            return Categoria.objects.get(nombre=nombre_categoria)
         except Categoria.DoesNotExist:
             return None
 
@@ -846,7 +757,6 @@ class AtletaPunto(models.Model):
     ]
 
     atleta = models.ForeignKey(Atleta, on_delete=models.CASCADE, related_name='puntos')
-    torneo = models.ForeignKey(Torneo, on_delete=models.CASCADE, related_name='puntos', null=True, blank=True)
     categoria = models.ForeignKey(Categoria, on_delete=models.SET_NULL, related_name='puntos', null=True, blank=True)
     origen = models.CharField(max_length=20, choices=ORIGEN_CHOICES)
     puntos = models.IntegerField(default=0)

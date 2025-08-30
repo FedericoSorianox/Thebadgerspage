@@ -1,42 +1,18 @@
 from rest_framework import serializers
-from .models import Torneo, Categoria, Participante, Llave, Lucha, Atleta, AtletaPunto
+from .models import Categoria, Participante, Llave, Lucha, Atleta, AtletaPunto
 
 
-class TorneoSerializer(serializers.ModelSerializer):
-    usuario_creador = serializers.StringRelatedField(read_only=True)
-    
-    class Meta:
-        model = Torneo
-        fields = ['id', 'nombre', 'descripcion', 'fecha_inicio', 'fecha_fin', 'ubicacion', 
-                 'estado', 'fecha_creacion', 'usuario_creador']
-        read_only_fields = ['fecha_creacion', 'usuario_creador']
-    
-    def create(self, validated_data):
-        """Crear torneo y sus categorías fijas automáticamente"""
-        print(f"DEBUG TorneoSerializer.create: validated_data={validated_data}")
-        try:
-            torneo = super().create(validated_data)
-            print(f"DEBUG TorneoSerializer.create: Torneo creado: {torneo}")
-            
-            print("DEBUG TorneoSerializer.create: Creando categorías por defecto...")
-            torneo.create_default_categories()
-            print(f"DEBUG TorneoSerializer.create: Categorías creadas para torneo {torneo.id}")
-            
-            return torneo
-        except Exception as e:
-            print(f"DEBUG TorneoSerializer.create: ERROR: {e}")
-            raise
+
 
 
 class CategoriaSerializer(serializers.ModelSerializer):
-    torneo_nombre = serializers.CharField(source='torneo.nombre', read_only=True)
     participantes_count = serializers.SerializerMethodField()
     llaves_count = serializers.SerializerMethodField()
     luchas_pendientes = serializers.SerializerMethodField()
     
     class Meta:
         model = Categoria
-        fields = ['id', 'torneo', 'torneo_nombre', 'nombre', 'tipo_categoria', 
+        fields = ['id', 'nombre', 'tipo_categoria', 
                  'peso_minimo', 'peso_maximo', 'estado', 'fecha_creacion', 
                  'participantes_count', 'llaves_count', 'luchas_pendientes']
         read_only_fields = ['fecha_creacion', 'nombre', 'tipo_categoria', 'peso_minimo', 'peso_maximo']
@@ -58,7 +34,8 @@ class CategoriaSerializer(serializers.ModelSerializer):
             }
             cinturon = cinturon_map.get(obj.tipo_categoria)
             if cinturon:
-                queryset = obj.torneo.participantes.filter(
+                from .models import Participante
+                queryset = Participante.objects.filter(
                     activo=True,
                     cinturon=cinturon,
                     categoria_asignada__isnull=True  # Solo los no asignados manualmente
@@ -97,7 +74,7 @@ class ParticipanteSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Participante
-        fields = ['id', 'nombre', 'cinturon', 'academia', 'peso', 'torneo', 'atleta',
+        fields = ['id', 'nombre', 'cinturon', 'academia', 'peso', 'atleta',
                  'categoria_asignada', 'categoria_sugerida_nombre', 'categoria_actual_nombre',
                  'fecha_inscripcion', 'activo']
         read_only_fields = ['fecha_inscripcion']
@@ -146,7 +123,8 @@ class LlaveSerializer(serializers.ModelSerializer):
                 }
                 cinturon = cinturon_map.get(categoria.tipo_categoria)
                 if cinturon:
-                    qs = categoria.torneo.participantes.filter(
+                    from .models import Participante
+                    qs = Participante.objects.filter(
                         activo=True,
                         cinturon=cinturon,
                         categoria_asignada__isnull=True
@@ -232,10 +210,9 @@ class AtletaSerializer(serializers.ModelSerializer):
 
 class AtletaPuntoSerializer(serializers.ModelSerializer):
     atleta_nombre = serializers.CharField(source='atleta.nombre', read_only=True)
-    torneo_nombre = serializers.CharField(source='torneo.nombre', read_only=True)
     categoria_nombre = serializers.CharField(source='categoria.nombre', read_only=True)
 
     class Meta:
         model = AtletaPunto
-        fields = ['id', 'atleta', 'atleta_nombre', 'torneo', 'torneo_nombre', 'categoria', 'categoria_nombre', 'origen', 'puntos', 'detalle', 'fecha']
+        fields = ['id', 'atleta', 'atleta_nombre', 'categoria', 'categoria_nombre', 'origen', 'puntos', 'detalle', 'fecha']
         read_only_fields = ['fecha']

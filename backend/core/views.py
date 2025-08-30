@@ -17,9 +17,9 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, AllowAny
 from django.shortcuts import get_object_or_404
-from .models import Torneo, Categoria, Participante, Llave, Lucha, Atleta, AtletaPunto
+from .models import Categoria, Participante, Llave, Lucha, Atleta, AtletaPunto
 from .serializers import (
-    TorneoSerializer, CategoriaSerializer, ParticipanteSerializer,
+    CategoriaSerializer, ParticipanteSerializer,
     LlaveSerializer, LuchaSerializer, LuchaSimpleSerializer,
     AtletaSerializer, AtletaPuntoSerializer
 )
@@ -602,45 +602,7 @@ def productos_proxy(request):
 
 # ============= API VIEWS PARA SISTEMA DE TORNEO BJJ =============
 
-class TorneoViewSet(viewsets.ModelViewSet):
-    """ViewSet para gestionar torneos"""
-    queryset = Torneo.objects.all()
-    serializer_class = TorneoSerializer
-    permission_classes = [AllowAny]  # TEMPORAL: Permitir acceso completo para debug
-    
-    def perform_create(self, serializer):
-        """Asignar el usuario actual como creador del torneo"""
-        print(f"DEBUG TorneoViewSet.perform_create: usuario={self.request.user}, autenticado={self.request.user.is_authenticated}")
-        
-        # Si no hay usuario autenticado, usar el primer admin
-        if self.request.user.is_authenticated:
-            print(f"DEBUG TorneoViewSet.perform_create: Usuario autenticado encontrado: {self.request.user}")
-            serializer.save(usuario_creador=self.request.user)
-        else:
-            from django.contrib.auth.models import User
-            admin_user = User.objects.filter(is_staff=True).first()
-            print(f"DEBUG TorneoViewSet.perform_create: Usuario no autenticado, buscando admin: {admin_user}")
-            if admin_user:
-                serializer.save(usuario_creador=admin_user)
-            else:
-                print("DEBUG TorneoViewSet.perform_create: No hay admin, creando sin usuario")
-                serializer.save()  # Sin usuario_creador si no hay admins
-    
-    @action(detail=True, methods=['post'])
-    def activar(self, request, pk=None):
-        """Activar un torneo"""
-        torneo = self.get_object()
-        torneo.estado = 'activo'
-        torneo.save()
-        return Response({'status': 'Torneo activado'})
-    
-    @action(detail=True, methods=['post'])
-    def finalizar(self, request, pk=None):
-        """Finalizar un torneo"""
-        torneo = self.get_object()
-        torneo.estado = 'finalizado'
-        torneo.save()
-        return Response({'status': 'Torneo finalizado'})
+
 
 class CategoriaViewSet(viewsets.ModelViewSet):
     """ViewSet para gestionar categorías"""
@@ -649,12 +611,8 @@ class CategoriaViewSet(viewsets.ModelViewSet):
     permission_classes = [AllowAny]  # TEMPORAL: Permitir acceso completo para debug
     
     def get_queryset(self):
-        """Filtrar categorías por torneo si se especifica"""
-        queryset = Categoria.objects.all()
-        torneo_id = self.request.query_params.get('torneo', None)
-        if torneo_id is not None:
-            queryset = queryset.filter(torneo_id=torneo_id)
-        return queryset
+        """Obtener todas las categorías"""
+        return Categoria.objects.all()
     
     @action(detail=True, methods=['post'])
     def cerrar_inscripciones(self, request, pk=None):
@@ -674,7 +632,6 @@ class ParticipanteViewSet(viewsets.ModelViewSet):
         """Filtrar participantes por categoría si se especifica"""
         queryset = Participante.objects.filter(activo=True)
         categoria_id = self.request.query_params.get('categoria', None)
-        torneo_id = self.request.query_params.get('torneo', None)
         
         if categoria_id is not None:
             try:
@@ -718,12 +675,8 @@ class ParticipanteViewSet(viewsets.ModelViewSet):
             except Categoria.DoesNotExist:
                 queryset = queryset.none()
         
-        elif torneo_id is not None:
-            queryset = queryset.filter(torneo_id=torneo_id)
-        
         # Log para debugging
         print(f"[ParticipanteViewSet] Categoria ID: {categoria_id}")
-        print(f"[ParticipanteViewSet] Torneo ID: {torneo_id}")
         print(f"[ParticipanteViewSet] Queryset count: {queryset.count()}")
         
         return queryset
@@ -786,12 +739,9 @@ class LlaveViewSet(viewsets.ModelViewSet):
         """Filtrar llaves por categoría si se especifica"""
         queryset = Llave.objects.all()
         categoria_id = self.request.query_params.get('categoria', None)
-        torneo_id = self.request.query_params.get('torneo', None)
         
         if categoria_id is not None:
             queryset = queryset.filter(categoria_id=categoria_id)
-        elif torneo_id is not None:
-            queryset = queryset.filter(categoria__torneo_id=torneo_id)
             
         return queryset
     
@@ -1080,12 +1030,9 @@ class LuchaViewSet(viewsets.ModelViewSet):
         """Filtrar luchas por categoría si se especifica"""
         queryset = Lucha.objects.all()
         categoria_id = self.request.query_params.get('categoria', None)
-        torneo_id = self.request.query_params.get('torneo', None)
         
         if categoria_id is not None:
             queryset = queryset.filter(categoria_id=categoria_id)
-        elif torneo_id is not None:
-            queryset = queryset.filter(categoria__torneo_id=torneo_id)
             
         return queryset.order_by('ronda', 'posicion_llave', '-fecha_creacion')
     
