@@ -24,10 +24,14 @@ from .serializers import (
     AtletaSerializer, AtletaPuntoSerializer
 )
 from datetime import datetime
-from rest_framework.authtoken.models import Token
+# Importación segura de Token para evitar warnings del linter
+try:
+    from rest_framework.authtoken.models import Token
+except ImportError:
+    # Fallback para casos donde el módulo no esté disponible
+    Token = None
 from .permissions import IsAdminOrReadOnly
 from django.views.decorators.http import require_http_methods
-from django.utils.decorators import method_decorator
 from django.utils import timezone
 
 # Decorador para añadir headers CORS manualmente
@@ -1232,6 +1236,13 @@ def luchas_disponibles(request):
 @permission_classes([AllowAny])
 def login_api(request):
     """Endpoint para login con token authentication"""
+    # Verificar que Token esté disponible
+    if Token is None:
+        return Response(
+            {'error': 'Token authentication not available'}, 
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+    
     username = request.data.get('username')
     password = request.data.get('password')
     
@@ -1266,6 +1277,13 @@ def login_api(request):
 @permission_classes([IsAuthenticated])
 def logout_api(request):
     """Endpoint para logout"""
+    # Verificar que Token esté disponible
+    if Token is None:
+        return Response(
+            {'error': 'Token authentication not available'}, 
+            status=status.HTTP_503_SERVICE_UNAVAILABLE
+        )
+    
     try:
         # Eliminar el token del usuario
         Token.objects.filter(user=request.user).delete()
