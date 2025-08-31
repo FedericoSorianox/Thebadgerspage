@@ -326,6 +326,75 @@ export const luchaAPI = {
     },
 };
 
+// =================== SERVICIOS DE SOCIOS ===================
+
+export const sociosAPI = {
+    // Obtener headers de autenticación para la API de socios
+    getAuthHeaders: () => {
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        
+        // Obtener credenciales del localStorage
+        const username = localStorage.getItem('badgers_user');
+        const password = localStorage.getItem('badgers_pass');
+        
+        if (username && password) {
+            headers['Authorization'] = `Basic ${btoa(`${username}:${password}`)}`;
+        }
+        
+        return headers;
+    },
+
+    // Obtener todos los socios
+    getAll: async (search = '') => {
+        const url = search 
+            ? `https://thebadgersadmin.onrender.com/api/socios/?search=${encodeURIComponent(search)}`
+            : 'https://thebadgersadmin.onrender.com/api/socios/';
+        
+        const config = {
+            method: 'GET',
+            headers: sociosAPI.getAuthHeaders(),
+        };
+        
+        const response = await fetch(url, config);
+        return handleResponse(response);
+    },
+
+    // Obtener un socio específico por ID
+    getById: async (id) => {
+        const config = {
+            method: 'GET',
+            headers: sociosAPI.getAuthHeaders(),
+        };
+        
+        const response = await fetch(`https://thebadgersadmin.onrender.com/api/socios/${id}/`, config);
+        return handleResponse(response);
+    },
+
+    // Buscar socios por nombre
+    search: async (query) => {
+        const config = {
+            method: 'GET',
+            headers: sociosAPI.getAuthHeaders(),
+        };
+        
+        const response = await fetch(`https://thebadgersadmin.onrender.com/api/socios/?search=${encodeURIComponent(query)}`, config);
+        return handleResponse(response);
+    },
+
+    // Obtener socios activos
+    getActivos: async () => {
+        const config = {
+            method: 'GET',
+            headers: sociosAPI.getAuthHeaders(),
+        };
+        
+        const response = await fetch('https://thebadgersadmin.onrender.com/api/socios/?activo=true', config);
+        return handleResponse(response);
+    },
+};
+
 // Exportación por defecto para compatibilidad
 const API = {
     torneoAPI,
@@ -333,6 +402,7 @@ const API = {
     participanteAPI,
     llaveAPI,
     luchaAPI,
+    sociosAPI,
 };
 
 export default API;

@@ -100,11 +100,25 @@
   transform: translateY(0);
 }
 
-/* Estilos para el temporizador */
+/* Estilos para el temporizador - MÁS GRANDE */
 .timer-display {
   font-family: 'Courier New', monospace;
   font-weight: bold;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  font-size: 4rem !important;
+  line-height: 1;
+}
+
+/* Temporizador aún más grande en pantalla completa */
+.fight-scorer-fullscreen .timer-display {
+  font-size: 6rem !important;
+}
+
+/* Responsive para pantallas medianas */
+@media (min-width: 1024px) and (max-width: 1919px) {
+  .timer-display {
+    font-size: 5rem !important;
+  }
 }
 
 /* Estilos para la información del combate */
@@ -129,6 +143,10 @@
     padding: 8px 12px;
     font-size: 12px;
   }
+  
+  .timer-display {
+    font-size: 3rem !important;
+  }
 }
 
 /* Estilos para el modo oscuro en pantalla completa */
@@ -149,4 +167,24 @@
 .score-counter:hover .text-2xl {
   transform: scale(1.1);
   transition: transform 0.2s ease;
+}
+
+/* Estilos para los botones de puntuación */
+.fight-scorer button[class*="bg-blue-600"],
+.fight-scorer button[class*="bg-red-600"] {
+  font-weight: bold;
+  font-size: 1.1rem;
+  min-height: 48px;
+}
+
+/* Estilos para los botones de resta */
+.fight-scorer button[class*="bg-gray-300"] {
+  font-weight: bold;
+  font-size: 1.1rem;
+  min-height: 48px;
+}
+
+/* Animación suave para cambios de color */
+.fight-scorer > div {
+  transition: background-color 0.3s ease, color 0.3s ease;
 }

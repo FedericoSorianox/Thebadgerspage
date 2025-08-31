@@ -11,6 +11,8 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null,
   const [showFinishModal, setShowFinishModal] = useState(false);
   const [selectedWinnerId, setSelectedWinnerId] = useState(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
+  // Nuevo estado para alternar colores de participantes
+  const [colorSwap, setColorSwap] = useState(false);
 
   const current = luchas[currentIdx] || null;
 
@@ -287,6 +289,14 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null,
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Botón para alternar colores */}
+            <button 
+              className="text-white hover:text-gray-300 transition-colors text-lg p-2 rounded hover:bg-gray-800" 
+              onClick={() => setColorSwap(!colorSwap)}
+              title="Cambiar colores de participantes"
+            >
+              🎨
+            </button>
             {customFighters && (
               <button 
                 className="text-white hover:text-gray-300 transition-colors text-2xl p-2 rounded hover:bg-gray-800 fullscreen-toggle" 
@@ -302,10 +312,10 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null,
 
         {/* SECCIÓN CENTRAL - COMPETIDORES */}
         <div className="flex-1 flex">
-          {/* COMPETIDOR 1 - FONDO BLANCO */}
-          <div className="flex-1 bg-white text-black p-6 flex flex-col">
+          {/* COMPETIDOR 1 - COLOR DINÁMICO */}
+          <div className={`flex-1 ${colorSwap ? 'bg-red-900 text-white' : 'bg-white text-black'} p-6 flex flex-col`}>
             <div className="text-center mb-4">
-              <div className="text-sm text-gray-600 mb-1">Academia</div>
+              <div className={`text-sm ${colorSwap ? 'text-red-200' : 'text-gray-600'} mb-1`}>Academia</div>
               <div className="text-lg font-semibold">The Badgers</div>
             </div>
             
@@ -334,29 +344,35 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null,
               </div>
             </div>
 
-            {/* BOTONES DE CONTROL */}
-            <div className="grid grid-cols-3 gap-2 text-sm">
-              <button onClick={() => addDelta('montadas_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white rounded p-2">Montada +4</button>
-              <button onClick={() => addDelta('guardas_pasadas_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white rounded p-2">Guardia +3</button>
-              <button onClick={() => addDelta('rodillazos_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white rounded p-2">Rodilla +2</button>
-              <button onClick={() => addDelta('derribos_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white rounded p-2">Derribo +2</button>
-              <button onClick={() => addDelta('ventajas_p1', +1)} className="bg-yellow-500 hover:bg-yellow-600 text-black rounded p-2">Ventaja +1</button>
-              <button onClick={() => addDelta('penalizaciones_p1', +1)} className="bg-red-600 hover:bg-red-700 text-white rounded p-2">Penal. +1</button>
-              
-              {/* BOTONES DE RESTA */}
-              <button onClick={() => addDelta('montadas_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Montada -1</button>
-              <button onClick={() => addDelta('guardas_pasadas_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Guardia -1</button>
-              <button onClick={() => addDelta('rodillazos_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Rodilla -1</button>
-              <button onClick={() => addDelta('derribos_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Derribo -1</button>
-              <button onClick={() => addDelta('ventajas_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Ventaja -1</button>
-              <button onClick={() => addDelta('penalizaciones_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Penal. -1</button>
+            {/* BOTONES DE CONTROL - LADO IZQUIERDO (SUMAR) */}
+            <div className="flex gap-2 text-sm mb-2">
+              <button onClick={() => addDelta('montadas_p1', +1)} className={`${colorSwap ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded p-2 flex-1`}>+4</button>
+              <button onClick={() => addDelta('guardas_pasadas_p1', +1)} className={`${colorSwap ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded p-2 flex-1`}>+3</button>
+              <button onClick={() => addDelta('rodillazos_p1', +1)} className={`${colorSwap ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded p-2 flex-1`}>+2</button>
+              <button onClick={() => addDelta('derribos_p1', +1)} className={`${colorSwap ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded p-2 flex-1`}>+2</button>
+            </div>
+            <div className="flex gap-2 text-sm mb-4">
+              <button onClick={() => addDelta('ventajas_p1', +1)} className="bg-yellow-500 hover:bg-yellow-600 text-black rounded p-2 flex-1">Ventaja +1</button>
+              <button onClick={() => addDelta('penalizaciones_p1', +1)} className="bg-red-600 hover:bg-red-700 text-white rounded p-2 flex-1">Penalización +1</button>
+            </div>
+
+            {/* BOTONES DE CONTROL - LADO DERECHO (RESTAR) */}
+            <div className="flex gap-2 text-sm mb-2">
+              <button onClick={() => addDelta('montadas_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">-4</button>
+              <button onClick={() => addDelta('guardas_pasadas_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">-3</button>
+              <button onClick={() => addDelta('rodillazos_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">-2</button>
+              <button onClick={() => addDelta('derribos_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">-2</button>
+            </div>
+            <div className="flex gap-2 text-sm">
+              <button onClick={() => addDelta('ventajas_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">Ventaja -1</button>
+              <button onClick={() => addDelta('penalizaciones_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">Penalización -1</button>
             </div>
           </div>
 
-          {/* COMPETIDOR 2 - FONDO AZUL OSCURO */}
-          <div className="flex-1 bg-blue-900 text-white p-6 flex flex-col">
+          {/* COMPETIDOR 2 - COLOR DINÁMICO */}
+          <div className={`flex-1 ${colorSwap ? 'bg-blue-900 text-white' : 'bg-blue-900 text-white'} p-6 flex flex-col`}>
             <div className="text-center mb-4">
-              <div className="text-sm text-blue-200 mb-1">Academia</div>
+              <div className={`text-sm ${colorSwap ? 'text-blue-200' : 'text-blue-200'} mb-1`}>Academia</div>
               <div className="text-lg font-semibold">The Badgers</div>
             </div>
             
@@ -385,22 +401,28 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null,
               </div>
             </div>
 
-            {/* BOTONES DE CONTROL */}
-            <div className="grid grid-cols-3 gap-2 text-sm">
-              <button onClick={() => addDelta('montadas_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white rounded p-2">Montada +4</button>
-              <button onClick={() => addDelta('guardas_pasadas_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white rounded p-2">Guardia +3</button>
-              <button onClick={() => addDelta('rodillazos_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white rounded p-2">Rodilla +2</button>
-              <button onClick={() => addDelta('derribos_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white rounded p-2">Derribo +2</button>
-              <button onClick={() => addDelta('ventajas_p2', +1)} className="bg-yellow-500 hover:bg-yellow-600 text-black rounded p-2">Ventaja +1</button>
-              <button onClick={() => addDelta('penalizaciones_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white rounded p-2">Penal. +1</button>
-              
-              {/* BOTONES DE RESTA */}
-              <button onClick={() => addDelta('montadas_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Montada -1</button>
-              <button onClick={() => addDelta('guardas_pasadas_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Guardia -1</button>
-              <button onClick={() => addDelta('rodillazos_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Rodilla -1</button>
-              <button onClick={() => addDelta('derribos_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Derribo -1</button>
-              <button onClick={() => addDelta('ventajas_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Ventaja -1</button>
-              <button onClick={() => addDelta('penalizaciones_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Penal. -1</button>
+            {/* BOTONES DE CONTROL - LADO IZQUIERDO (SUMAR) */}
+            <div className="flex gap-2 text-sm mb-2">
+              <button onClick={() => addDelta('montadas_p2', +1)} className={`${colorSwap ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'} text-white rounded p-2 flex-1`}>+4</button>
+              <button onClick={() => addDelta('guardas_pasadas_p2', +1)} className={`${colorSwap ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'} text-white rounded p-2 flex-1`}>+3</button>
+              <button onClick={() => addDelta('rodillazos_p2', +1)} className={`${colorSwap ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'} text-white rounded p-2 flex-1`}>+2</button>
+              <button onClick={() => addDelta('derribos_p2', +1)} className={`${colorSwap ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'} text-white rounded p-2 flex-1`}>+2</button>
+            </div>
+            <div className="flex gap-2 text-sm mb-4">
+              <button onClick={() => addDelta('ventajas_p2', +1)} className="bg-yellow-500 hover:bg-yellow-600 text-black rounded p-2 flex-1">Ventaja +1</button>
+              <button onClick={() => addDelta('penalizaciones_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white rounded p-2 flex-1">Penalización +1</button>
+            </div>
+
+            {/* BOTONES DE CONTROL - LADO DERECHO (RESTAR) */}
+            <div className="flex gap-2 text-sm mb-2">
+              <button onClick={() => addDelta('montadas_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">-4</button>
+              <button onClick={() => addDelta('guardas_pasadas_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">-3</button>
+              <button onClick={() => addDelta('rodillazos_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">-2</button>
+              <button onClick={() => addDelta('derribos_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">-2</button>
+            </div>
+            <div className="flex gap-2 text-sm">
+              <button onClick={() => addDelta('ventajas_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">Ventaja -1</button>
+              <button onClick={() => addDelta('penalizaciones_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">Penalización -1</button>
             </div>
           </div>
         </div>
@@ -427,7 +449,7 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null,
 
           {/* LADO DERECHO - TEMPORIZADOR Y CONTROLES */}
           <div className="text-center">
-            <div className="text-4xl font-bold text-green-400 mb-2">
+            <div className="text-6xl font-bold text-green-400 mb-2 timer-display">
               {fmt(current.duracion_segundos - (current.tiempo_transcurrido || 0))}
             </div>
             <div className="flex gap-2">
