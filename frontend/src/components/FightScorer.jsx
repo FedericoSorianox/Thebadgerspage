@@ -97,6 +97,36 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null,
     }
   };
 
+  // Función para manejar ventajas independientes
+  const handleVentajas = (participante, delta) => {
+    if (participante === 1) {
+      setLuchas(prev => prev.map((l, i) => i === currentIdx ? { 
+        ...l, 
+        ventajas_p1: Math.max(0, (l.ventajas_p1 || 0) + delta) 
+      } : l));
+    } else {
+      setLuchas(prev => prev.map((l, i) => i === currentIdx ? { 
+        ...l, 
+        ventajas_p2: Math.max(0, (l.ventajas_p2 || 0) + delta) 
+      } : l));
+    }
+  };
+
+  // Función para manejar penalizaciones independientes
+  const handlePenalizaciones = (participante, delta) => {
+    if (participante === 1) {
+      setLuchas(prev => prev.map((l, i) => i === currentIdx ? { 
+        ...l, 
+        penalizaciones_p1: Math.max(0, (l.penalizaciones_p1 || 0) + delta) 
+      } : l));
+    } else {
+      setLuchas(prev => prev.map((l, i) => i === currentIdx ? { 
+        ...l, 
+        penalizaciones_p2: Math.max(0, (l.penalizaciones_p2 || 0) + delta) 
+      } : l));
+    }
+  };
+
   const calcPoints = useMemo(() => {
     if (!current) return { p1: 0, p2: 0 };
     
@@ -363,19 +393,71 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null,
               </div>
             </div>
 
-            {/* BOTONES DE CONTROL - SOLO +2 Y -2 */}
-            <div className="flex gap-4 justify-center">
+            {/* BOTONES DE CONTROL - PUNTOS */}
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <button 
+                onClick={() => customFighters ? handlePuntos(1, +4) : addDelta('montadas_p1', +1)} 
+                className={`${colorSwap ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'} text-white rounded-lg p-3 text-lg font-bold`}
+              >
+                +4
+              </button>
+              <button 
+                onClick={() => customFighters ? handlePuntos(1, +3) : addDelta('guardas_pasadas_p1', +1)} 
+                className={`${colorSwap ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'} text-white rounded-lg p-3 text-lg font-bold`}
+              >
+                +3
+              </button>
               <button 
                 onClick={() => customFighters ? handlePuntos(1, +2) : addDelta('derribos_p1', +1)} 
-                className={`${colorSwap ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'} text-white rounded-lg p-4 text-xl font-bold min-w-[80px]`}
+                className={`${colorSwap ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'} text-white rounded-lg p-3 text-lg font-bold`}
               >
                 +2
               </button>
               <button 
                 onClick={() => customFighters ? handlePuntos(1, -2) : addDelta('derribos_p1', -1)} 
-                className="bg-gray-300 hover:bg-gray-400 text-black rounded-lg p-4 text-xl font-bold min-w-[80px]"
+                className="bg-gray-300 hover:bg-gray-400 text-black rounded-lg p-3 text-lg font-bold"
               >
                 -2
+              </button>
+              <button 
+                onClick={() => customFighters ? handlePuntos(1, -3) : addDelta('guardas_pasadas_p1', -1)} 
+                className="bg-gray-300 hover:bg-gray-400 text-black rounded-lg p-3 text-lg font-bold"
+              >
+                -3
+              </button>
+              <button 
+                onClick={() => customFighters ? handlePuntos(1, -4) : addDelta('montadas_p1', -1)} 
+                className="bg-gray-300 hover:bg-gray-400 text-black rounded-lg p-3 text-lg font-bold"
+              >
+                -4
+              </button>
+            </div>
+
+            {/* BOTONES DE CONTROL - VENTAJAS Y PENALIZACIONES */}
+            <div className="grid grid-cols-2 gap-2">
+              <button 
+                onClick={() => customFighters ? handleVentajas(1, +1) : addDelta('ventajas_p1', +1)} 
+                className="bg-yellow-500 hover:bg-yellow-600 text-black rounded-lg p-3 text-sm font-bold"
+              >
+                Ventaja +1
+              </button>
+              <button 
+                onClick={() => customFighters ? handleVentajas(1, -1) : addDelta('ventajas_p1', -1)} 
+                className="bg-gray-300 hover:bg-gray-400 text-black rounded-lg p-3 text-sm font-bold"
+              >
+                Ventaja -1
+              </button>
+              <button 
+                onClick={() => customFighters ? handlePenalizaciones(1, +1) : addDelta('penalizaciones_p1', +1)} 
+                className="bg-red-600 hover:bg-red-700 text-white rounded-lg p-3 text-sm font-bold"
+              >
+                Penal. +1
+              </button>
+              <button 
+                onClick={() => customFighters ? handlePenalizaciones(1, -1) : addDelta('penalizaciones_p1', -1)} 
+                className="bg-gray-300 hover:bg-gray-400 text-black rounded-lg p-3 text-sm font-bold"
+              >
+                Penal. -1
               </button>
             </div>
           </div>
@@ -412,19 +494,71 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null,
               </div>
             </div>
 
-            {/* BOTONES DE CONTROL - SOLO +2 Y -2 */}
-            <div className="flex gap-4 justify-center">
+            {/* BOTONES DE CONTROL - PUNTOS */}
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <button 
+                onClick={() => customFighters ? handlePuntos(2, +4) : addDelta('montadas_p2', +1)} 
+                className={`${colorSwap ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-lg p-3 text-lg font-bold`}
+              >
+                +4
+              </button>
+              <button 
+                onClick={() => customFighters ? handlePuntos(2, +3) : addDelta('guardas_pasadas_p2', +1)} 
+                className={`${colorSwap ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-lg p-3 text-lg font-bold`}
+              >
+                +3
+              </button>
               <button 
                 onClick={() => customFighters ? handlePuntos(2, +2) : addDelta('derribos_p2', +1)} 
-                className={`${colorSwap ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-lg p-4 text-xl font-bold min-w-[80px]`}
+                className={`${colorSwap ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-lg p-3 text-lg font-bold`}
               >
                 +2
               </button>
               <button 
                 onClick={() => customFighters ? handlePuntos(2, -2) : addDelta('derribos_p2', -1)} 
-                className="bg-gray-300 hover:bg-gray-400 text-black rounded-lg p-4 text-xl font-bold min-w-[80px]"
+                className="bg-gray-300 hover:bg-gray-400 text-black rounded-lg p-3 text-lg font-bold"
               >
                 -2
+              </button>
+              <button 
+                onClick={() => customFighters ? handlePuntos(2, -3) : addDelta('guardas_pasadas_p2', -1)} 
+                className="bg-gray-300 hover:bg-gray-400 text-black rounded-lg p-3 text-lg font-bold"
+              >
+                -3
+              </button>
+              <button 
+                onClick={() => customFighters ? handlePuntos(2, -4) : addDelta('montadas_p2', -1)} 
+                className="bg-gray-300 hover:bg-gray-400 text-black rounded-lg p-3 text-lg font-bold"
+              >
+                -4
+              </button>
+            </div>
+
+            {/* BOTONES DE CONTROL - VENTAJAS Y PENALIZACIONES */}
+            <div className="grid grid-cols-2 gap-2">
+              <button 
+                onClick={() => customFighters ? handleVentajas(2, +1) : addDelta('ventajas_p2', +1)} 
+                className="bg-yellow-500 hover:bg-yellow-600 text-black rounded-lg p-3 text-sm font-bold"
+              >
+                Ventaja +1
+              </button>
+              <button 
+                onClick={() => customFighters ? handleVentajas(2, -1) : addDelta('ventajas_p2', -1)} 
+                className="bg-gray-300 hover:bg-gray-400 text-black rounded-lg p-3 text-sm font-bold"
+              >
+                Ventaja -1
+              </button>
+              <button 
+                onClick={() => customFighters ? handlePenalizaciones(2, +1) : addDelta('penalizaciones_p2', +1)} 
+                className="bg-red-600 hover:bg-red-700 text-white rounded-lg p-3 text-sm font-bold"
+              >
+                Penal. +1
+              </button>
+              <button 
+                onClick={() => customFighters ? handlePenalizaciones(2, -1) : addDelta('penalizaciones_p2', -1)} 
+                className="bg-gray-300 hover:bg-gray-400 text-black rounded-lg p-3 text-sm font-bold"
+              >
+                Penal. -1
               </button>
             </div>
           </div>
