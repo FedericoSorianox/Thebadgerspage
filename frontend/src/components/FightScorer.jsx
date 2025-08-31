@@ -11,8 +11,11 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null,
   const [showFinishModal, setShowFinishModal] = useState(false);
   const [selectedWinnerId, setSelectedWinnerId] = useState(null);
   const [isFullScreen, setIsFullScreen] = useState(false);
-  // Nuevo estado para alternar colores de participantes
+  // Estado para alternar colores de participantes (rojo/azul por defecto)
   const [colorSwap, setColorSwap] = useState(false);
+  // Estados para puntos independientes
+  const [puntosP1, setPuntosP1] = useState(0);
+  const [puntosP2, setPuntosP2] = useState(0);
 
   const current = luchas[currentIdx] || null;
 
@@ -85,12 +88,28 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null,
     }
   };
 
+  // Función para manejar puntos independientes
+  const handlePuntos = (participante, delta) => {
+    if (participante === 1) {
+      setPuntosP1(prev => Math.max(0, prev + delta));
+    } else {
+      setPuntosP2(prev => Math.max(0, prev + delta));
+    }
+  };
+
   const calcPoints = useMemo(() => {
     if (!current) return { p1: 0, p2: 0 };
+    
+    // Si es una lucha independiente, usar los puntos independientes
+    if (customFighters) {
+      return { p1: puntosP1, p2: puntosP2 };
+    }
+    
+    // Para luchas de torneo, usar el cálculo original
     const p1 = (current.montadas_p1 || 0) * 4 + (current.guardas_pasadas_p1 || 0) * 3 + ((current.rodillazos_p1 || 0) + (current.derribos_p1 || 0)) * 2;
     const p2 = (current.montadas_p2 || 0) * 4 + (current.guardas_pasadas_p2 || 0) * 3 + ((current.rodillazos_p2 || 0) + (current.derribos_p2 || 0)) * 2;
     return { p1, p2 };
-  }, [current]);
+  }, [current, puntosP1, puntosP2, customFighters]);
 
   const addDelta = async (field, delta) => {
     if (!current) return;
@@ -289,13 +308,13 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null,
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {/* Botón para alternar colores */}
+            {/* Botón para intercambiar colores */}
             <button 
               className="text-white hover:text-gray-300 transition-colors text-lg p-2 rounded hover:bg-gray-800" 
               onClick={() => setColorSwap(!colorSwap)}
-              title="Cambiar colores de participantes"
+              title="Intercambiar colores de participantes"
             >
-              🎨
+              🔄
             </button>
             {customFighters && (
               <button 
@@ -312,10 +331,10 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null,
 
         {/* SECCIÓN CENTRAL - COMPETIDORES */}
         <div className="flex-1 flex">
-          {/* COMPETIDOR 1 - COLOR DINÁMICO */}
-          <div className={`flex-1 ${colorSwap ? 'bg-red-900 text-white' : 'bg-white text-black'} p-6 flex flex-col`}>
+          {/* COMPETIDOR 1 - COLOR DINÁMICO (Rojo por defecto, Azul si se intercambia) */}
+          <div className={`flex-1 ${colorSwap ? 'bg-blue-900 text-white' : 'bg-red-900 text-white'} p-6 flex flex-col`}>
             <div className="text-center mb-4">
-              <div className={`text-sm ${colorSwap ? 'text-red-200' : 'text-gray-600'} mb-1`}>Academia</div>
+              <div className={`text-sm ${colorSwap ? 'text-blue-200' : 'text-red-200'} mb-1`}>Academia</div>
               <div className="text-lg font-semibold">The Badgers</div>
             </div>
             
@@ -344,35 +363,27 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null,
               </div>
             </div>
 
-            {/* BOTONES DE CONTROL - LADO IZQUIERDO (SUMAR) */}
-            <div className="flex gap-2 text-sm mb-2">
-              <button onClick={() => addDelta('montadas_p1', +1)} className={`${colorSwap ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded p-2 flex-1`}>+4</button>
-              <button onClick={() => addDelta('guardas_pasadas_p1', +1)} className={`${colorSwap ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded p-2 flex-1`}>+3</button>
-              <button onClick={() => addDelta('rodillazos_p1', +1)} className={`${colorSwap ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded p-2 flex-1`}>+2</button>
-              <button onClick={() => addDelta('derribos_p1', +1)} className={`${colorSwap ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded p-2 flex-1`}>+2</button>
-            </div>
-            <div className="flex gap-2 text-sm mb-4">
-              <button onClick={() => addDelta('ventajas_p1', +1)} className="bg-yellow-500 hover:bg-yellow-600 text-black rounded p-2 flex-1">Ventaja +1</button>
-              <button onClick={() => addDelta('penalizaciones_p1', +1)} className="bg-red-600 hover:bg-red-700 text-white rounded p-2 flex-1">Penalización +1</button>
-            </div>
-
-            {/* BOTONES DE CONTROL - LADO DERECHO (RESTAR) */}
-            <div className="flex gap-2 text-sm mb-2">
-              <button onClick={() => addDelta('montadas_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">-4</button>
-              <button onClick={() => addDelta('guardas_pasadas_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">-3</button>
-              <button onClick={() => addDelta('rodillazos_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">-2</button>
-              <button onClick={() => addDelta('derribos_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">-2</button>
-            </div>
-            <div className="flex gap-2 text-sm">
-              <button onClick={() => addDelta('ventajas_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">Ventaja -1</button>
-              <button onClick={() => addDelta('penalizaciones_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">Penalización -1</button>
+            {/* BOTONES DE CONTROL - SOLO +2 Y -2 */}
+            <div className="flex gap-4 justify-center">
+              <button 
+                onClick={() => customFighters ? handlePuntos(1, +2) : addDelta('derribos_p1', +1)} 
+                className={`${colorSwap ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'} text-white rounded-lg p-4 text-xl font-bold min-w-[80px]`}
+              >
+                +2
+              </button>
+              <button 
+                onClick={() => customFighters ? handlePuntos(1, -2) : addDelta('derribos_p1', -1)} 
+                className="bg-gray-300 hover:bg-gray-400 text-black rounded-lg p-4 text-xl font-bold min-w-[80px]"
+              >
+                -2
+              </button>
             </div>
           </div>
 
-          {/* COMPETIDOR 2 - COLOR DINÁMICO */}
-          <div className={`flex-1 ${colorSwap ? 'bg-blue-900 text-white' : 'bg-blue-900 text-white'} p-6 flex flex-col`}>
+          {/* COMPETIDOR 2 - COLOR DINÁMICO (Azul por defecto, Rojo si se intercambia) */}
+          <div className={`flex-1 ${colorSwap ? 'bg-red-900 text-white' : 'bg-blue-900 text-white'} p-6 flex flex-col`}>
             <div className="text-center mb-4">
-              <div className={`text-sm ${colorSwap ? 'text-blue-200' : 'text-blue-200'} mb-1`}>Academia</div>
+              <div className={`text-sm ${colorSwap ? 'text-red-200' : 'text-blue-200'} mb-1`}>Academia</div>
               <div className="text-lg font-semibold">The Badgers</div>
             </div>
             
@@ -383,7 +394,7 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null,
             {/* CONTADORES DE PUNTUACIÓN */}
             <div className="flex justify-center gap-4 mb-6">
               {/* PUNTOS */}
-              <div className="bg-green-600 text-white rounded-lg p-4 text-center min-w-[80px]">
+              <div className="bg-gray-600 text-white rounded-lg p-4 text-center min-w-[80px]">
                 <div className="text-2xl font-bold">{calcPoints.p2}</div>
                 <div className="text-xs">PUNTOS</div>
               </div>
@@ -401,28 +412,20 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null,
               </div>
             </div>
 
-            {/* BOTONES DE CONTROL - LADO IZQUIERDO (SUMAR) */}
-            <div className="flex gap-2 text-sm mb-2">
-              <button onClick={() => addDelta('montadas_p2', +1)} className={`${colorSwap ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'} text-white rounded p-2 flex-1`}>+4</button>
-              <button onClick={() => addDelta('guardas_pasadas_p2', +1)} className={`${colorSwap ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'} text-white rounded p-2 flex-1`}>+3</button>
-              <button onClick={() => addDelta('rodillazos_p2', +1)} className={`${colorSwap ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'} text-white rounded p-2 flex-1`}>+2</button>
-              <button onClick={() => addDelta('derribos_p2', +1)} className={`${colorSwap ? 'bg-blue-600 hover:bg-blue-700' : 'bg-red-600 hover:bg-red-700'} text-white rounded p-2 flex-1`}>+2</button>
-            </div>
-            <div className="flex gap-2 text-sm mb-4">
-              <button onClick={() => addDelta('ventajas_p2', +1)} className="bg-yellow-500 hover:bg-yellow-600 text-black rounded p-2 flex-1">Ventaja +1</button>
-              <button onClick={() => addDelta('penalizaciones_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white rounded p-2 flex-1">Penalización +1</button>
-            </div>
-
-            {/* BOTONES DE CONTROL - LADO DERECHO (RESTAR) */}
-            <div className="flex gap-2 text-sm mb-2">
-              <button onClick={() => addDelta('montadas_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">-4</button>
-              <button onClick={() => addDelta('guardas_pasadas_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">-3</button>
-              <button onClick={() => addDelta('rodillazos_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">-2</button>
-              <button onClick={() => addDelta('derribos_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">-2</button>
-            </div>
-            <div className="flex gap-2 text-sm">
-              <button onClick={() => addDelta('ventajas_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">Ventaja -1</button>
-              <button onClick={() => addDelta('penalizaciones_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2 flex-1">Penalización -1</button>
+            {/* BOTONES DE CONTROL - SOLO +2 Y -2 */}
+            <div className="flex gap-4 justify-center">
+              <button 
+                onClick={() => customFighters ? handlePuntos(2, +2) : addDelta('derribos_p2', +1)} 
+                className={`${colorSwap ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'} text-white rounded-lg p-4 text-xl font-bold min-w-[80px]`}
+              >
+                +2
+              </button>
+              <button 
+                onClick={() => customFighters ? handlePuntos(2, -2) : addDelta('derribos_p2', -1)} 
+                className="bg-gray-300 hover:bg-gray-400 text-black rounded-lg p-4 text-xl font-bold min-w-[80px]"
+              >
+                -2
+              </button>
             </div>
           </div>
         </div>
