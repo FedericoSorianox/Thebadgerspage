@@ -7,7 +7,6 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null,
   const [currentIdx, setCurrentIdx] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  // Eliminamos bloqueos por “working” para tener UI siempre reactiva
   const [timerId, setTimerId] = useState(null);
   const [showFinishModal, setShowFinishModal] = useState(false);
   const [selectedWinnerId, setSelectedWinnerId] = useState(null);
@@ -276,98 +275,208 @@ export default function FightScorer({ categoria, onClose, initialLuchaId = null,
 
   return (
     <div className={`fixed inset-0 ${customFighters ? 'bg-black' : 'bg-black/70'} ${customFighters ? '' : 'flex items-center justify-center'} z-50 ${isFullScreen ? 'fight-scorer-fullscreen' : ''}`}>
-      <div className={`bg-white ${customFighters ? 'w-full h-full' : 'rounded-2xl w-full max-w-3xl flex items-center justify-center'} shadow-2xl flex flex-col fight-scorer-content`}>
-        <div className={`flex justify-between items-center ${customFighters ? 'p-8' : 'p-4'} ${customFighters ? 'mb-8' : 'mb-3'}`}>
-          <h3 className={`font-bold ${customFighters ? 'text-4xl' : 'text-xl'}`}>Marcador — {categoria.nombre}</h3>
+      <div className={`${customFighters ? 'w-full h-full' : 'rounded-2xl w-full max-w-6xl'} shadow-2xl flex flex-col fight-scorer-content bg-white`}>
+        
+        {/* CABECERA NEGRA CON LOGO (como IBJJF) */}
+        <div className="bg-black text-white p-4 flex justify-between items-center">
+          <div className="flex items-center gap-4">
+            <div className="text-2xl font-bold">🥋</div>
+            <div className="text-center">
+              <div className="text-xl font-bold">THE BADGERS</div>
+              <div className="text-sm opacity-80">BRAZILIAN JIU-JITSU ACADEMY</div>
+            </div>
+          </div>
           <div className="flex items-center gap-2">
-            {/* Botón de pantalla completa solo para luchas independientes */}
             {customFighters && (
               <button 
-                className={`text-gray-500 hover:text-gray-700 transition-colors ${customFighters ? 'text-2xl' : 'text-xl'} p-2 rounded hover:bg-gray-100 fullscreen-toggle`} 
+                className="text-white hover:text-gray-300 transition-colors text-2xl p-2 rounded hover:bg-gray-800 fullscreen-toggle" 
                 onClick={toggleFullScreen}
                 title={isFullScreen ? "Salir de pantalla completa" : "Pantalla completa"}
               >
                 {isFullScreen ? '⛶' : '⛶'}
               </button>
             )}
-            <button className={`text-gray-500 hover:text-gray-700 transition-colors ${customFighters ? 'text-4xl' : 'text-xl'}`} onClick={onClose}>×</button>
+            <button className="text-white hover:text-gray-300 transition-colors text-3xl" onClick={onClose}>×</button>
           </div>
         </div>
 
-        <div className={`flex-1 ${customFighters ? 'px-8 flex flex-col' : 'px-4'}`}>
-          {error && (
-            <div className="mb-3 text-red-600" style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap: 8 }}>
-              <span>{error}</span>
-              <button className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded" onClick={load}>Reintentar</button>
+        {/* SECCIÓN CENTRAL - COMPETIDORES */}
+        <div className="flex-1 flex">
+          {/* COMPETIDOR 1 - FONDO BLANCO */}
+          <div className="flex-1 bg-white text-black p-6 flex flex-col">
+            <div className="text-center mb-4">
+              <div className="text-sm text-gray-600 mb-1">Academia</div>
+              <div className="text-lg font-semibold">The Badgers</div>
             </div>
-          )}
+            
+            <div className="text-center mb-6">
+              <div className="text-3xl font-bold">{current.participante1_nombre || current.participante1?.nombre || 'Competidor 1'}</div>
+            </div>
 
-          <div className={`text-center ${customFighters ? 'mb-8 flex-shrink-0' : 'mb-3'}`}>
-            <div className={`font-extrabold timer ${customFighters ? 'text-6xl' : 'text-2xl'}`}>{fmt(current.duracion_segundos - (current.tiempo_transcurrido || 0))}</div>
-            <div className="mt-2">
-              <button onClick={toggleTimer} className={`px-4 py-2 rounded text-white ${customFighters ? 'text-lg' : ''} ${current.estado === 'en_progreso' ? 'bg-black hover:bg-black' : 'bg-black hover:bg-green-700'}`}>
-                {current.estado === 'en_progreso' ? 'Pausar' : 'Iniciar'}
+            {/* CONTADORES DE PUNTUACIÓN */}
+            <div className="flex justify-center gap-4 mb-6">
+              {/* PUNTOS */}
+              <div className="bg-gray-600 text-white rounded-lg p-4 text-center min-w-[80px]">
+                <div className="text-2xl font-bold">{calcPoints.p1}</div>
+                <div className="text-xs">PUNTOS</div>
+              </div>
+              
+              {/* VENTAJAS */}
+              <div className="bg-yellow-500 text-black rounded-lg p-4 text-center min-w-[80px]">
+                <div className="text-2xl font-bold">{current.ventajas_p1 || 0}</div>
+                <div className="text-xs">VENTAJAS</div>
+              </div>
+              
+              {/* PENALIZACIONES */}
+              <div className="bg-red-600 text-white rounded-lg p-4 text-center min-w-[80px]">
+                <div className="text-2xl font-bold">{current.penalizaciones_p1 || 0}</div>
+                <div className="text-xs">PENALIZ.</div>
+              </div>
+            </div>
+
+            {/* BOTONES DE CONTROL */}
+            <div className="grid grid-cols-3 gap-2 text-sm">
+              <button onClick={() => addDelta('montadas_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white rounded p-2">Montada +4</button>
+              <button onClick={() => addDelta('guardas_pasadas_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white rounded p-2">Guardia +3</button>
+              <button onClick={() => addDelta('rodillazos_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white rounded p-2">Rodilla +2</button>
+              <button onClick={() => addDelta('derribos_p1', +1)} className="bg-blue-600 hover:bg-blue-700 text-white rounded p-2">Derribo +2</button>
+              <button onClick={() => addDelta('ventajas_p1', +1)} className="bg-yellow-500 hover:bg-yellow-600 text-black rounded p-2">Ventaja +1</button>
+              <button onClick={() => addDelta('penalizaciones_p1', +1)} className="bg-red-600 hover:bg-red-700 text-white rounded p-2">Penal. +1</button>
+              
+              {/* BOTONES DE RESTA */}
+              <button onClick={() => addDelta('montadas_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Montada -1</button>
+              <button onClick={() => addDelta('guardas_pasadas_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Guardia -1</button>
+              <button onClick={() => addDelta('rodillazos_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Rodilla -1</button>
+              <button onClick={() => addDelta('derribos_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Derribo -1</button>
+              <button onClick={() => addDelta('ventajas_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Ventaja -1</button>
+              <button onClick={() => addDelta('penalizaciones_p1', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Penal. -1</button>
+            </div>
+          </div>
+
+          {/* COMPETIDOR 2 - FONDO AZUL OSCURO */}
+          <div className="flex-1 bg-blue-900 text-white p-6 flex flex-col">
+            <div className="text-center mb-4">
+              <div className="text-sm text-blue-200 mb-1">Academia</div>
+              <div className="text-lg font-semibold">The Badgers</div>
+            </div>
+            
+            <div className="text-center mb-6">
+              <div className="text-3xl font-bold">{current.participante2_nombre || current.participante2?.nombre || 'Competidor 2'}</div>
+            </div>
+
+            {/* CONTADORES DE PUNTUACIÓN */}
+            <div className="flex justify-center gap-4 mb-6">
+              {/* PUNTOS */}
+              <div className="bg-green-600 text-white rounded-lg p-4 text-center min-w-[80px]">
+                <div className="text-2xl font-bold">{calcPoints.p2}</div>
+                <div className="text-xs">PUNTOS</div>
+              </div>
+              
+              {/* VENTAJAS */}
+              <div className="bg-yellow-500 text-black rounded-lg p-4 text-center min-w-[80px]">
+                <div className="text-2xl font-bold">{current.ventajas_p2 || 0}</div>
+                <div className="text-xs">VENTAJAS</div>
+              </div>
+              
+              {/* PENALIZACIONES */}
+              <div className="bg-red-600 text-white rounded-lg p-4 text-center min-w-[80px]">
+                <div className="text-2xl font-bold">{current.penalizaciones_p2 || 0}</div>
+                <div className="text-xs">PENALIZ.</div>
+              </div>
+            </div>
+
+            {/* BOTONES DE CONTROL */}
+            <div className="grid grid-cols-3 gap-2 text-sm">
+              <button onClick={() => addDelta('montadas_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white rounded p-2">Montada +4</button>
+              <button onClick={() => addDelta('guardas_pasadas_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white rounded p-2">Guardia +3</button>
+              <button onClick={() => addDelta('rodillazos_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white rounded p-2">Rodilla +2</button>
+              <button onClick={() => addDelta('derribos_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white rounded p-2">Derribo +2</button>
+              <button onClick={() => addDelta('ventajas_p2', +1)} className="bg-yellow-500 hover:bg-yellow-600 text-black rounded p-2">Ventaja +1</button>
+              <button onClick={() => addDelta('penalizaciones_p2', +1)} className="bg-red-600 hover:bg-red-700 text-white rounded p-2">Penal. +1</button>
+              
+              {/* BOTONES DE RESTA */}
+              <button onClick={() => addDelta('montadas_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Montada -1</button>
+              <button onClick={() => addDelta('guardas_pasadas_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Guardia -1</button>
+              <button onClick={() => addDelta('rodillazos_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Rodilla -1</button>
+              <button onClick={() => addDelta('derribos_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Derribo -1</button>
+              <button onClick={() => addDelta('ventajas_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Ventaja -1</button>
+              <button onClick={() => addDelta('penalizaciones_p2', -1)} className="bg-gray-300 hover:bg-gray-400 text-black rounded p-2">Penal. -1</button>
+            </div>
+          </div>
+        </div>
+
+        {/* SECCIÓN INFERIOR - INFORMACIÓN DEL COMBATE Y TEMPORIZADOR */}
+        <div className="bg-black text-white p-6 flex justify-between items-center">
+          {/* LADO IZQUIERDO - INFORMACIÓN DEL COMBATE */}
+          <div className="flex gap-8">
+            <div className="text-center">
+              <div className="text-sm text-gray-400">MAT</div>
+              <div className="text-2xl font-bold text-yellow-400">1</div>
+            </div>
+            <div className="text-center">
+              <div className="text-sm text-gray-400">FIGHT</div>
+              <div className="text-2xl font-bold text-yellow-400">{currentIdx + 1}</div>
+            </div>
+          </div>
+
+          {/* CENTRO - CATEGORÍA Y ETAPA */}
+          <div className="text-center">
+            <div className="text-lg font-semibold mb-1">{categoria.nombre}</div>
+            <div className="text-2xl font-bold text-yellow-400">EN PROGRESO</div>
+          </div>
+
+          {/* LADO DERECHO - TEMPORIZADOR Y CONTROLES */}
+          <div className="text-center">
+            <div className="text-4xl font-bold text-green-400 mb-2">
+              {fmt(current.duracion_segundos - (current.tiempo_transcurrido || 0))}
+            </div>
+            <div className="flex gap-2">
+              <button 
+                onClick={toggleTimer} 
+                className={`px-4 py-2 rounded font-semibold ${
+                  current.estado === 'en_progreso' 
+                    ? 'bg-red-600 hover:bg-red-700' 
+                    : 'bg-green-600 hover:bg-green-700'
+                }`}
+              >
+                {current.estado === 'en_progreso' ? 'PAUSAR' : 'INICIAR'}
+              </button>
+              <button 
+                onClick={finalize} 
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded font-semibold"
+              >
+                FINALIZAR
               </button>
             </div>
           </div>
-
-          <div className={`grid grid-cols-2 gap-4 ${customFighters ? 'gap-8 flex-1' : ''}`}>
-          {/* P1 */}
-          <div className={`border rounded-xl ${customFighters ? 'p-8 flex flex-col' : 'p-3'}`}>
-            <div className={`text-center font-semibold mb-2 fighter-name ${customFighters ? 'text-2xl' : 'text-base'} ${customFighters ? 'flex-shrink-0' : ''}`}>{current.participante1_nombre || current.participante1?.nombre || 'P1'}</div>
-            <div className={`text-center font-black text-blue-600 mb-3 score ${customFighters ? 'text-7xl' : 'text-3xl'} ${customFighters ? 'flex-shrink-0' : ''}`}>{calcPoints.p1}</div>
-            <div className={`grid grid-cols-3 ${customFighters ? 'gap-4 flex-1' : 'gap-2'}`}>
-              <button onClick={() => addDelta('montadas_p1', +1)} className={`bg-blue-600 hover:bg-blue-700 text-white rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>+4</button>
-              <button onClick={() => addDelta('guardas_pasadas_p1', +1)} className={`bg-blue-600 hover:bg-blue-700 text-white rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>+3</button>
-              <button onClick={() => addDelta('rodillazos_p1', +1)} className={`bg-blue-600 hover:bg-blue-700 text-white rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>+2</button>
-              <button onClick={() => addDelta('derribos_p1', +1)} className={`bg-blue-600 hover:bg-blue-700 text-white rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>+2</button>
-              <button onClick={() => addDelta('ventajas_p1', +1)} className={`bg-green-200 hover:bg-yellow-600 text-white rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>Vent +1</button>
-              <button onClick={() => addDelta('penalizaciones_p1', +1)} className={`bg-red-200 hover:bg-red-200 text-white rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>Pen -1</button>
-              <button onClick={() => addDelta('montadas_p1', -1)} className={`bg-gray-200 rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>-4</button>
-              <button onClick={() => addDelta('guardas_pasadas_p1', -1)} className={`bg-gray-200 rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>-3</button>
-              <button onClick={() => addDelta('rodillazos_p1', -1)} className={`bg-gray-200 rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>-2</button>
-              <button onClick={() => addDelta('derribos_p1', -1)} className={`bg-gray-200 rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>-2</button>
-              <button onClick={() => addDelta('ventajas_p1', -1)} className={`bg-green-200 rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>Vent -1</button>
-              <button onClick={() => addDelta('penalizaciones_p1', -1)} className={`bg-red-200 rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>Pen +1</button>
-            </div>
-          </div>
-
-          {/* P2 */}
-          <div className={`border rounded-xl ${customFighters ? 'p-8 flex flex-col' : 'p-3'}`}>
-            <div className={`text-center font-semibold mb-2 fighter-name ${customFighters ? 'text-2xl' : 'text-base'} ${customFighters ? 'flex-shrink-0' : ''}`}>{current.participante2_nombre || current.participante2?.nombre || 'P2'}</div>
-            <div className={`text-center font-black text-red-600 mb-3 score ${customFighters ? 'text-7xl' : 'text-3xl'} ${customFighters ? 'flex-shrink-0' : ''}`}>{calcPoints.p2}</div>
-            <div className={`grid grid-cols-3 ${customFighters ? 'gap-4 flex-1' : 'gap-2'}`}>
-              <button onClick={() => addDelta('montadas_p2', +1)} className={`bg-red-600 hover:bg-red-700 text-white rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>+4</button>
-              <button onClick={() => addDelta('guardas_pasadas_p2', +1)} className={`bg-red-600 hover:bg-red-700 text-white rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>+3</button>
-              <button onClick={() => addDelta('rodillazos_p2', +1)} className={`bg-red-600 hover:bg-red-700 text-white rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>+2</button>
-              <button onClick={() => addDelta('derribos_p2', +1)} className={`bg-red-600 hover:bg-red-700 text-white rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>+2</button>
-              <button onClick={() => addDelta('ventajas_p2', +1)} className={`bg-green-200 hover:bg-yellow-600 text-white rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>Vent +1</button>
-              <button onClick={() => addDelta('penalizaciones_p2', +1)} className={`bg-red-200 hover:bg-red-200 text-white rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>Pen -1</button>
-              <button onClick={() => addDelta('montadas_p2', -1)} className={`bg-gray-200 rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>-4</button>
-              <button onClick={() => addDelta('guardas_pasadas_p2', -1)} className={`bg-gray-200 rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>-3</button>
-              <button onClick={() => addDelta('rodillazos_p2', -1)} className={`bg-gray-200 rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>-2</button>
-              <button onClick={() => addDelta('derribos_p2', -1)} className={`bg-gray-200 rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>-2</button>
-              <button onClick={() => addDelta('ventajas_p2', -1)} className={`bg-green-200 rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>Vent -1</button>
-              <button onClick={() => addDelta('penalizaciones_p2', -1)} className={`bg-red-200 rounded ${customFighters ? 'px-4 py-3 text-lg' : 'px-3 py-2'}`}>Pen +1</button>
-            </div>
-          </div>
         </div>
-      </div>
 
-      <div className={`flex justify-between items-center ${customFighters ? 'p-8' : 'p-4'} ${customFighters ? 'mt-8' : 'mt-4'}`}>
-          {/* Solo mostrar botones de navegación si no es una lucha independiente */}
-          {!customFighters && (
+        {/* BOTONES DE NAVEGACIÓN (solo si no es lucha independiente) */}
+        {!customFighters && (
+          <div className="bg-gray-100 p-4 flex justify-between items-center">
             <div className="flex gap-2">
-              <button disabled={currentIdx <= 0} onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))} className="px-3 py-2 bg-gray-200 rounded">◀︎ Anterior</button>
-              <button disabled={currentIdx >= luchas.length - 1} onClick={() => setCurrentIdx(Math.min(luchas.length - 1, currentIdx + 1))} className="px-3 py-2 bg-gray-200 rounded">Siguiente ▶︎</button>
+              <button 
+                disabled={currentIdx <= 0} 
+                onClick={() => setCurrentIdx(Math.max(0, currentIdx - 1))} 
+                className="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded disabled:opacity-50"
+              >
+                ◀︎ Anterior
+              </button>
+              <button 
+                disabled={currentIdx >= luchas.length - 1} 
+                onClick={() => setCurrentIdx(Math.min(luchas.length - 1, currentIdx + 1))} 
+                className="px-4 py-2 bg-gray-300 hover:bg-gray-400 rounded disabled:opacity-50"
+              >
+                Siguiente ▶︎
+              </button>
             </div>
-          )}
-          <div className="flex gap-2">
-            <button onClick={finalize} className={`bg-indigo-600 hover:bg-indigo-700 text-white rounded font-semibold ${customFighters ? 'px-6 py-3 text-lg' : 'px-4 py-2'}`}>Finalizar</button>
-            <button onClick={onClose} className={`bg-gray-600 hover:bg-gray-700 text-white rounded ${customFighters ? 'px-6 py-3 text-lg' : 'px-4 py-2'}`}>Cerrar</button>
+            <div className="text-sm text-gray-600">
+              Lucha {currentIdx + 1} de {luchas.length}
+            </div>
           </div>
-        </div>
+        )}
       </div>
+
       {/* Modal seleccionar ganador */}
       {showFinishModal && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">

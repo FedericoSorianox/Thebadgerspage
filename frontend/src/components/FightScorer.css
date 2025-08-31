@@ -1,4 +1,4 @@
-/* Estilos específicos para el FightScorer */
+/* Estilos específicos para el FightScorer - Diseño tipo IBJJF */
 
 /* Modo pantalla completa real */
 .fight-scorer-fullscreen {
@@ -32,7 +32,7 @@
 }
 
 .fullscreen-toggle:hover {
-  background-color: rgba(0, 0, 0, 0.1) !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
   transform: scale(1.1);
 }
 
@@ -55,4 +55,98 @@
   .fight-scorer-fullscreen .fighter-name {
     font-size: 3rem !important;
   }
+}
+
+/* Estilos específicos para los contadores de puntuación */
+.score-counter {
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  min-width: 80px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.score-counter:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Animación para cambios de puntuación */
+@keyframes scoreUpdate {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.score-update {
+  animation: scoreUpdate 0.3s ease-in-out;
+}
+
+/* Estilos para los botones de control */
+.control-button {
+  transition: all 0.2s ease;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+.control-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.control-button:active {
+  transform: translateY(0);
+}
+
+/* Estilos para el temporizador */
+.timer-display {
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Estilos para la información del combate */
+.fight-info {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 8px 16px;
+}
+
+/* Responsive design para pantallas pequeñas */
+@media (max-width: 768px) {
+  .fight-scorer-content {
+    font-size: 14px;
+  }
+  
+  .score-counter {
+    min-width: 60px;
+    padding: 12px;
+  }
+  
+  .control-button {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
+
+/* Estilos para el modo oscuro en pantalla completa */
+.fight-scorer-fullscreen .bg-black {
+  background-color: #000 !important;
+}
+
+.fight-scorer-fullscreen .bg-blue-900 {
+  background-color: #1e3a8a !important;
+}
+
+/* Mejoras en la legibilidad */
+.fight-scorer-content {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Efectos de hover mejorados para los contadores */
+.score-counter:hover .text-2xl {
+  transform: scale(1.1);
+  transition: transform 0.2s ease;
 }
