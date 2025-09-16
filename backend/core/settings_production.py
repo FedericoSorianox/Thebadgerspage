@@ -10,9 +10,10 @@ DEBUG = False
 ALLOWED_HOSTS = [
     'thebadgerspage.onrender.com',
     'www.thebadgerspage.onrender.com',
+    'the-badgers.com',
+    'www.the-badgers.com',
     '127.0.0.1',
     'localhost',
-    "the-badgers.com",
 ]
 
 # Configuración de base de datos PostgreSQL para producción
@@ -114,7 +115,25 @@ if not SECRET_KEY:
 # Configuración de archivos estáticos
 STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'frontend_build'),
+]
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+# Configuración de WhiteNoise para servir archivos estáticos
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = True
+WHITENOISE_MIMETYPES = {
+    '.js': 'application/javascript',
+    '.css': 'text/css',
+    '.html': 'text/html',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.gif': 'image/gif',
+    '.svg': 'image/svg+xml',
+    '.ico': 'image/x-icon',
+}
 
 # Configuración de Cloudinary
 CLOUDINARY_STORAGE = {

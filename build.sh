@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🚀 Iniciando build..."
+echo "🚀 Iniciando build de producción..."
 
 # Verificar si estamos en el directorio correcto
 if [ ! -d "frontend" ]; then
@@ -11,30 +11,42 @@ if [ ! -d "frontend" ]; then
     exit 1
 fi
 
+# Crear directorio para el build del frontend si no existe
+mkdir -p backend/frontend_build
+
 # Build del frontend
 echo "📦 Instalando dependencias del frontend..."
 cd frontend
-npm install
+npm ci --only=production
 
 echo "🔨 Compilando frontend..."
 npm run build
 
 echo "📁 Copiando build al backend..."
-cp -r dist/* ../backend/frontend_build/
+if [ -d "dist" ]; then
+    cp -r dist/* ../backend/frontend_build/
+    echo "✅ Frontend copiado correctamente"
+else
+    echo "❌ Error: Directorio dist no encontrado"
+    exit 1
+fi
 
 # Volver al directorio raíz
 cd ..
 
-# Si es un Web Service, instalar dependencias de Python
+# Instalar dependencias de Python
 if [ -f "backend/requirements.txt" ]; then
     echo "🐍 Instalando dependencias de Python..."
     cd backend
-    pip install -r requirements.txt
-    
+
+    # Instalar dependencias sin cache para reducir tamaño
+    pip install --no-cache-dir -r requirements.txt
+
     echo "📂 Recolectando archivos estáticos..."
-    python manage.py collectstatic --noinput
-    
+    python manage.py collectstatic --noinput --clear
+
     echo "✅ Build completado exitosamente!"
 else
-    echo "✅ Build del frontend completado!"
+    echo "❌ Error: requirements.txt no encontrado"
+    exit 1
 fi 
