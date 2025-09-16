@@ -8,7 +8,6 @@ import { ProtectedComponent } from './components/AuthComponents.jsx';
 import badgersHeroBg from "./assets/the-badgers-academia.jpeg";
 import gymBackground from "./assets/gym-background.jpeg";
 import Galeria from './components/Galeria.jsx';
-import TorneoDashboardSimple from './components/TorneoDashboardSimple.jsx';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 
   (import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : 'http://127.0.0.1:8000');
@@ -35,8 +34,6 @@ function Navbar() {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(!!(localStorage.getItem('badgers_user') && localStorage.getItem('badgers_pass')));
-  const [user, setUser] = useState(localStorage.getItem('badgers_user') || '');
-  const [pass, setPass] = useState(localStorage.getItem('badgers_pass') || '');
 
   const handleNavigation = (href) => {
     if (href.startsWith('/#')) {
@@ -79,16 +76,16 @@ function Navbar() {
         if (!r.ok) throw new Error('Credenciales inválidas');
         localStorage.setItem('badgers_user', u);
         localStorage.setItem('badgers_pass', p);
-        setUser(u); setPass(p); setIsAdmin(true);
+        setIsAdmin(true);
         window.dispatchEvent(new Event('badgers-admin-changed'));
         alert('Modo admin activado');
-      } catch (e) {
+      } catch {
         alert('Error de autenticación');
       }
     } else {
       localStorage.removeItem('badgers_user');
       localStorage.removeItem('badgers_pass');
-      setUser(''); setPass(''); setIsAdmin(false);
+      setIsAdmin(false);
       window.dispatchEvent(new Event('badgers-admin-changed'));
       alert('Modo admin desactivado');
     }
@@ -111,7 +108,7 @@ function Navbar() {
 
         {/* Menú de escritorio */}
         <ul className="hidden md:flex gap-6">
-          {[...NAV_ITEMS, ...(isAdmin ? [{ label: 'Torneo BJJ', href: '/torneo' }] : [])].map((item) => (
+          {NAV_ITEMS.map((item) => (
             <li key={item.label}>
               {item.href.startsWith('/tienda') ? (
                 <Link
@@ -124,13 +121,6 @@ function Navbar() {
                 <Link
                   to={item.href}
                   className={`text-cyan-100 font-semibold hover:text-cyan-400 transition-colors duration-200 drop-shadow ${location.pathname === '/galeria' ? 'text-cyan-400' : ''}`}
-                >
-                  {item.label}
-                </Link>
-              ) : item.href.startsWith('/torneo') ? (
-                <Link
-                  to={item.href}
-                  className={`text-cyan-100 font-semibold hover:text-cyan-400 transition-colors duration-200 drop-shadow ${location.pathname === '/torneo' ? 'text-cyan-400' : ''}`}
                 >
                   {item.label}
                 </Link>
@@ -162,7 +152,7 @@ function Navbar() {
       <div className={`md:hidden transition-all duration-300 ease-in-out ${isMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 overflow-hidden'}`}>
         <div className="bg-black/95 backdrop-blur-md border-t border-cyan-500/60">
           <ul className="flex flex-col space-y-2 px-4 py-4">
-            {[...NAV_ITEMS, ...(isAdmin ? [{ label: 'Torneo BJJ', href: '/torneo' }] : [])].map((item) => (
+            {NAV_ITEMS.map((item) => (
               <li key={item.label} className="border-b border-cyan-500/20 last:border-b-0">
                 {item.href.startsWith('/tienda') ? (
                   <Link
@@ -177,14 +167,6 @@ function Navbar() {
                     to={item.href}
                     onClick={() => handleLinkClick(item.href)}
                     className={`block py-3 text-cyan-100 font-semibold hover:text-cyan-400 transition-colors duration-200 drop-shadow ${location.pathname === '/galeria' ? 'text-cyan-400' : ''}`}
-                  >
-                    {item.label}
-                  </Link>
-                ) : item.href.startsWith('/torneo') ? (
-                  <Link
-                    to={item.href}
-                    onClick={() => handleLinkClick(item.href)}
-                    className={`block py-3 text-cyan-100 font-semibold hover:text-cyan-400 transition-colors duration-200 drop-shadow ${location.pathname === '/torneo' ? 'text-cyan-400' : ''}`}
                   >
                     {item.label}
                   </Link>
@@ -526,13 +508,6 @@ function Home() {
   );
 }
 
-function TorneoPage() {
-  return (
-    <div className="min-h-screen w-full pt-28 px-4" style={{backgroundColor: '#f5f5f5'}}>
-      <TorneoDashboardSimple />
-    </div>
-  );
-}
 
 export default function App() {
   // Stubs para compatibilidad con Galeria actual (auth básica de galería)
@@ -562,7 +537,6 @@ export default function App() {
             />
           }
         />
-        <Route path="/torneo" element={<TorneoPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </AuthProvider>

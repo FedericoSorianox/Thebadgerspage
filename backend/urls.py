@@ -40,40 +40,17 @@ def global_options_handler(request):
     
     return response
 
-# Router para las APIs del sistema de torneo
-router = DefaultRouter()
-router.register(r'torneos', views.TorneoViewSet)
-router.register(r'categorias', views.CategoriaViewSet)
-router.register(r'participantes', views.ParticipanteViewSet)
-router.register(r'llaves', views.LlaveViewSet)
-router.register(r'luchas', views.LuchaViewSet)
-router.register(r'atletas', views.AtletaViewSet)
-router.register(r'atleta-puntos', views.AtletaPuntoViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', views.api_root),
-    # Endpoints de autenticación
-    path('api/auth/login/', views.login_api, name='api_login'),
-    path('api/auth/logout/', views.logout_api, name='api_logout'),
-    path('api/auth/user/', views.user_info, name='api_user_info'),
-    path('api/auth/status/', views.check_auth_status, name='api_auth_status'),
-    path('api/user/', views.user_info),
-    path('api/create-user/', views.create_user),
     path('api/galeria/', views.galeria_list),
     path('api/galeria/items/', views.galeria_items),
 
     path('api/galeria/upload/', views.galeria_upload),
     path('api/productos/', views.productos_proxy),
    
-    # APIs del sistema de torneo BJJ
-    path('api/torneo/', include(router.urls)),
-    path('api/torneo/luchas-disponibles/', views.luchas_disponibles),
    
-    path('api/update-item-cloudinary/', views.update_item_cloudinary_url),
-    path('api/usuarios/crear/', views.crear_usuario),
-    path('api/usuarios/cambiar-password/', views.cambiar_password),
-    path('api/usuarios/setup/', views.setup_usuarios),
 
     
     # Servir archivos estáticos con MIME types correctos
