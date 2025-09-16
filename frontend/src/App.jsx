@@ -479,7 +479,7 @@ function Tienda() {
         <ProductoModal producto={productoSeleccionado} onClose={() => setProductoSeleccionado(null)} />
         <div className="w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 mb-16">
           {productos
-            .filter(prod => !["Agua Salus", "Alfa Way", "Way Bar", "Power Ade", "Cuota"].includes(prod.nombre))
+            .filter(prod => !["Agua Salus", "Alfa Way", "Way Bar", "Power Ade", "Cuota", "Cuota Sala", "Parche chico", "Parche Grande"].includes(prod.nombre))
             .map(prod => (
               <div key={prod.id} className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-slate-200 flex flex-col items-center p-5 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:border-indigo-300 cursor-pointer" onClick={() => setProductoSeleccionado(prod)}>
                 {prod.foto_url ? (
