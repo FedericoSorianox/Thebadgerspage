@@ -6,6 +6,7 @@ from django.views.static import serve
 import os
 from core import views
 from core.views import FrontendAppView
+from core import dev_views
 from rest_framework.routers import DefaultRouter
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -40,17 +41,44 @@ def global_options_handler(request):
     
     return response
 
+# Router para las APIs del sistema de gestión BJJ
+router = DefaultRouter()
+router.register(r'categorias', views.CategoriaViewSet)
+router.register(r'participantes', views.ParticipanteViewSet)
+router.register(r'llaves', views.LlaveViewSet)
+router.register(r'luchas', views.LuchaViewSet)
+router.register(r'atletas', views.AtletaViewSet)
+router.register(r'atleta-puntos', views.AtletaPuntoViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', views.api_root),
+    # Endpoints de autenticación
+    path('api/auth/login/', views.login_api, name='api_login'),
+    path('api/auth/logout/', views.logout_api, name='api_logout'),
+    path('api/auth/user/', views.user_info, name='api_user_info'),
+    path('api/auth/status/', views.check_auth_status, name='api_auth_status'),
+    path('api/user/', views.user_info),
+    path('api/create-user/', views.create_user),
     path('api/galeria/', views.galeria_list),
     path('api/galeria/items/', views.galeria_items),
 
     path('api/galeria/upload/', views.galeria_upload),
     path('api/productos/', views.productos_proxy),
+    
+    # Endpoints de desarrollo (solo disponibles cuando DEBUG=True)
+    path('api/dev/galeria/upload/', dev_views.dev_galeria_upload),
+    path('api/dev/auth/status/', dev_views.dev_auth_status),
+    path('api/dev/auth/login/', dev_views.dev_login),
    
+    # APIs del sistema de gestión BJJ
+    path('api/torneo/', include(router.urls)),
+    path('api/torneo/luchas-disponibles/', views.luchas_disponibles),
    
+    path('api/update-item-cloudinary/', views.update_item_cloudinary_url),
+    path('api/usuarios/crear/', views.crear_usuario),
+    path('api/usuarios/cambiar-password/', views.cambiar_password),
+    path('api/usuarios/setup/', views.setup_usuarios),
 
     
     # Servir archivos estáticos con MIME types correctos

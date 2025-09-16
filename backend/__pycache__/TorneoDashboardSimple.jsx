@@ -1,42 +1,40 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { torneoAPI, categoriaAPI, participanteAPI, llaveAPI } from '../services/api-new.js';
+import { categoriaAPI, participanteAPI, llaveAPI } from '../services/api-new.js';
 import LlaveManager from './LlaveManager.jsx';
 import FightScorer from './FightScorer.jsx';
 import BracketView from './BracketView.jsx';
+import IndependentFightScorer from './IndependentFightScorer.jsx';
 import './TorneoDashboard.css';
 import './TorneoDashboard-llaves.css';
 
 export default function TorneoDashboardSimple() {
   // Estados principales
-  const [torneos, setTorneos] = useState([]);
   const [categorias, setCategorias] = useState([]);
   const [participantes, setParticipantes] = useState([]);
   
-  const [activeTorneo, setActiveTorneo] = useState(null);
   const [activeCategoria, setActiveCategoria] = useState(null);
   
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [isWorking, setIsWorking] = useState(false);
   // Estados de carga/errores por sección
-  const [isLoadingTorneos, setIsLoadingTorneos] = useState(false);
   const [isLoadingCategorias, setIsLoadingCategorias] = useState(false);
   const [isLoadingParticipantes, setIsLoadingParticipantes] = useState(false);
-  const [errorTorneos, setErrorTorneos] = useState(null);
   const [errorCategorias, setErrorCategorias] = useState(null);
   const [errorParticipantes, setErrorParticipantes] = useState(null);
   
   // Estados para controlar secciones expandidas
   const [expandedSections, setExpandedSections] = useState({
-    torneos: true,
-    categorias: false,
+    categorias: true,
     participantes: false,
-    llaves: false
+    llaves: false,
+    independent: false
   });
   
   // Estados para el gestor de llaves
   const [showLlaveManager, setShowLlaveManager] = useState(false);
   const [showScorer, setShowScorer] = useState(false);
+  const [showIndependentScorer, setShowIndependentScorer] = useState(false);
   // Estado para modal de edición de participante
   const [showParticipanteModal, setShowParticipanteModal] = useState(false);
   const [participanteEdit, setParticipanteEdit] = useState(null);
@@ -50,13 +48,6 @@ export default function TorneoDashboardSimple() {
   const lastActionRef = useRef(null);
   
   // Estados para formularios
-  const [torneoForm, setTorneoForm] = useState({
-    nombre: '',
-    descripcion: '',
-    fecha: '',
-    ubicacion: ''
-  });
-  
   const [participanteForm, setParticipanteForm] = useState({
     nombre: '',
     cinturon: 'blanca',
@@ -64,34 +55,14 @@ export default function TorneoDashboardSimple() {
     peso: ''
   });
 
-  // Funciones de carga
-  const loadTorneos = useCallback(async () => {
-    try {
-      setError(null);
-      setErrorTorneos(null);
-      setIsLoadingTorneos(true);
-      const data = await torneoAPI.getAll();
-      const torneosArray = Array.isArray(data) ? data : [];
-      setTorneos(torneosArray);
-      
-      if (torneosArray.length && !activeTorneo) {
-        setActiveTorneo(torneosArray[0]);
-      }
-    } catch (e) {
-      console.error('[TorneoDashboard] Error al cargar torneos:', e);
-      setError(e.message);
-      setErrorTorneos(e.message);
-    } finally {
-      setIsLoadingTorneos(false);
-    }
-  }, [activeTorneo]);
 
-  const loadCategorias = useCallback(async (torneoId) => {
+
+  const loadCategorias = useCallback(async () => {
     try {
       setError(null);
       setErrorCategorias(null);
       setIsLoadingCategorias(true);
-      const data = await categoriaAPI.getAll(torneoId);
+      const data = await categoriaAPI.getAll();
       const categoriasArray = Array.isArray(data) ? data : [];
       setCategorias(categoriasArray);
     } catch (e) {
@@ -124,42 +95,19 @@ export default function TorneoDashboardSimple() {
     }
   }, []);
 
-  const loadParticipantesTorneo = useCallback(async (torneoId) => {
-    try {
-      setError(null);
-      setErrorParticipantes(null);
-      setIsLoadingParticipantes(true);
-      const data = await participanteAPI.getAll(null, torneoId);
-      const participantesArray = Array.isArray(data) ? data : [];
-      setParticipantes(participantesArray);
-    } catch (e) {
-      console.error('[TorneoDashboard] Error al cargar participantes del torneo:', e);
-      setError(e.message);
-      setErrorParticipantes(e.message);
-      setParticipantes([]);
-    } finally {
-      setIsLoadingParticipantes(false);
-    }
-  }, []);
+
 
   // Efectos
+  // Cargar datos al montar el componente
   useEffect(() => {
-    loadTorneos();
-  }, [loadTorneos]);
+    loadCategorias();
+  }, [loadCategorias]);
 
   useEffect(() => {
-    if (activeTorneo) {
-      loadCategorias(activeTorneo.id);
-    }
-  }, [activeTorneo, loadCategorias]);
-
-  useEffect(() => {
-    if (expandedSections.participantes && activeTorneo) {
-      loadParticipantesTorneo(activeTorneo.id);
-    } else if (activeCategoria) {
+    if (expandedSections.participantes && activeCategoria) {
       loadParticipantes(activeCategoria.id);
     }
-  }, [expandedSections.participantes, activeTorneo, activeCategoria, loadParticipantes, loadParticipantesTorneo]);
+  }, [expandedSections.participantes, activeCategoria, loadParticipantes]);
 
   // Handlers
   const toggleSection = (section) => {
@@ -169,11 +117,7 @@ export default function TorneoDashboardSimple() {
     }));
   };
 
-  const handleSelectTorneo = async (torneo) => {
-    setActiveTorneo(torneo);
-    setActiveCategoria(null);
-    setParticipantes([]);
-  };
+
 
   const handleSelectCategoria = async (categoria) => {
     setActiveCategoria(categoria);
@@ -217,9 +161,7 @@ export default function TorneoDashboardSimple() {
         payload.categoria_asignada = null;
       }
       await participanteAPI.update(participanteEdit.id, payload);
-      if (expandedSections.participantes && activeTorneo) {
-        await loadParticipantesTorneo(activeTorneo.id);
-      } else if (activeCategoria) {
+      if (activeCategoria) {
         await loadParticipantes(activeCategoria.id);
       }
       setSuccess('Participante actualizado');
@@ -238,89 +180,15 @@ export default function TorneoDashboardSimple() {
     }
   }, [expandedSections.llaves, activeCategoria, loadParticipantes]);
 
-  const handleCreateTorneo = async (e) => {
-    e.preventDefault();
-    if (!torneoForm.nombre.trim()) {
-      setError('El nombre del torneo es obligatorio');
-      return;
-    }
-    
-    try {
-      setIsWorking(true);
-      setError(null);
-      // mapear una sola fecha a inicio/fin
-      const payload = {
-        nombre: torneoForm.nombre,
-        descripcion: torneoForm.descripcion,
-        fecha_inicio: torneoForm.fecha || '',
-        fecha_fin: torneoForm.fecha || '',
-        ubicacion: torneoForm.ubicacion
-      };
-      await torneoAPI.create(payload);
-      setSuccess('¡Torneo creado exitosamente con todas las categorías!');
-      setTorneoForm({
-        nombre: '',
-        descripcion: '',
-        fecha: '',
-        ubicacion: ''
-      });
-      await loadTorneos();
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setIsWorking(false);
-    }
-  };
 
-  const handleEditTorneo = async (torneo) => {
-    const nombre = prompt('Nombre del torneo', torneo.nombre);
-    if (nombre === null) return;
-    const fecha = prompt('Fecha (YYYY-MM-DD)', torneo.fecha_inicio || '');
-    if (fecha === null) return;
-    try {
-      setIsWorking(true);
-      const payload = {
-        nombre: nombre.trim(),
-        descripcion: torneo.descripcion || '',
-        fecha_inicio: fecha,
-        fecha_fin: fecha,
-        ubicacion: torneo.ubicacion || ''
-      };
-      await torneoAPI.update(torneo.id, payload);
-      await loadTorneos();
-      setSuccess('Torneo actualizado');
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setIsWorking(false);
-    }
-  };
 
-  const handleDeleteTorneo = async (id) => {
-    if (!confirm('¿Eliminar torneo?')) return;
-    try {
-      setIsWorking(true);
-      const ok = await torneoAPI.delete(id);
-      if (!ok) throw new Error('No se pudo eliminar');
-      await loadTorneos();
-      setSuccess('Torneo eliminado');
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setIsWorking(false);
-    }
-  };
+
 
   const handleCreateParticipante = async (e) => {
     e.preventDefault();
     
     if (!participanteForm.nombre.trim()) {
       setError('El nombre del participante es obligatorio');
-      return;
-    }
-    
-    if (!activeTorneo) {
-      setError('Debe seleccionar un torneo');
       return;
     }
     
@@ -331,8 +199,7 @@ export default function TorneoDashboardSimple() {
       const participanteData = {
         nombre: participanteForm.nombre.trim(),
         cinturon: participanteForm.cinturon,
-        academia: participanteForm.academia.trim() || 'The Badgers',
-        torneo: activeTorneo.id
+        academia: participanteForm.academia.trim() || 'The Badgers'
       };
       
       // Agregar peso solo si se proporcionó
@@ -350,7 +217,7 @@ export default function TorneoDashboardSimple() {
       });
       
       // Recargar categorías para actualizar conteos
-      await loadCategorias(activeTorneo.id);
+      await loadCategorias();
       
       // Si hay una categoría activa, recargar sus participantes
       if (activeCategoria) {
@@ -363,59 +230,7 @@ export default function TorneoDashboardSimple() {
     }
   };
 
-  // Renderizado
-  const renderTorneoForm = () => (
-    <form onSubmit={handleCreateTorneo} className="form-container">
-      <div className="form-group">
-        <label className="form-label">Nombre del Torneo *</label>
-        <input
-          type="text"
-          className="form-input"
-          value={torneoForm.nombre}
-          onChange={(e) => setTorneoForm(prev => ({ ...prev, nombre: e.target.value }))}
-          placeholder="Copa The Badgers 2024"
-          required
-        />
-      </div>
-      
-      <div className="form-group">
-        <label className="form-label">Descripción</label>
-        <textarea
-          className="form-input"
-          value={torneoForm.descripcion}
-          onChange={(e) => setTorneoForm(prev => ({ ...prev, descripcion: e.target.value }))}
-          placeholder="Descripción del torneo..."
-          rows="3"
-        />
-      </div>
-      
-      <div className="form-group">
-        <label className="form-label">Fecha *</label>
-        <input
-          type="date"
-          className="form-input"
-          value={torneoForm.fecha}
-          onChange={(e) => setTorneoForm(prev => ({ ...prev, fecha: e.target.value }))}
-          required
-        />
-      </div>
-      
-      <div className="form-group">
-        <label className="form-label">Ubicación</label>
-        <input
-          type="text"
-          className="form-input"
-          value={torneoForm.ubicacion}
-          onChange={(e) => setTorneoForm(prev => ({ ...prev, ubicacion: e.target.value }))}
-          placeholder="The Badgers Academy"
-        />
-      </div>
-      
-      <button type="submit" className="form-submit" disabled={isWorking}>
-        {isWorking ? 'Creando...' : 'Crear Torneo'}
-      </button>
-    </form>
-  );
+
 
   const renderParticipanteForm = () => (
     <form onSubmit={handleCreateParticipante} className="form-container">
@@ -481,27 +296,17 @@ export default function TorneoDashboardSimple() {
         </small>
       </div>
       
-      <button type="submit" className="form-submit" disabled={isWorking || !activeTorneo}>
+      <button type="submit" className="form-submit" disabled={isWorking}>
         {isWorking ? 'Registrando...' : 'Registrar Participante'}
       </button>
-      
-      {!activeTorneo && (
-        <p className="form-warning">Selecciona un torneo primero</p>
-      )}
     </form>
   );
 
   return (
     <div className="torneo-dashboard">
       <div className="dashboard-header">
-        <h1>🥋 Sistema de Gestión de Torneos BJJ</h1>
+        <h1>🥋 Sistema de Gestión BJJ</h1>
         <p>Gestiona categorías, participantes, llaves y luchas de manera automática y profesional</p>
-        {activeTorneo && (
-          <div className="torneo-active-info">
-            <span className="active-badge">🏆 Torneo Activo</span>
-            <span className="torneo-name">{activeTorneo.nombre}</span>
-          </div>
-        )}
       </div>
 
       {/* BARRA COMPACTA OCULTA por requerimiento */}
@@ -512,9 +317,10 @@ export default function TorneoDashboardSimple() {
           <div className="content-grid" style={{ gridTemplateColumns: '1fr' }}>
             <div className="content-column">
               <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid #e5e7eb' }}>
-                <button className={`btn ${expandedSections.torneos ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ torneos: true, categorias: false, participantes: false, llaves: false })}>🏆 Torneos</button>
-                <button className={`btn ${expandedSections.participantes ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ torneos: false, categorias: false, participantes: true, llaves: false })}>👥 Participantes</button>
-                <button className={`btn ${expandedSections.llaves ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ torneos: false, categorias: false, participantes: false, llaves: true })}>🗂️ Llaves / Luchas</button>
+                <button className={`btn ${expandedSections.categorias ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ categorias: true, participantes: false, llaves: false, independent: false })}>🏷️ Categorías</button>
+                <button className={`btn ${expandedSections.participantes ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ categorias: false, participantes: true, llaves: false, independent: false })}>👥 Participantes</button>
+                <button className={`btn ${expandedSections.llaves ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ categorias: false, participantes: false, llaves: true, independent: false })}>🗂️ Llaves / Luchas</button>
+                <button className={`btn ${expandedSections.independent ? 'btn-primary' : ''}`} onClick={() => setExpandedSections({ categorias: false, participantes: false, llaves: false, independent: true })}>🥊 Lucha Independiente</button>
               </div>
             </div>
           </div>
@@ -524,7 +330,7 @@ export default function TorneoDashboardSimple() {
       {/* Acciones rápidas ocultas en tab Llaves/Luchas según pedido */}
 
       {/* BRACKET en la pestaña Llaves/Luchas */}
-      {activeTorneo && expandedSections.llaves && (
+      {expandedSections.llaves && (
         <div className="section">
           <div className="section-content">
             {activeCategoria ? (
@@ -540,7 +346,7 @@ export default function TorneoDashboardSimple() {
                         try {
                           setIsWorking(true);
                           await llaveAPI.generar(activeCategoria.id);
-                          await loadCategorias(activeTorneo.id);
+                          await loadCategorias();
                           setSuccess('Llave generada aleatoriamente');
                           setShowLlaveManager(true);
                         } catch (e) {
@@ -663,77 +469,13 @@ export default function TorneoDashboardSimple() {
         </div>
       )}
 
-      {/* SECCIÓN TORNEOS (solo tab Torneos) */}
-      {expandedSections.torneos && (
-      <div className="section">
-        <div className="section-header" onClick={() => toggleSection('torneos')}>
-          <h2>🏆 Torneos ({torneos.length})</h2>
-          <span className={`expand-icon ${expandedSections.torneos ? 'expanded' : ''}`}>
-            ▼
-          </span>
-        </div>
 
-        {expandedSections.torneos && (
-          <div className="section-content">
-            <div className="content-grid">
-              <div className="content-column">
-                <h3>Crear Nuevo Torneo</h3>
-                <p className="form-description">
-                  Al crear un torneo, se generan automáticamente todas las categorías por cinturón y nivel.
-                </p>
-                {renderTorneoForm()}
-              </div>
 
-              <div className="content-column">
-                <h3>Torneos Existentes</h3>
-                <div className="items-list">
-                  {isLoadingTorneos ? (
-                    <div className="empty-state" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <div className="inline-block animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                      <span>Cargando torneos...</span>
-                    </div>
-                  ) : errorTorneos ? (
-                    <div className="alert alert-error" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div>❌ {errorTorneos}</div>
-                      <button className="btn" onClick={() => loadTorneos()}>Reintentar</button>
-                    </div>
-                  ) : (
-                    <>
-                      {torneos.map(torneo => (
-                        <div
-                          key={torneo.id}
-                          className={`item-card ${activeTorneo?.id === torneo.id ? 'active' : ''}`}
-                          onClick={() => handleSelectTorneo(torneo)}
-                        >
-                          <h4>{torneo.nombre}</h4>
-                          <p>{torneo.fecha_inicio || torneo.fecha_fin || ''}</p>
-                          <span className={`status status-${torneo.estado}`}>
-                            {torneo.estado}
-                          </span>
-                          <div className="torneo-actions" style={{ marginTop: 8, display: 'flex', gap: 8 }}>
-                            <button className="btn btn-action" onClick={(e) => { e.stopPropagation(); handleEditTorneo(torneo); }}>Editar</button>
-                            <button className="btn btn-action btn-eliminar" onClick={async (e) => { e.stopPropagation(); const doDel = async () => { try { await handleDeleteTorneo(torneo.id); lastActionRef.current = null; } catch (e) {} finally { lastActionRef.current = doDel; } }; await doDel(); }}>Eliminar</button>
-                          </div>
-                        </div>
-                      ))}
-                      {torneos.length === 0 && (
-                        <p className="empty-state">No hay torneos creados</p>
-                      )}
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-      )}
-
-      {/* SECCIÓN CATEGORÍAS (solo tab Categorías) */}
-      {activeTorneo && expandedSections.categorias && (
+      {/* SECCIÓN CATEGORÍAS */}
+      {expandedSections.categorias && (
         <div className="section">
           <div className="section-header" onClick={() => toggleSection('categorias')}>
-            <h2>🏷️ Categorías de "{activeTorneo.nombre}" ({categorias.length})</h2>
+            <h2>🏷️ Categorías ({categorias.length})</h2>
             <span className={`expand-icon ${expandedSections.categorias ? 'expanded' : ''}`}>
               ▼
             </span>
@@ -756,9 +498,7 @@ export default function TorneoDashboardSimple() {
                 ) : errorCategorias ? (
                   <div className="alert alert-error" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div>❌ {errorCategorias}</div>
-                    {activeTorneo && (
-                      <button className="btn" onClick={() => loadCategorias(activeTorneo.id)}>Reintentar</button>
-                    )}
+                    <button className="btn" onClick={() => loadCategorias()}>Reintentar</button>
                   </div>
                 ) : categorias.map(categoria => (
                   <div
@@ -841,7 +581,7 @@ export default function TorneoDashboardSimple() {
       )}
 
       {/* SECCIÓN PARTICIPANTES (solo tab Participantes) */}
-      {activeTorneo && expandedSections.participantes && (
+      {expandedSections.participantes && (
         <div className="section">
           <div className="section-header" onClick={() => toggleSection('participantes')}>
             <h2>👥 Participantes</h2>
@@ -872,9 +612,7 @@ export default function TorneoDashboardSimple() {
                     ) : errorParticipantes ? (
                       <div className="alert alert-error" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
                         <span>❌ {errorParticipantes}</span>
-                        {activeTorneo && (
-                          <button className="btn" onClick={() => loadParticipantesTorneo(activeTorneo.id)}>Reintentar</button>
-                        )}
+                        <button className="btn" onClick={() => loadParticipantes()}>Reintentar</button>
                       </div>
                     ) : (
                       <>
@@ -894,7 +632,7 @@ export default function TorneoDashboardSimple() {
                                   setIsWorking(true);
                                   const ok = await participanteAPI.delete(p.id);
                                   if (!ok) throw new Error('No se pudo eliminar');
-                                  await loadParticipantesTorneo(activeTorneo.id);
+                                  await loadParticipantes();
                                   setSuccess('Participante eliminado');
                                 } catch (err) {
                                   setError(err.message);
@@ -907,11 +645,89 @@ export default function TorneoDashboardSimple() {
                         ))}
                         {participantes.length === 0 && (
                           <p className="empty-state">
-                            No hay participantes en este torneo
+                            No hay participantes registrados
                           </p>
                         )}
                       </>
                     )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* SECCIÓN LUCHA INDEPENDIENTE (solo tab Lucha Independiente) */}
+      {expandedSections.independent && (
+        <div className="section">
+          <div className="section-header" onClick={() => toggleSection('independent')}>
+            <h2>🥊 Lucha Independiente</h2>
+            <span className={`expand-icon ${expandedSections.independent ? 'expanded' : ''}`}>
+              ▼
+            </span>
+          </div>
+
+          {expandedSections.independent && (
+            <div className="section-content">
+              <div className="content-grid">
+                <div className="content-column">
+                  <h3>Marcador Independiente</h3>
+                  <p className="form-description">
+                    Usa el marcador de forma independiente, sin estar vinculado a ningún torneo. 
+                    Perfecto para luchas de entrenamiento, exhibiciones o eventos informales.
+                  </p>
+                  
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <h4 className="font-semibold text-blue-800 mb-2">✨ Características:</h4>
+                    <ul className="text-blue-700 text-sm space-y-1">
+                      <li>• Ingresa manualmente los nombres de los luchadores</li>
+                      <li>• Selecciona la duración de la lucha (3, 5, 7, 10 o 15 minutos)</li>
+                      <li>• Marcador completo con todos los puntos del BJJ</li>
+                      <li>• Cronómetro en tiempo real</li>
+                      <li>• Los resultados no se guardan en la base de datos</li>
+                    </ul>
+                  </div>
+
+                  <button 
+                    className="btn btn-primary btn-prominent-large"
+                    onClick={() => setShowIndependentScorer(true)}
+                    style={{ fontSize: '1.1rem', padding: '12px 24px' }}
+                  >
+                    🥊 Iniciar Lucha Independiente
+                  </button>
+                </div>
+
+                <div className="content-column">
+                  <h3>Información del Marcador</h3>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h4 className="font-semibold text-gray-800 mb-3">📊 Sistema de Puntos BJJ:</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="font-medium">Montada:</span>
+                        <span className="text-green-600 font-bold">+4 puntos</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Guardia pasada:</span>
+                        <span className="text-green-600 font-bold">+3 puntos</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Rodillazo:</span>
+                        <span className="text-green-600 font-bold">+2 puntos</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Derribo:</span>
+                        <span className="text-green-600 font-bold">+2 puntos</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Ventaja:</span>
+                        <span className="text-yellow-600 font-bold">+1 punto</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Penalización:</span>
+                        <span className="text-red-600 font-bold">-1 punto</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -933,6 +749,11 @@ export default function TorneoDashboardSimple() {
       {/* MARCADOR (FightScorer) */}
       {showScorer && activeCategoria && (
         <FightScorer categoria={activeCategoria} onClose={() => setShowScorer(false)} />
+      )}
+
+      {/* FIGHTSCORER INDEPENDIENTE */}
+      {showIndependentScorer && (
+        <IndependentFightScorer onClose={() => setShowIndependentScorer(false)} />
       )}
 
       {/* MODAL EDICIÓN PARTICIPANTE */}

@@ -1,3 +1,3 @@
-// Deprecated legacy API wrapper. Re-export the new token-authenticated client.
-export { default } from './api-new.js';
-export * from './api-new.js';
+// API wrapper que permite cambiar entre desarrollo y producción
+export { default } from './api-config.js';
+export * from './api-config.js';

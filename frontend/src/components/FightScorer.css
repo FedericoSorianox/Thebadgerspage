@@ -1,0 +1,190 @@
+/* Estilos específicos para el FightScorer - Diseño tipo IBJJF */
+
+/* Modo pantalla completa real */
+.fight-scorer-fullscreen {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 9999 !important;
+  background: white !important;
+  overflow: hidden !important;
+}
+
+/* Ocultar scroll en modo pantalla completa */
+.fight-scorer-fullscreen * {
+  overflow: hidden !important;
+}
+
+/* Asegurar que el contenido se ajuste perfectamente */
+.fight-scorer-fullscreen .fight-scorer-content {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+/* Botón de pantalla completa mejorado */
+.fullscreen-toggle {
+  transition: all 0.2s ease;
+}
+
+.fullscreen-toggle:hover {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  transform: scale(1.1);
+}
+
+/* Asegurar que los botones sean accesibles en pantalla completa */
+.fight-scorer-fullscreen button {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Optimizar el layout para pantallas grandes */
+@media (min-width: 1920px) {
+  .fight-scorer-fullscreen .timer {
+    font-size: 8rem !important;
+  }
+  
+  .fight-scorer-fullscreen .score {
+    font-size: 9rem !important;
+  }
+  
+  .fight-scorer-fullscreen .fighter-name {
+    font-size: 3rem !important;
+  }
+}
+
+/* Estilos específicos para los contadores de puntuación */
+.score-counter {
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  min-width: 80px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.score-counter:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Animación para cambios de puntuación */
+@keyframes scoreUpdate {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+.score-update {
+  animation: scoreUpdate 0.3s ease-in-out;
+}
+
+/* Estilos para los botones de control */
+.control-button {
+  transition: all 0.2s ease;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+}
+
+.control-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.control-button:active {
+  transform: translateY(0);
+}
+
+/* Estilos para el temporizador - MÁS GRANDE */
+.timer-display {
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  font-size: 4rem !important;
+  line-height: 1;
+}
+
+/* Temporizador aún más grande en pantalla completa */
+.fight-scorer-fullscreen .timer-display {
+  font-size: 6rem !important;
+}
+
+/* Responsive para pantallas medianas */
+@media (min-width: 1024px) and (max-width: 1919px) {
+  .timer-display {
+    font-size: 5rem !important;
+  }
+}
+
+/* Estilos para la información del combate */
+.fight-info {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 8px 16px;
+}
+
+/* Responsive design para pantallas pequeñas */
+@media (max-width: 768px) {
+  .fight-scorer-content {
+    font-size: 14px;
+  }
+  
+  .score-counter {
+    min-width: 60px;
+    padding: 12px;
+  }
+  
+  .control-button {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  
+  .timer-display {
+    font-size: 3rem !important;
+  }
+}
+
+/* Estilos para el modo oscuro en pantalla completa */
+.fight-scorer-fullscreen .bg-black {
+  background-color: #000 !important;
+}
+
+.fight-scorer-fullscreen .bg-blue-900 {
+  background-color: #1e3a8a !important;
+}
+
+/* Mejoras en la legibilidad */
+.fight-scorer-content {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Efectos de hover mejorados para los contadores */
+.score-counter:hover .text-2xl {
+  transform: scale(1.1);
+  transition: transform 0.2s ease;
+}
+
+/* Estilos para los botones de puntuación */
+.fight-scorer button[class*="bg-blue-600"],
+.fight-scorer button[class*="bg-red-600"] {
+  font-weight: bold;
+  font-size: 1.1rem;
+  min-height: 48px;
+}
+
+/* Estilos para los botones de resta */
+.fight-scorer button[class*="bg-gray-300"] {
+  font-weight: bold;
+  font-size: 1.1rem;
+  min-height: 48px;
+}
+
+/* Animación suave para cambios de color */
+.fight-scorer > div {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
