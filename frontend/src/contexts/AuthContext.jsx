@@ -1,17 +1,6 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import authService from '../services/authService.js';
-
-// Contexto de autenticación
-const AuthContext = createContext();
-
-// Hook para usar el contexto de autenticación
-export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth debe ser usado dentro de AuthProvider');
-    }
-    return context;
-};
+import { AuthContext } from './AuthContextDefinition.js';
 
 // Proveedor de autenticación
 export const AuthProvider = ({ children }) => {
@@ -93,3 +82,6 @@ export const AuthProvider = ({ children }) => {
         </AuthContext.Provider>
     );
 };
+
+// Solo exportamos el componente AuthProvider
+// El hook useAuth se encuentra en /hooks/useAuth.js
