@@ -76,10 +76,10 @@ export const AuthProvider = ({ children }) => {
         try {
             setError(null);
             const data = await authService.login(username, password);
-            
+
             setUser(data.user);
             setIsAuthenticated(true);
-            
+
             return { success: true, user: data.user };
         } catch (error) {
             console.error('Error en login:', error);
