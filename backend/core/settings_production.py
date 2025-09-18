@@ -35,14 +35,14 @@ else:
             'PORT': os.environ.get('DATABASE_PORT', '5432'),
         }
     }
-# Configuración CORS para producción - TEMPORALMENTE PERMISIVA
-CORS_ALLOW_ALL_ORIGINS = True  # TEMPORAL para debug
+# Configuración CORS para producción - Específica para permitir credenciales
+CORS_ALLOW_ALL_ORIGINS = False  # Deshabilitar para poder usar credenciales
 CORS_ALLOW_CREDENTIALS = True
 
-# Si queremos ser específicos, usar esta lista en lugar de ALLOW_ALL
+# Lista específica de orígenes permitidos
 CORS_ALLOWED_ORIGINS = [
     "https://thebadgerspage.onrender.com",
-    "https://www.thebadgerspage.onrender.com", 
+    "https://www.thebadgerspage.onrender.com",
     "https://the-badgers.com",
     "https://www.the-badgers.com",
     "http://localhost:5173",
