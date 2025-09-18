@@ -5,11 +5,13 @@ import { Parallax } from 'react-parallax';
 import { Routes, Route, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext.jsx';
 import { ProtectedComponent } from './components/AuthComponents.jsx';
+import useAuth from './hooks/useAuth';
 import badgersHeroBg from "./assets/the-badgers-academia.jpeg";
 import gymBackground from "./assets/gym-background.jpeg";
 import Galeria from './components/Galeria.jsx';
+import TorneoBJJ from './components/TorneoBJJ.jsx';
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 
+const API_BASE = import.meta.env.VITE_API_BASE_URL ||
   (import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : 'http://127.0.0.1:8000');
 
 // FORCE correct API URL in production - temporary fix for environment variable issue
@@ -33,7 +35,8 @@ function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(!!(localStorage.getItem('badgers_user') && localStorage.getItem('badgers_pass')));
+  const { isAuthenticated, user } = useAuth();
+  const isAdmin = isAuthenticated && user && (user.is_staff || user.is_superuser);
 
   const handleNavigation = (href) => {
     if (href.startsWith('/#')) {
@@ -520,6 +523,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/tienda" element={<Tienda />} />
+        <Route path="/torneo" element={<TorneoBJJ />} />
         <Route
           path="/galeria"
           element={
@@ -527,9 +531,9 @@ export default function App() {
               isLoggedIn={!!(storedUser && storedPass)}
               loginUser={storedUser || ''}
               loginPass={storedPass || ''}
-              setShowLogin={() => {}}
-              handleLogin={() => {}}
-              handleLogout={() => {}}
+              setShowLogin={() => { }}
+              handleLogin={() => { }}
+              handleLogout={() => { }}
               loginError={null}
               showLogin={false}
               API_BASE={FORCED_API_BASE}

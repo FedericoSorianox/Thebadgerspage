@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 // import { SingleEliminationBracket, Match, SVGViewer } from '@g-loot/react-tournament-brackets';
+import useAuth from '../hooks/useAuth';
+import authService from '../services/authService';
 
 // API functions for MongoDB
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
@@ -7,15 +9,14 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 const apiCall = async (endpoint, options = {}) => {
   const url = `${API_BASE}${endpoint}`;
 
-  // Get credentials from localStorage
-  const username = localStorage.getItem('badgers_user');
-  const password = localStorage.getItem('badgers_pass');
+  // Get token from authService
+  const token = authService.getToken();
 
-  if (!username || !password) {
-    throw new Error('No hay credenciales de administrador');
+  if (!token) {
+    throw new Error('No hay token de autenticación');
   }
 
-  const authHeader = 'Basic ' + btoa(`${username}:${password}`);
+  const authHeader = `Token ${token}`;
 
   const defaultOptions = {
     headers: {
@@ -107,6 +108,8 @@ const api = {
 };
 
 const TorneoBJJ = () => {
+  const { isAuthenticated, isLoading: authLoading, error: authError } = useAuth();
+
   const [torneos, setTorneos] = useState([]);
   const [torneoSeleccionado, setTorneoSeleccionado] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -126,8 +129,35 @@ const TorneoBJJ = () => {
 
   // Cargar torneos al montar el componente
   useEffect(() => {
-    cargarTorneos();
-  }, []);
+    if (isAuthenticated) {
+      cargarTorneos();
+    }
+  }, [isAuthenticated]);
+
+  // Verificar autenticación
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Verificando autenticación...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Acceso Denegado</h2>
+          <p className="text-gray-600 mb-4">Necesitas estar autenticado para acceder a esta página.</p>
+          <p className="text-sm text-gray-500">Por favor, inicia sesión como administrador.</p>
+          {authError && <p className="text-red-500 mt-2">{authError}</p>}
+        </div>
+      </div>
+    );
+  }
 
   const cargarTorneos = async () => {
     try {
@@ -322,7 +352,7 @@ const TorneoBJJ = () => {
       if (torneoSeleccionado && categoriaSeleccionada) {
         cargarDatosCategoria();
       }
-    }, [torneoSeleccionado?._id, categoriaSeleccionada]);
+    }, [torneoSeleccionado, categoriaSeleccionada]);
 
     // Función para generar luchas basadas en participantes
     const generarLuchas = (participantesCategoria) => {
@@ -884,7 +914,7 @@ const TorneoBJJ = () => {
       if (torneoSeleccionado) {
         cargarParticipantesTorneo();
       }
-    }, [torneoSeleccionado?._id]);
+    }, [torneoSeleccionado]);
 
     // Generar luchas basadas en la categoría seleccionada
     useEffect(() => {
