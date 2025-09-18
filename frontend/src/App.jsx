@@ -15,7 +15,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ||
   (import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : 'http://127.0.0.1:8000');
 
 // FORCE correct API URL in production - temporary fix for environment variable issue
-const FORCED_API_BASE = import.meta.env.PROD ? 'https://www.the-badgers.com' : API_BASE;
+const FORCED_API_BASE = import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : API_BASE;
 
 console.log('DEBUG API_BASE:', API_BASE);
 console.log('DEBUG FORCED_API_BASE:', FORCED_API_BASE);
