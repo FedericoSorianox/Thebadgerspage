@@ -75,15 +75,26 @@ function Navbar() {
       if (!p) return;
       try {
         const token = btoa(`${u}:${p}`);
-        const r = await fetch(`${FORCED_API_BASE}/api/galeria/upload/`, { method: 'GET', headers: { Authorization: `Basic ${token}` } });
-        if (!r.ok) throw new Error('Credenciales inválidas');
+        console.log('DEBUG: Intentando login con URL:', `${FORCED_API_BASE}/api/galeria/upload/`);
+        console.log('DEBUG: Token generado:', token.substring(0, 20) + '...');
+        const r = await fetch(`${FORCED_API_BASE}/api/galeria/upload/`, {
+          method: 'GET',
+          headers: { Authorization: `Basic ${token}` }
+        });
+        console.log('DEBUG: Response status:', r.status);
+        console.log('DEBUG: Response ok:', r.ok);
+        const responseText = await r.text();
+        console.log('DEBUG: Response text:', responseText);
+
+        if (!r.ok) throw new Error(`HTTP ${r.status}: ${responseText}`);
         localStorage.setItem('badgers_user', u);
         localStorage.setItem('badgers_pass', p);
         setIsAdmin(true);
         window.dispatchEvent(new Event('badgers-admin-changed'));
         alert('Modo admin activado');
-      } catch {
-        alert('Error de autenticación');
+      } catch (error) {
+        console.error('DEBUG: Error de autenticación:', error);
+        alert(`Error de autenticación: ${error.message}`);
       }
     } else {
       localStorage.removeItem('badgers_user');
