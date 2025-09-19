@@ -55,6 +55,7 @@ Contraseña: admin123
 
 #### **Solo para Administradores (Con Login):**
 - 🔐 **Subir fotos y videos** a la galería
+- 🔐 **Eliminar fotos y videos** de la galería (con confirmación)
 - 🔐 **Acceder al sistema completo de torneos** BJJ
 - 🔐 **Gestionar todo el contenido** administrativo
 
@@ -196,16 +197,30 @@ for t in tokens:
    - ❌ **Antes**: Galería protegida por login
    - ✅ **Ahora**: Galería 100% pública, solo subir archivos requiere login
 
-4. **Componentes actualizados**
+4. **Nueva funcionalidad: Eliminar fotos**
+   - ✅ **Botón de eliminar** para administradores
+   - ✅ **Confirmación de eliminación** con diálogo
+   - ✅ **Eliminación de archivos** tanto locales como en Cloudinary
+   - ✅ **Actualización automática** de la interfaz
+
+5. **Optimización: Sin titileo de imágenes**
+   - ✅ **Placeholders mientras cargan** las imágenes
+   - ✅ **Transiciones suaves** de opacidad
+   - ✅ **Estado de carga persistente** para evitar recargas
+   - ✅ **Mejor experiencia de usuario**
+
+6. **Componentes actualizados**
    - ✅ `TorneoBJJ.jsx`: URLs corregidas para APIs del backend
    - ✅ `Galeria.jsx`: Autenticación usando authService correctamente
    - ✅ `views.py`: Soporte dual para Token y Basic authentication
 
 ### 🔧 Archivos Modificados
 
+- `backend/core/models.py`: Nuevo campo `archivo_url` para URLs de Cloudinary
+- `backend/core/views.py`: Endpoint de eliminación `/api/galeria/delete/<id>/`
+- `backend/urls.py`: Nueva URL para eliminación de fotos
 - `frontend/src/components/TorneoBJJ.jsx`: URLs de APIs corregidas
-- `frontend/src/components/Galeria.jsx`: Autenticación Token implementada
-- `backend/core/views.py`: Soporte dual de autenticación en galería/upload
+- `frontend/src/components/Galeria.jsx`: Botón eliminar + optimización anti-titileo
 - `README_LOGIN_SYSTEM.md`: Documentación actualizada
 
 ### 🧪 Verificación de Funcionamiento
@@ -217,6 +232,9 @@ curl -H "Authorization: Token [TOKEN_COMPLETO]" http://localhost:8000/api/torneo
 # Verificar subida de archivos
 curl -H "Authorization: Token [TOKEN_COMPLETO]" http://localhost:8000/api/galeria/upload/
 
+# Verificar eliminación de fotos
+curl -X DELETE -H "Authorization: Token [TOKEN_COMPLETO]" http://localhost:8000/api/galeria/delete/1/
+
 # Verificar que la galería funciona sin autenticación
 curl http://localhost:8000/api/galeria/items/
 ```
@@ -225,10 +243,14 @@ curl http://localhost:8000/api/galeria/items/
 
 ```python
 class GaleriaItem(models.Model):
-    archivo = models.FileField(upload_to='galeria/', null=True, blank=True)  # Archivos locales
-    archivo_url = models.URLField(max_length=500, null=True, blank=True)    # URLs Cloudinary
+    # Campo para archivo local (usado en desarrollo)
+    archivo = models.FileField(upload_to='galeria/', null=True, blank=True)
+    # Campo para URL de Cloudinary (usado en producción)
+    archivo_url = models.URLField(max_length=500, null=True, blank=True)
     nombre = models.CharField(max_length=100)
-    # ... otros campos
+    fecha_subida = models.DateTimeField(auto_now_add=True)
+    tipo = models.CharField(max_length=10, choices=[('img', 'Imagen'), ('video', 'Video')], blank=True)
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
 
     @property
     def url(self):
@@ -248,10 +270,13 @@ class GaleriaItem(models.Model):
 
 ---
 
-**¡Todos los errores han sido corregidos! El sistema de subida de archivos funciona perfectamente.** 🎉
+**¡Todos los errores han sido corregidos! El sistema completo funciona perfectamente.** 🎉
 
 **✅ Problemas resueltos:**
 - Error 500 "This backend doesn't support absolute paths"
 - Autenticación incompatible entre frontend y backend
 - URLs incorrectas en APIs de torneo
 - Manejo de archivos tanto locales como en Cloudinary
+- **Nueva funcionalidad**: Eliminación de fotos por administradores
+- **Optimización**: Eliminación del titileo de imágenes
+- **UX mejorada**: Placeholders y transiciones suaves

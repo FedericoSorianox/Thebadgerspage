@@ -1370,3 +1370,109 @@ def create_user(request):
             return JsonResponse({'error': str(e)}, status=500)
     
     return JsonResponse({'error': 'No autorizado'}, status=403)
+
+@csrf_exempt
+def galeria_delete(request, item_id):
+    """Eliminar un item de la galería"""
+    if request.method != 'DELETE':
+        return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+    # Verificar autenticación
+    if settings.DEBUG:
+        # En desarrollo, permitir acceso sin autenticación
+        from django.contrib.auth.models import User
+        user, created = User.objects.get_or_create(
+            username='dev',
+            defaults={
+                'email': 'dev@example.com',
+                'is_staff': True,
+                'is_superuser': True
+            }
+        )
+        if created:
+            user.set_password('dev123')
+            user.save()
+            print("DEBUG: Usuario dev creado")
+    else:
+        # Verificar autenticación para todos los métodos en producción
+        if not request.META.get('HTTP_AUTHORIZATION'):
+            return JsonResponse({'error': 'No autenticado'}, status=401)
+
+        auth = request.META['HTTP_AUTHORIZATION']
+        user = None
+
+        # Intentar autenticación con Token primero
+        if auth.startswith('Token '):
+            token_key = auth.split(' ')[1]
+            try:
+                from rest_framework.authtoken.models import Token
+                token = Token.objects.get(key=token_key)
+                user = token.user
+                print(f"DEBUG: Usuario autenticado por Token: {user.username}")
+            except Token.DoesNotExist:
+                return JsonResponse({'error': 'Token inválido'}, status=401)
+            except Exception as e:
+                print(f"DEBUG: Error con Token auth: {e}")
+                return JsonResponse({'error': 'Error de autenticación'}, status=401)
+
+        # Fallback a autenticación Basic si no es Token
+        elif auth.startswith('Basic '):
+            try:
+                userpass = base64.b64decode(auth.split(' ')[1]).decode('utf-8')
+                username, password = userpass.split(':', 1)
+                print(f"DEBUG: Intentando autenticar usuario: {username}")
+                user = authenticate(username=username, password=password)
+                if not user:
+                    print(f"DEBUG: Autenticación fallida para usuario: {username}")
+                    return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
+            except Exception as e:
+                print(f"DEBUG: Error con Basic auth: {e}")
+                return JsonResponse({'error': 'Error de autenticación'}, status=401)
+        else:
+            return JsonResponse({'error': 'Tipo de autenticación no soportado'}, status=401)
+
+        # Verificar permisos de admin
+        if not (user.is_staff or user.is_superuser):
+            print(f"DEBUG: Usuario sin permisos de admin: {user.username}")
+            return JsonResponse({'error': 'Permisos insuficientes'}, status=403)
+
+    try:
+        # Buscar el item
+        item = GaleriaItem.objects.get(id=item_id)
+
+        # Eliminar archivos físicos si existen
+        if item.archivo:
+            try:
+                if item.archivo.path and os.path.exists(item.archivo.path):
+                    os.remove(item.archivo.path)
+                    print(f"DEBUG: Archivo local eliminado: {item.archivo.path}")
+            except Exception as e:
+                print(f"DEBUG: Error eliminando archivo local: {e}")
+
+        # Si hay URL de Cloudinary, intentar eliminar de Cloudinary
+        if item.archivo_url and 'cloudinary' in item.archivo_url:
+            try:
+                # Extraer public_id de la URL de Cloudinary
+                import re
+                match = re.search(r'/v\d+/(.*?)\.\w+$', item.archivo_url)
+                if match:
+                    public_id = match.group(1)
+                    cloudinary.uploader.destroy(public_id)
+                    print(f"DEBUG: Archivo de Cloudinary eliminado: {public_id}")
+            except Exception as e:
+                print(f"DEBUG: Error eliminando de Cloudinary: {e}")
+
+        # Eliminar el registro de la base de datos
+        item.delete()
+
+        return JsonResponse({
+            'ok': True,
+            'message': 'Foto eliminada exitosamente',
+            'id': item_id
+        })
+
+    except GaleriaItem.DoesNotExist:
+        return JsonResponse({'error': f'Foto con ID {item_id} no encontrada'}, status=404)
+    except Exception as e:
+        print(f"DEBUG: Error eliminando foto: {e}")
+        return JsonResponse({'error': f'Error eliminando foto: {str(e)}'}, status=500)

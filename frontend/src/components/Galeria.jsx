@@ -17,6 +17,8 @@ export default function Galeria({ API_BASE }) {
   const [uploading, setUploading] = useState(false);
   const [uploadMsg, setUploadMsg] = useState('');
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [deleting, setDeleting] = useState(null); // ID del item que se está eliminando
+  const [loadedImages, setLoadedImages] = useState(new Set()); // Para evitar titileo de imágenes
 
   // Usar el hook de autenticación
   const { isAuthenticated, user, login } = useAuth();
@@ -67,6 +69,16 @@ export default function Galeria({ API_BASE }) {
     return isAuthenticated && user && (user.is_staff || user.is_superuser);
   }, [isAuthenticated, user]);
 
+  // Función para manejar la carga de imágenes y evitar titileo
+  const handleImageLoad = useCallback((imageId) => {
+    setLoadedImages(prev => new Set([...prev, imageId]));
+  }, []);
+
+  // Función para verificar si una imagen ya está cargada
+  const isImageLoaded = useCallback((imageId) => {
+    return loadedImages.has(imageId);
+  }, [loadedImages]);
+
   const handleFiles = async (files) => {
     if (!files || files.length === 0) return;
 
@@ -115,6 +127,47 @@ export default function Galeria({ API_BASE }) {
     setUploading(false);
   };
 
+  const handleDelete = async (itemId, itemName) => {
+    if (!canUpload()) {
+      setUploadMsg('Error: No tienes permisos para eliminar archivos');
+      return;
+    }
+
+    if (!confirm(`¿Estás seguro de que quieres eliminar "${itemName}"?`)) {
+      return;
+    }
+
+    setDeleting(itemId);
+
+    try {
+      const authHeaders = getAuthHeaders();
+      const response = await fetch(`${base}/api/galeria/delete/${itemId}/`, {
+        method: 'DELETE',
+        headers: authHeaders
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+
+      // Remover el item de la lista
+      setItems(prev => prev.filter(item => item.id !== itemId));
+      setUploadMsg(`✅ Foto "${itemName}" eliminada exitosamente`);
+
+      // Limpiar el mensaje después de 3 segundos
+      setTimeout(() => setUploadMsg(''), 3000);
+
+    } catch (e) {
+      console.error('Error eliminando foto:', e);
+      setUploadMsg(`❌ Error eliminando foto: ${e.message}`);
+    } finally {
+      setDeleting(null);
+    }
+  };
+
   useEffect(() => {
     // Carga inicial o cuando cambia la base de la API
     setItems([]);
@@ -129,6 +182,21 @@ export default function Galeria({ API_BASE }) {
       setShowUploader(false);
     }
   }, [canUpload]);
+
+  // Limpiar estado de imágenes cargadas cuando cambian los items
+  useEffect(() => {
+    // Mantener solo las imágenes que siguen existiendo en la lista actual
+    const currentImageIds = new Set(items.map(item => item.id));
+    setLoadedImages(prev => {
+      const filtered = new Set();
+      for (const id of prev) {
+        if (currentImageIds.has(id)) {
+          filtered.add(id);
+        }
+      }
+      return filtered;
+    });
+  }, [items]);
 
   useEffect(() => {
     if (!hasMore || loading) return;
@@ -232,7 +300,28 @@ export default function Galeria({ API_BASE }) {
       {/* Masonry */}
       <div className="max-w-6xl w-full columns-1 sm:columns-2 md:columns-3 gap-4 [column-fill:_balance]"><div className="[&>*]:mb-4">
         {items.map((it) => (
-          <div key={it.id || it.nombre} className="break-inside-avoid bg-white rounded-xl shadow hover:shadow-lg overflow-hidden">
+          <div key={it.id || it.nombre} className="break-inside-avoid bg-white rounded-xl shadow hover:shadow-lg overflow-hidden relative group">
+            {/* Botón de eliminar (solo para admins) */}
+            {canUpload() && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(it.id, it.nombre);
+                }}
+                disabled={deleting === it.id}
+                className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white rounded-full w-8 h-8 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 z-10 shadow-lg"
+                title="Eliminar foto"
+              >
+                {deleting === it.id ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b border-white"></div>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                )}
+              </button>
+            )}
+
             {it.tipo === 'video' ? (
               <video src={it.url} muted playsInline controls={false} autoPlay={false}
                 className="w-full h-auto cursor-pointer"
@@ -240,9 +329,27 @@ export default function Galeria({ API_BASE }) {
                 onMouseLeave={(e) => { try { e.currentTarget.pause(); e.currentTarget.currentTime = 0; } catch (err) { void err; } }}
                 onClick={() => setSelected(it)} />
             ) : (
-              <img src={it.url} alt={it.nombre} loading="lazy" decoding="async"
-                className="w-full h-auto cursor-pointer"
-                onClick={() => setSelected(it)} />
+              <div className="relative w-full h-auto">
+                {/* Placeholder mientras carga */}
+                {!isImageLoaded(it.id) && (
+                  <div className="absolute inset-0 bg-gray-200 animate-pulse rounded-t-xl flex items-center justify-center">
+                    <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                )}
+                <img
+                  src={it.url}
+                  alt={it.nombre}
+                  loading="lazy"
+                  decoding="async"
+                  className={`w-full h-auto cursor-pointer transition-opacity duration-300 ${isImageLoaded(it.id) ? 'opacity-100' : 'opacity-0'
+                    }`}
+                  onLoad={() => handleImageLoad(it.id)}
+                  onError={() => handleImageLoad(it.id)} // Marcar como cargada incluso si hay error
+                  onClick={() => setSelected(it)}
+                />
+              </div>
             )}
             <div className="p-3 flex items-center justify-between text-sm text-slate-700">
               <span className="font-medium truncate">{it.nombre}</span>
