@@ -4,7 +4,7 @@ import useAuth from '../hooks/useAuth';
 import authService from '../services/authService';
 
 // API functions for MongoDB
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+const API_BASE = import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000');
 
 const apiCall = async (endpoint, options = {}) => {
   const url = `${API_BASE}${endpoint}`;
@@ -124,7 +124,7 @@ const TorneoBJJ = () => {
   const [vista, setVista] = useState('lista'); // 'lista', 'nuevo', 'bracket', 'participantes', 'luchas'
   const [notificacion, setNotificacion] = useState({ mostrar: false, mensaje: '' });
 
-  const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+  const API_BASE = import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : (import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000');
 
   // Función para mostrar notificaciones
   const mostrarNotificacion = (mensaje, duracion = 3000) => {

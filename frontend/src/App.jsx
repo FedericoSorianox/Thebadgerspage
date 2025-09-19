@@ -14,13 +14,26 @@ import TorneoBJJ from './components/TorneoBJJ.jsx';
 const API_BASE = import.meta.env.VITE_API_BASE_URL ||
   (import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : 'http://127.0.0.1:8000');
 
-// FORCE correct API URL in production - temporary fix for environment variable issue
+// FORCE correct API URL in production - fix for domain mismatch
 const FORCED_API_BASE = import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : API_BASE;
 
-console.log('DEBUG API_BASE:', API_BASE);
-console.log('DEBUG FORCED_API_BASE:', FORCED_API_BASE);
-console.log('DEBUG PROD mode:', import.meta.env.PROD);
-console.log('DEBUG VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
+// Debug de configuración de URLs
+console.log('🔧 CONFIGURACIÓN DE URLS:');
+console.log('  - Environment:', import.meta.env.PROD ? 'PRODUCTION' : 'DEVELOPMENT');
+console.log('  - VITE_API_BASE_URL:', import.meta.env.VITE_API_BASE_URL);
+console.log('  - API_BASE:', API_BASE);
+console.log('  - FORCED_API_BASE:', FORCED_API_BASE);
+console.log('  - Current origin:', window.location.origin);
+
+// Verificar si estamos en el dominio personalizado
+if (window.location.origin.includes('the-badgers.com')) {
+  console.log('🎯 Detectado dominio personalizado - usando backend en Render');
+  console.log('✅ Backend API:', FORCED_API_BASE);
+}
+
+// Forzar la URL correcta del backend si estamos en producción
+const FINAL_API_BASE = import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : 'http://127.0.0.1:8000';
+console.log('✅ FINAL_API_BASE:', FINAL_API_BASE);
 
 const NAV_ITEMS = [
   { label: "Inicio", href: "/#inicio" },
@@ -615,7 +628,7 @@ export default function App() {
               handleLogout={() => { }}
               loginError={null}
               showLogin={false}
-              API_BASE={FORCED_API_BASE}
+              API_BASE={FINAL_API_BASE}
               setLoginPass={(p) => localStorage.setItem('badgers_pass', p)}
             />
           }

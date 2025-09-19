@@ -78,16 +78,20 @@ def galeria_items(request):
       - q: texto en nombre (opcional)
     """
     try:
+        print("DEBUG: Iniciando galeria_items")
         from core.models import GaleriaItem
         qs = GaleriaItem.objects.all().order_by('-fecha_subida')
+        print(f"DEBUG: Total items en DB: {qs.count()}")
 
         tipo = request.GET.get('tipo')
         if tipo in ('img', 'video'):
             qs = qs.filter(tipo=tipo)
+            print(f"DEBUG: Filtrando por tipo: {tipo}")
 
         q = request.GET.get('q')
         if q:
             qs = qs.filter(nombre__icontains=q)
+            print(f"DEBUG: Filtrando por query: {q}")
 
         cursor = request.GET.get('cursor')
         if cursor:
@@ -98,40 +102,56 @@ def galeria_items(request):
                 dt = parse_datetime(cursor)
                 if dt is not None:
                     qs = qs.filter(fecha_subida__lt=dt)
-            except Exception:
-                pass
+                    print(f"DEBUG: Usando cursor: {cursor}")
+            except Exception as e:
+                print(f"DEBUG: Error parseando cursor: {e}")
 
         try:
             limit = min(int(request.GET.get('limit', '24')), 500)
         except ValueError:
             limit = 24
 
+        print(f"DEBUG: Limit: {limit}")
         items = list(qs[:limit])
-        data = []
-        for it in items:
-            # Usar la propiedad url del modelo que maneja tanto archivos locales como URLs de Cloudinary
-            file_url = it.url
-            if not file_url:
-                continue
+        print(f"DEBUG: Items obtenidos: {len(items)}")
 
-            # ocultar unsplash
-            if 'unsplash.com' in file_url:
+        data = []
+        for i, it in enumerate(items):
+            try:
+                # Usar la propiedad url del modelo que maneja tanto archivos locales como URLs de Cloudinary
+                file_url = it.url
+                if not file_url:
+                    print(f"DEBUG: Item {i} sin URL, saltando")
+                    continue
+
+                # ocultar unsplash
+                if 'unsplash.com' in file_url:
+                    print(f"DEBUG: Item {i} es unsplash, saltando")
+                    continue
+
+                data.append({
+                    'id': it.id,
+                    'url': file_url,
+                    'nombre': it.nombre,
+                    'fecha': it.fecha_subida.strftime('%Y-%m-%dT%H:%M:%SZ') if it.fecha_subida else None,
+                    'tipo': it.tipo or 'img',
+                    'usuario': it.usuario.username if it.usuario else 'Anónimo',
+                })
+                print(f"DEBUG: Item {i} procesado: {it.nombre}")
+            except Exception as e:
+                print(f"DEBUG: Error procesando item {i}: {e}")
                 continue
-            data.append({
-                'id': it.id,
-                'url': file_url,
-                'nombre': it.nombre,
-                'fecha': it.fecha_subida.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                'tipo': it.tipo or 'img',
-                'usuario': it.usuario.username if it.usuario else 'Anónimo',
-            })
 
         next_cursor = None
-        if items:
+        if items and items[-1].fecha_subida:
             next_cursor = items[-1].fecha_subida.strftime('%Y-%m-%dT%H:%M:%SZ')
 
+        print(f"DEBUG: Respuesta exitosa con {len(data)} items")
         return JsonResponse({'results': data, 'next_cursor': next_cursor})
     except Exception as e:
+        print(f"DEBUG: Error en galeria_items: {str(e)}")
+        import traceback
+        print(f"DEBUG: Traceback completo: {traceback.format_exc()}")
         return JsonResponse({'error': str(e)}, status=500)
 
 @add_cors_headers

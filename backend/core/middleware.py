@@ -11,7 +11,7 @@ class CustomCorsMiddleware(MiddlewareMixin):
         self.allowed_origins = [
             'https://the-badgers.com',
             'https://www.the-badgers.com',
-            'https://thebadgerspage.onrender.com', 
+            'https://thebadgerspage.onrender.com',
             'https://www.thebadgerspage.onrender.com',
             'http://localhost:5173',
             'http://localhost:5174',
@@ -20,6 +20,8 @@ class CustomCorsMiddleware(MiddlewareMixin):
             'http://localhost:3000',
             'http://127.0.0.1:3000',
         ]
+        print("DEBUG: CustomCorsMiddleware inicializado")
+        print(f"DEBUG: Orígenes permitidos: {self.allowed_origins}")
         super().__init__(get_response)
 
     def __call__(self, request):
