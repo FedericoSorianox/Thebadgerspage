@@ -2,24 +2,32 @@
 
 ## Descripción General
 
-Se ha implementado un sistema completo de login con autenticación de administradores para proteger las secciones de **Galería** y **Torneo BJJ** de la aplicación.
+Se ha implementado un sistema inteligente de autenticación donde:
+- **La Galería es 100% PÚBLICA** - cualquier usuario puede ver todas las fotos y videos
+- **El login solo habilita funciones administrativas** - subir archivos y acceder al sistema de torneos BJJ
+- **Protección selectiva** - solo las funciones administrativas requieren autenticación
 
 ## Características Implementadas
 
-### ✅ Autenticación Completa
+### ✅ Galería 100% Pública
+- **Acceso libre** a todas las fotos y videos sin login
+- **Navegación completa** por el contenido multimedia
+- **Experiencia fluida** para visitantes no registrados
+
+### ✅ Autenticación Selectiva
 - **Login modal elegante** con diseño moderno
 - **Sistema de tokens JWT** para autenticación segura
 - **Validación de permisos** (solo usuarios con `is_staff` o `is_superuser`)
-- **Protección de rutas** con redireccionamiento automático
+- **Funciones protegidas** solo para administradores
 
-### ✅ Interfaz de Usuario
+### ✅ Interfaz de Usuario Inteligente
 - **Modal de login** responsive con animaciones
 - **Botones de login/logout** en navbar (escritorio y móvil)
-- **Indicadores visuales** de estado de autenticación
-- **Mensajes de error** informativos
+- **Indicadores visuales** del estado de autenticación
+- **Mensajes informativos** para funcionalidades bloqueadas
 
-### ✅ Seguridad
-- **Protección de rutas** para Galería y Torneo BJJ
+### ✅ Seguridad Específica
+- **Protección selectiva** - solo funciones admin requieren login
 - **Validación de permisos** de administrador
 - **Autenticación por tokens** (no cookies)
 - **Limpieza automática** de datos al logout
@@ -34,14 +42,21 @@ Contraseña: admin123
 
 ### 2. Acceso al Sistema
 1. **Desde la página principal**: Haz clic en el botón "Login" en la navbar
-2. **Acceso directo**: Navega a `/galeria` o `/torneo` (se mostrará modal de login automáticamente)
-3. **Modal de login**: Ingresa las credenciales y confirma
+2. **Galería pública**: Navega a `/galeria` - ¡es pública para todos!
+3. **Torneo BJJ**: Navega a `/torneo` (requiere autenticación)
+4. **Subir archivos**: En la galería, haz clic en "Subir Fotos" (requiere autenticación)
 
 ### 3. Funcionalidades Disponibles
-Una vez autenticado como admin podrás:
-- **Subir fotos** a la galería
-- **Acceder al sistema de torneos** BJJ
-- **Gestionar contenido** administrativo
+
+#### **Para Todos los Usuarios (Sin Login):**
+- ✅ **Ver la galería completa** - imágenes y videos públicos
+- ✅ **Navegar por todas las fotos** sin restricciones
+- ✅ **Visualizar contenido** de alta calidad
+
+#### **Solo para Administradores (Con Login):**
+- 🔐 **Subir fotos y videos** a la galería
+- 🔐 **Acceder al sistema completo de torneos** BJJ
+- 🔐 **Gestionar todo el contenido** administrativo
 
 ## Arquitectura Técnica
 
@@ -79,17 +94,27 @@ Una vez autenticado como admin podrás:
 - `GET /api/auth/status/` - Verificar estado
 - `GET /api/auth/user/` - Información del usuario
 
-### Contenido Protegido
-- `POST /api/galeria/upload/` - Subir imágenes (requiere auth)
-- `GET /api/torneo/*` - APIs del sistema de torneos (requiere auth)
+### APIs Públicas
+- `GET /api/galeria/items/` - Ver galería completa (sin auth)
+- `GET /api/galeria/` - Listado de galería (sin auth)
+
+### APIs Protegidas
+- `POST /api/galeria/upload/` - Subir imágenes (requiere auth admin)
+- `GET /api/torneo/*` - Sistema completo de torneos BJJ (requiere auth admin)
 
 ## Seguridad Implementada
 
-1. **Protección de rutas**: Solo usuarios autenticados pueden acceder
+### Acceso Público
+1. **Galería completamente pública**: Cualquier usuario puede ver todo el contenido
+2. **Navegación libre**: Sin restricciones para visualizar fotos y videos
+3. **Experiencia abierta**: Diseño optimizado para visitantes no registrados
+
+### Acceso Administrativo
+1. **Protección selectiva**: Solo funciones administrativas requieren login
 2. **Validación de permisos**: Solo staff/superuser pueden subir contenido
 3. **Autenticación stateless**: Uso de tokens JWT
 4. **Limpieza de datos**: Eliminación automática de tokens al logout
-5. **Mensajes informativos**: Feedback claro al usuario sobre permisos
+5. **Mensajes informativos**: Feedback claro sobre funcionalidades disponibles
 
 ## Próximos Pasos
 

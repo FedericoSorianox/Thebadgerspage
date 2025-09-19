@@ -606,20 +606,18 @@ export default function App() {
         <Route
           path="/galeria"
           element={
-            <ProtectedComponent>
-              <Galeria
-                isLoggedIn={!!(storedUser && storedPass)}
-                loginUser={storedUser || ''}
-                loginPass={storedPass || ''}
-                setShowLogin={() => { }}
-                handleLogin={() => { }}
-                handleLogout={() => { }}
-                loginError={null}
-                showLogin={false}
-                API_BASE={FORCED_API_BASE}
-                setLoginPass={(p) => localStorage.setItem('badgers_pass', p)}
-              />
-            </ProtectedComponent>
+            <Galeria
+              isLoggedIn={!!(storedUser && storedPass)}
+              loginUser={storedUser || ''}
+              loginPass={storedPass || ''}
+              setShowLogin={() => { }}
+              handleLogin={() => { }}
+              handleLogout={() => { }}
+              loginError={null}
+              showLogin={false}
+              API_BASE={FORCED_API_BASE}
+              setLoginPass={(p) => localStorage.setItem('badgers_pass', p)}
+            />
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />
