@@ -3,10 +3,12 @@ set -e
 
 echo "🚀 Iniciando build de producción para The Badgers Page..."
 echo "========================================================"
+echo "📅 Fecha/Hora: $(date)"
+echo "📁 Directorio actual: $(pwd)"
 
 # Verificar si estamos en el directorio correcto
-if [ ! -d "frontend" ]; then
-    echo "❌ Error: No se encuentra el directorio frontend"
+if [ ! -d "frontend" ] || [ ! -d "backend" ]; then
+    echo "❌ Error: Directorios frontend o backend no encontrados"
     echo "📁 Contenido del directorio actual:"
     ls -la
     exit 1
@@ -32,11 +34,15 @@ if [ -d "dist" ]; then
     cp -r dist/* ../backend/frontend_build/
     echo "✅ Frontend copiado correctamente"
     echo "   📄 Archivos copiados:"
-    ls -la ../backend/frontend_build/ | head -10
+    ls -la ../backend/frontend_build/ | head -5
 else
     echo "❌ Error: Directorio dist no encontrado"
     exit 1
 fi
+
+echo "📋 Copiando script de inicio..."
+cp start_render.py backend/
+echo "✅ Script de inicio copiado"
 
 # Volver al directorio raíz
 cd ..
