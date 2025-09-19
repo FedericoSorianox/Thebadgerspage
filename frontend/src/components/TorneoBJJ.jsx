@@ -41,69 +41,69 @@ const api = {
   getTorneos: (filtros = {}) => {
     const params = new URLSearchParams();
     if (filtros.estado) params.append('estado', filtros.estado);
-    return apiCall(`/api/torneos/?${params}`);
+    return apiCall(`/api/torneo/categorias/?${params}`);
   },
 
-  createTorneo: (torneoData) => apiCall('/api/torneos/', {
+  createTorneo: (torneoData) => apiCall('/api/torneo/categorias/', {
     method: 'POST',
     body: JSON.stringify(torneoData)
   }),
 
-  getTorneo: (id) => apiCall(`/api/torneos/${id}/`),
+  getTorneo: (id) => apiCall(`/api/torneo/categorias/${id}/`),
 
-  updateTorneo: (id, data) => apiCall(`/api/torneos/${id}/`, {
+  updateTorneo: (id, data) => apiCall(`/api/torneo/categorias/${id}/`, {
     method: 'PUT',
     body: JSON.stringify(data)
   }),
 
-  deleteTorneo: (id) => apiCall(`/api/torneos/${id}/`, {
+  deleteTorneo: (id) => apiCall(`/api/torneo/categorias/${id}/`, {
     method: 'DELETE'
   }),
 
   // Categorías de torneos
-  getCategoriasTorneo: (torneoId) => apiCall(`/api/torneos/${torneoId}/categorias/`),
+  getCategoriasTorneo: () => apiCall('/api/torneo/categorias/'),
 
-  createCategoriaTorneo: (torneoId, categoriaData) => apiCall(`/api/torneos/${torneoId}/categorias/`, {
+  createCategoriaTorneo: (categoriaData) => apiCall('/api/torneo/categorias/', {
     method: 'POST',
     body: JSON.stringify(categoriaData)
   }),
 
-  updateCategoriaTorneo: (torneoId, categoriaId, categoriaData) => apiCall(`/api/torneos/${torneoId}/categorias/${categoriaId}/`, {
+  updateCategoriaTorneo: (categoriaId, categoriaData) => apiCall(`/api/torneo/categorias/${categoriaId}/`, {
     method: 'PUT',
     body: JSON.stringify(categoriaData)
   }),
 
-  deleteCategoriaTorneo: (torneoId, categoriaId) => apiCall(`/api/torneos/${torneoId}/categorias/${categoriaId}/`, {
+  deleteCategoriaTorneo: (categoriaId) => apiCall(`/api/torneo/categorias/${categoriaId}/`, {
     method: 'DELETE'
   }),
 
   // Participantes
-  getParticipantes: (torneoId) => apiCall(`/api/torneos/${torneoId}/participantes/`),
+  getParticipantes: () => apiCall('/api/torneo/participantes/'),
 
-  createParticipante: (torneoId, participanteData) => apiCall(`/api/torneos/${torneoId}/participantes/`, {
+  createParticipante: (participanteData) => apiCall('/api/torneo/participantes/', {
     method: 'POST',
     body: JSON.stringify(participanteData)
   }),
 
   // Luchas
-  getLuchas: (torneoId, categoria = null) => {
+  getLuchas: (categoria = null) => {
     const params = categoria ? `?categoria=${categoria}` : '';
-    return apiCall(`/api/torneos/${torneoId}/luchas/${params}`);
+    return apiCall(`/api/torneo/luchas/${params}`);
   },
 
-  createLucha: (torneoId, luchaData) => apiCall(`/api/torneos/${torneoId}/luchas/`, {
+  createLucha: (luchaData) => apiCall('/api/torneo/luchas/', {
     method: 'POST',
     body: JSON.stringify(luchaData)
   }),
 
-  updatePuntuacion: (luchaId, campo, valor) => apiCall(`/api/luchas/${luchaId}/puntuacion/`, {
+  updateLucha: (luchaId, luchaData) => apiCall(`/api/torneo/luchas/${luchaId}/`, {
     method: 'PUT',
-    body: JSON.stringify({ campo, valor })
+    body: JSON.stringify(luchaData)
   }),
 
-  finalizarLucha: (luchaId, ganadorId, tipoVictoria, detalle = '') => apiCall(`/api/luchas/${luchaId}/finalizar/`, {
+  finalizarLucha: (luchaId, data) => apiCall(`/api/torneo/luchas/${luchaId}/finalizar/`, {
     method: 'POST',
-    body: JSON.stringify({ ganador_id: ganadorId, tipo_victoria: tipoVictoria, detalle })
+    body: JSON.stringify(data)
   })
 };
 

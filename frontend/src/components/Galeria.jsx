@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import useAuth from '../hooks/useAuth';
 import { LoginModal } from './AuthComponents.jsx';
+import authService from '../services/authService.js';
 
 // Galería completa solo para visualización
 export default function Galeria({ API_BASE }) {
@@ -52,18 +53,10 @@ export default function Galeria({ API_BASE }) {
   const getAuthHeaders = useCallback(() => {
     if (!isAuthenticated || !user) return {};
 
-    // Para la galería, usamos el token del authService
-    const token = localStorage.getItem('auth_token');
+    // Usar el authService para obtener el token
+    const token = authService.getToken();
     if (token) {
       return { 'Authorization': `Token ${token}` };
-    }
-
-    // Fallback al sistema básico si no hay token
-    const storedUser = localStorage.getItem('badgers_user');
-    const storedPass = localStorage.getItem('badgers_pass');
-    if (storedUser && storedPass) {
-      const basicToken = btoa(`${storedUser}:${storedPass}`);
-      return { 'Authorization': `Basic ${basicToken}` };
     }
 
     return {};

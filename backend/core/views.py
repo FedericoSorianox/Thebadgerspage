@@ -254,32 +254,48 @@ def galeria_upload(request):
         # Verificar autenticación para todos los métodos en producción
         if not request.META.get('HTTP_AUTHORIZATION'):
             return JsonResponse({'error': 'No autenticado'}, status=401)
-        
-        auth = request.META['HTTP_AUTHORIZATION']
-        if not auth.startswith('Basic '):
-            return JsonResponse({'error': 'Tipo de autenticación no soportado'}, status=401)
-        
-        try:
-            userpass = base64.b64decode(auth.split(' ')[1]).decode('utf-8')
-            username, password = userpass.split(':', 1)
-            print(f"DEBUG: Intentando autenticar usuario: {username}")
-            user = authenticate(username=username, password=password)
-            if not user:
-                print(f"DEBUG: Autenticación fallida para usuario: {username}")
-                return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
-            print(f"DEBUG: Usuario autenticado exitosamente: {username}")
 
-            # Solo admins pueden subir
-            if not (user.is_staff or user.is_superuser):
-                print(f"DEBUG: Usuario sin permisos de admin: {username}")
-                return JsonResponse({'error': 'Permisos insuficientes'}, status=403)
-        except Exception as e:
-            print(f"DEBUG: Error en autenticación: {e}")
-            return JsonResponse({'error': 'Error en autenticación'}, status=401)
+        auth = request.META['HTTP_AUTHORIZATION']
+        user = None
+
+        # Intentar autenticación con Token primero
+        if auth.startswith('Token '):
+            token_key = auth.split(' ')[1]
+            try:
+                from rest_framework.authtoken.models import Token
+                token = Token.objects.get(key=token_key)
+                user = token.user
+                print(f"DEBUG: Usuario autenticado por Token: {user.username}")
+            except Token.DoesNotExist:
+                return JsonResponse({'error': 'Token inválido'}, status=401)
+            except Exception as e:
+                print(f"DEBUG: Error con Token auth: {e}")
+                return JsonResponse({'error': 'Error de autenticación'}, status=401)
+
+        # Fallback a autenticación Basic si no es Token
+        elif auth.startswith('Basic '):
+            try:
+                userpass = base64.b64decode(auth.split(' ')[1]).decode('utf-8')
+                username, password = userpass.split(':', 1)
+                print(f"DEBUG: Intentando autenticar usuario: {username}")
+                user = authenticate(username=username, password=password)
+                if not user:
+                    print(f"DEBUG: Autenticación fallida para usuario: {username}")
+                    return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
+            except Exception as e:
+                print(f"DEBUG: Error con Basic auth: {e}")
+                return JsonResponse({'error': 'Error de autenticación'}, status=401)
+        else:
+            return JsonResponse({'error': 'Tipo de autenticación no soportado'}, status=401)
+
+        # Verificar permisos de admin
+        if not (user.is_staff or user.is_superuser):
+            print(f"DEBUG: Usuario sin permisos de admin: {user.username}")
+            return JsonResponse({'error': 'Permisos insuficientes'}, status=403)
     
     # Si es un GET request, solo verificar credenciales y devolver OK
     if request.method == 'GET':
-        return JsonResponse({'ok': True, 'message': 'Credenciales válidas', 'user': username})
+        return JsonResponse({'ok': True, 'message': 'Credenciales válidas', 'user': user.username if user else 'dev'})
     
     # Solo POST está permitido para subir archivos
     if request.method != 'POST':

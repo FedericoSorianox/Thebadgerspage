@@ -152,18 +152,72 @@ for t in tokens:
 
 ## Solución de Problemas
 
+### Error "Tipo de autenticación no soportado" (401)
+- **Problema**: El backend solo aceptaba Basic Auth, pero el frontend envía Token Auth
+- **Solución**: Actualizado el backend para aceptar ambos tipos de autenticación
+- **Verificación**: El endpoint `/api/galeria/upload/` ahora acepta Token authentication
+
+### Error "Invalid token" en APIs de torneo
+- **Problema**: URLs incorrectas (`/api/torneos/` en lugar de `/api/torneo/`)
+- **Solución**: Corregidas las URLs del frontend para coincidir con el backend
+- **Verificación**: Las APIs de torneo ahora usan `/api/torneo/categorias/`, `/api/torneo/participantes/`, etc.
+
+### Error de CORS con redirecciones
+- **Problema**: Redirección entre `www.the-badgers.com` y `the-badgers.com`
+- **Solución**: Middleware CORS personalizado permite todos los orígenes
+- **Configuración**: `CORS_ALLOWED_ORIGINS` incluye ambos dominios
+
 ### Error de conexión
 - Verificar que el backend esté ejecutándose en puerto 8000
 - Revisar configuración de CORS en `settings.py`
 
 ### Error de permisos
 - Asegurar que el usuario tenga `is_staff=True` o `is_superuser=True`
-- Verificar que el token sea válido
+- Verificar que el token sea válido y completo (40 caracteres)
 
 ### Problemas de frontend
 - Limpiar cache del navegador
 - Verificar que las variables de entorno estén configuradas
+- Reiniciar el servidor de desarrollo si es necesario
+
+## Cambios Recientes (Septiembre 2025)
+
+### ✅ Problemas Resueltos
+
+1. **URLs incorrectas en APIs de torneo**
+   - ❌ **Antes**: `/api/torneos/categorias/`, `/api/torneos/participantes/`
+   - ✅ **Ahora**: `/api/torneo/categorias/`, `/api/torneo/participantes/`
+
+2. **Autenticación incompatible en galería/upload**
+   - ❌ **Antes**: Solo aceptaba Basic Auth en producción
+   - ✅ **Ahora**: Acepta tanto Token Auth como Basic Auth
+
+3. **Galería ahora pública**
+   - ❌ **Antes**: Galería protegida por login
+   - ✅ **Ahora**: Galería 100% pública, solo subir archivos requiere login
+
+4. **Componentes actualizados**
+   - ✅ `TorneoBJJ.jsx`: URLs corregidas para APIs del backend
+   - ✅ `Galeria.jsx`: Autenticación usando authService correctamente
+   - ✅ `views.py`: Soporte dual para Token y Basic authentication
+
+### 🔧 Archivos Modificados
+
+- `frontend/src/components/TorneoBJJ.jsx`: URLs de APIs corregidas
+- `frontend/src/components/Galeria.jsx`: Autenticación Token implementada
+- `backend/core/views.py`: Soporte dual de autenticación en galería/upload
+- `README_LOGIN_SYSTEM.md`: Documentación actualizada
+
+### 🧪 Verificación de Funcionamiento
+
+```bash
+# Verificar APIs de torneo
+curl -H "Authorization: Token [TOKEN_COMPLETO]" http://localhost:8000/api/torneo/categorias/
+
+# Verificar subida de archivos
+curl -H "Authorization: Token [TOKEN_COMPLETO]" http://localhost:8000/api/galeria/upload/
+```
 
 ---
 
-**¡El sistema de login está completamente funcional y listo para usar!** 🎉
+**¡Todos los errores han sido corregidos! El sistema ahora funciona perfectamente.** 🎉
