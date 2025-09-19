@@ -45,7 +45,7 @@ TEMPLATES = [
 CORS_ALLOW_ALL_ORIGINS = True  # TEMPORAL: Permitir todos los orígenes
 CORS_ALLOW_CREDENTIALS = False  # Debe ser False cuando se usa CORS_ALLOW_ALL_ORIGINS
 
-# Descomentar y actualizar CORS_ALLOWED_ORIGINS
+# Descomentar y actualizar CORS_ALLOWED_ORIGINS - solo para thebadgerspage
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:5174",
@@ -91,7 +91,7 @@ CORS_EXPOSE_HEADERS = [
     'Authorization',
 ]
 
-# Confianza CSRF para frontends permitidos
+# Confianza CSRF para frontends permitidos - solo thebadgerspage
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:5173',
     'http://localhost:5174',
@@ -111,23 +111,29 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Configuración de base de datos
-# Usar PostgreSQL compartido con el sistema de socios
+# Configuración de base de datos - SQLite para desarrollo, fácil de migrar después
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'badgersdb',
-        'USER': 'badgersdb_user',
-        'PASSWORD': '6uI9aBMZlUg8sXXiKDIHkhDlJN5wbrhi',
-        'HOST': 'dpg-d1jrhpemcj7s73a8sskg-a.oregon-postgres.render.com',
-        'PORT': '5432',
-        'OPTIONS': {
-            'sslmode': 'require',
-        },
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'thebadgerspage.db'),
     }
 }
 
-# Configuración para desarrollo local (SQLite)
+# Configuración futura para MongoDB (cuando se resuelvan problemas de compatibilidad)
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'djongo',
+#         'NAME': 'thebadgerspage_db',
+#         'CLIENT': {
+#             'host': 'mongodb://localhost:27017',
+#             'username': 'admin',
+#             'password': 'password123',
+#             'authSource': 'admin'
+#         }
+#     }
+# }
+
+# Configuración alternativa para desarrollo local (SQLite si es necesario)
 if os.environ.get('USE_SQLITE', 'false').lower() == 'true':
     DATABASES = {
         'default': {
@@ -143,7 +149,7 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     '0.0.0.0',
     'thebadgerspage.onrender.com',
-    'thebadgersadmin.onrender.com',  # Agregar este
+    # REMOVIDO: 'thebadgersadmin.onrender.com' - proyecto separado
     'the-badgers.com',
     'www.the-badgers.com',
 ]
@@ -172,7 +178,8 @@ DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 FILE_UPLOAD_TEMP_DIR = None
 
-SECRET_KEY = 'dev-secret-key-1234567890abcdef'
+# SECRET_KEY única para el proyecto thebadgerspage
+SECRET_KEY = os.environ.get('PROJECT_SECRET_KEY', 'dev-secret-key-thebadgerspage-1234567890abcdef')
 
 # Configuración para forzar HTTPS solo en producción
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

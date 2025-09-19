@@ -8,7 +8,7 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: password123
-      MONGO_INITDB_DATABASE: thebadgers_torneos
+      MONGO_INITDB_DATABASE: thebadgerspage_db
     ports:
       - "27018:27017"
     volumes:
@@ -36,6 +36,7 @@ services:
 
 volumes:
   mongodb_data:
+
 
 networks:
   thebadgers_network:

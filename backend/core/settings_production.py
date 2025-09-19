@@ -16,25 +16,20 @@ ALLOWED_HOSTS = [
     'localhost',
 ]
 
-# Configuración de base de datos PostgreSQL para producción
-# Render proporciona DATABASE_URL automáticamente
-DATABASE_URL = os.environ.get('DATABASE_URL')
-if DATABASE_URL:
-    DATABASES = {
-        'default': dj_database_url.parse(DATABASE_URL)
-    }
-else:
-    # Fallback para configuración manual
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('DATABASE_NAME', 'bjj_production'),
-            'USER': os.environ.get('DATABASE_USER', 'bjj_user'),
-            'PASSWORD': os.environ.get('DATABASE_PASSWORD'),
-            'HOST': os.environ.get('DATABASE_HOST', 'localhost'),
-            'PORT': os.environ.get('DATABASE_PORT', '5432'),
+# Configuración de base de datos MongoDB para producción - propia del proyecto
+DATABASES = {
+    'default': {
+        'ENGINE': 'djongo',
+        'NAME': os.environ.get('MONGODB_NAME', 'thebadgerspage_db'),
+        'CLIENT': {
+            'host': os.environ.get('MONGODB_URI', 'mongodb://localhost:27017'),
+            'username': os.environ.get('MONGODB_USER'),
+            'password': os.environ.get('MONGODB_PASSWORD'),
+            'authSource': 'admin',
+            'authMechanism': 'SCRAM-SHA-1'
         }
     }
+}
 # Configuración CORS para producción - Específica para permitir credenciales
 CORS_ALLOW_ALL_ORIGINS = False  # Deshabilitar para poder usar credenciales
 CORS_ALLOW_CREDENTIALS = True

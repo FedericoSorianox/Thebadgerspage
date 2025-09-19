@@ -38,15 +38,19 @@ WHITENOISE_MIMETYPES = {
     '.ico': 'image/x-icon',
 }
 
-# Configuración de base de datos PostgreSQL para Render
-import dj_database_url
-
+# Configuración de base de datos MongoDB para Render - propia del proyecto
 DATABASES = {
-    'default': dj_database_url.config(
-        default='sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3'),
-        conn_max_age=600,
-        conn_health_checks=True,
-    )
+    'default': {
+        'ENGINE': 'djongo',
+        'NAME': os.environ.get('MONGODB_NAME', 'thebadgerspage_db'),
+        'CLIENT': {
+            'host': os.environ.get('MONGODB_URI', 'mongodb://localhost:27017'),
+            'username': os.environ.get('MONGODB_USER'),
+            'password': os.environ.get('MONGODB_PASSWORD'),
+            'authSource': 'admin',
+            'authMechanism': 'SCRAM-SHA-1'
+        }
+    }
 }
 
 # Configuración de seguridad

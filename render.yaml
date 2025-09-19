@@ -3,7 +3,7 @@ services:
     name: thebadgerspage
     env: python
     plan: free
-    buildCommand: ./deploy.sh
+    buildCommand: ./build.sh  # Cambiado de deploy.sh que no existe
     startCommand: cd backend && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --settings=core.settings_render
     envVars:
       - key: DJANGO_SETTINGS_MODULE
@@ -14,14 +14,22 @@ services:
         value: admin
       - key: ADMIN_EMAIL
         value: admin@thebadgers.uy
-      - key: ADMIN_PASSWORD
-        value: admin123bjj2025
+      # REMOVIDO: ADMIN_PASSWORD hardcodeado - ahora usa SECRET_KEY
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: DEBUG
         value: false
       - key: ALLOWED_HOSTS
         value: the-badgers.com,www.the-badgers.com,thebadgerspage.onrender.com,localhost,127.0.0.1
+      # Variables para MongoDB - propias del proyecto
+      - key: MONGODB_NAME
+        value: thebadgerspage_db
+      - key: MONGODB_USER
+        fromSecret: mongodb_user
+      - key: MONGODB_PASSWORD
+        fromSecret: mongodb_password
+      - key: MONGODB_URI
+        fromSecret: mongodb_uri
     customDomains:
       - name: the-badgers.com
       - name: www.the-badgers.com 
