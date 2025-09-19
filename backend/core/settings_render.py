@@ -38,20 +38,28 @@ WHITENOISE_MIMETYPES = {
     '.ico': 'image/x-icon',
 }
 
-# Configuración de base de datos MongoDB para Render - propia del proyecto
+# Configuración de base de datos SQLite para Render (más simple y confiable)
 DATABASES = {
     'default': {
-        'ENGINE': 'djongo',
-        'NAME': os.environ.get('MONGODB_NAME', 'thebadgerspage_db'),
-        'CLIENT': {
-            'host': os.environ.get('MONGODB_URI', 'mongodb://localhost:27017'),
-            'username': os.environ.get('MONGODB_USER'),
-            'password': os.environ.get('MONGODB_PASSWORD'),
-            'authSource': 'admin',
-            'authMechanism': 'SCRAM-SHA-1'
-        }
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
 }
+
+# Configuración futura para MongoDB (comentada por ahora)
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'djongo',
+#         'NAME': os.environ.get('MONGODB_NAME', 'thebadgerspage_db'),
+#         'CLIENT': {
+#             'host': os.environ.get('MONGODB_URI', 'mongodb://localhost:27017'),
+#             'username': os.environ.get('MONGODB_USER'),
+#             'password': os.environ.get('MONGODB_PASSWORD'),
+#             'authSource': 'admin',
+#             'authMechanism': 'SCRAM-SHA-1'
+#         }
+#     }
+# }
 
 # Configuración de seguridad
 SECURE_SSL_REDIRECT = True

@@ -283,3 +283,4 @@ class GaleriaItem(models.Model):
 - **Error 500 en producción**: Problemas con `fecha_subida` null y campos opcionales
 - **CORS entre dominios**: Configuración correcta entre `the-badgers.com` y `thebadgerspage.onrender.com`
 - **URLs de API**: Configuración forzada correcta en producción
+- **Error de MongoDB/djongo**: Cambiado a SQLite para mayor confiabilidad en Render

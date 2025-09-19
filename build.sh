@@ -52,8 +52,16 @@ if [ -f "backend/requirements.txt" ]; then
     echo "📂 Recolectando archivos estáticos..."
     python manage.py collectstatic --noinput --clear
 
-    echo "🔧 Verificando configuración..."
-    python manage.py check --settings=core.settings_render
+    echo "🔧 Verificando configuración de Django..."
+    if python3 manage.py check --settings=core.settings_render; then
+        echo "✅ Configuración de Django verificada correctamente"
+    else
+        echo "❌ Error en configuración de Django"
+        exit 1
+    fi
+
+    echo "📊 Verificando estado de migraciones..."
+    python3 manage.py showmigrations --settings=core.settings_render
 
     echo "✅ Build completado exitosamente!"
     echo ""
