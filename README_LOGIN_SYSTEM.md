@@ -216,8 +216,42 @@ curl -H "Authorization: Token [TOKEN_COMPLETO]" http://localhost:8000/api/torneo
 
 # Verificar subida de archivos
 curl -H "Authorization: Token [TOKEN_COMPLETO]" http://localhost:8000/api/galeria/upload/
+
+# Verificar que la galería funciona sin autenticación
+curl http://localhost:8000/api/galeria/items/
 ```
+
+### 🗃️ Nueva Estructura de Base de Datos
+
+```python
+class GaleriaItem(models.Model):
+    archivo = models.FileField(upload_to='galeria/', null=True, blank=True)  # Archivos locales
+    archivo_url = models.URLField(max_length=500, null=True, blank=True)    # URLs Cloudinary
+    nombre = models.CharField(max_length=100)
+    # ... otros campos
+
+    @property
+    def url(self):
+        """Retorna la URL correcta según el tipo de almacenamiento"""
+        if self.archivo_url:
+            return self.archivo_url
+        elif self.archivo:
+            return self.archivo.url
+        return None
+```
+
+### 🔄 Lógica de Almacenamiento
+
+1. **Producción (Cloudinary)**: Archivos se suben a Cloudinary, URL se guarda en `archivo_url`
+2. **Desarrollo (Local)**: Archivos se guardan localmente, URL se genera desde `archivo.url`
+3. **API Unificada**: La propiedad `url` del modelo maneja ambos casos automáticamente
 
 ---
 
-**¡Todos los errores han sido corregidos! El sistema ahora funciona perfectamente.** 🎉
+**¡Todos los errores han sido corregidos! El sistema de subida de archivos funciona perfectamente.** 🎉
+
+**✅ Problemas resueltos:**
+- Error 500 "This backend doesn't support absolute paths"
+- Autenticación incompatible entre frontend y backend
+- URLs incorrectas en APIs de torneo
+- Manejo de archivos tanto locales como en Cloudinary

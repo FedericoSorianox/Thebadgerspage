@@ -109,25 +109,13 @@ def galeria_items(request):
         items = list(qs[:limit])
         data = []
         for it in items:
-            archivo_value = str(it.archivo)
+            # Usar la propiedad url del modelo que maneja tanto archivos locales como URLs de Cloudinary
+            file_url = it.url
+            if not file_url:
+                continue
+
             # ocultar unsplash
-            if 'unsplash.com' in archivo_value:
-                continue
-            # Si no hay archivo asignado, saltar
-            if not archivo_value:
-                continue
-            if archivo_value.startswith('http') and 'cloudinary.com' in archivo_value:
-                file_url = archivo_value
-            elif hasattr(it.archivo, 'url'):
-                try:
-                    file_url = it.archivo.url
-                except Exception:
-                    # Si no hay archivo asociado o falla al resolver la URL, saltar
-                    continue
-                if not file_url.startswith('http'):
-                    # Construir URL absoluta acorde al entorno
-                    file_url = request.build_absolute_uri(file_url)
-            else:
+            if 'unsplash.com' in file_url:
                 continue
             data.append({
                 'id': it.id,
@@ -183,37 +171,17 @@ def galeria_list(request):
     for i, item in enumerate(items):
         print(f"DEBUG galeria_list: Procesando item {item.id} - {item.nombre}")
         
-        # Verificar si el campo archivo contiene una URL completa de Cloudinary
-        archivo_value = str(item.archivo)
-        print(f"DEBUG galeria_list: Valor real del campo archivo: {archivo_value}")
-        
-        # FILTRAR IMÁGENES DE UNSPLASH - NO MOSTRARLAS
-        if 'unsplash.com' in archivo_value:
-            print(f"DEBUG galeria_list: Saltando imagen de Unsplash: {archivo_value}")
+        # Usar la propiedad url del modelo que maneja tanto archivos locales como URLs de Cloudinary
+        file_url = item.url
+        if not file_url:
+            print(f"DEBUG galeria_list: Item {item.id} sin URL válida, saltando...")
             continue
-        
-        if archivo_value.startswith('http') and 'cloudinary.com' in archivo_value:
-            # Es una URL directa de Cloudinary, usarla sin procesar
-            file_url = archivo_value
-            print(f"DEBUG galeria_list: URL directa de Cloudinary encontrada: {file_url}")
-        elif hasattr(item.archivo, 'url') and 'cloudinary.com' in item.archivo.url:
-            # Si la URL contiene cloudinary.com a través del storage, usarla directamente
-            file_url = item.archivo.url
-            print(f"DEBUG galeria_list: URL de Cloudinary desde storage encontrada: {file_url}")
-        elif hasattr(item.archivo, 'url'):
-            # Para otros tipos de storage, construir URL absoluta
-            try:
-                file_url = item.archivo.url
-            except Exception:
-                # Si el FileField no tiene archivo asociado, saltar
-                print(f"DEBUG galeria_list: Item {item.id} sin archivo asociado, saltando...")
-                continue
-            if not file_url.startswith('http'):
-                file_url = request.build_absolute_uri(file_url)
-            print(f"DEBUG galeria_list: URL construida: {file_url}")
-        else:
-            # Si no hay URL válida, saltar este item
-            print(f"DEBUG galeria_list: Item {item.id} no tiene URL válida, saltando...")
+
+        print(f"DEBUG galeria_list: URL encontrada: {file_url}")
+
+        # FILTRAR IMÁGENES DE UNSPLASH - NO MOSTRARLAS
+        if 'unsplash.com' in file_url:
+            print(f"DEBUG galeria_list: Saltando imagen de Unsplash: {file_url}")
             continue
         
         data.append({
@@ -249,7 +217,20 @@ def galeria_upload(request):
     # En desarrollo local, permitir acceso sin autenticación
     if settings.DEBUG:
         print("DEBUG: Modo desarrollo - saltando autenticación")
-        user = None
+        # Crear un usuario dummy para desarrollo
+        from django.contrib.auth.models import User
+        user, created = User.objects.get_or_create(
+            username='dev',
+            defaults={
+                'email': 'dev@example.com',
+                'is_staff': True,
+                'is_superuser': True
+            }
+        )
+        if created:
+            user.set_password('dev123')
+            user.save()
+            print("DEBUG: Usuario dev creado")
     else:
         # Verificar autenticación para todos los métodos en producción
         if not request.META.get('HTTP_AUTHORIZATION'):
@@ -379,24 +360,28 @@ def galeria_upload(request):
             
             # Crear el item con la URL de Cloudinary
             item = GaleriaItem.objects.create(
-                nombre=nombre, 
-                archivo=result['secure_url'],  # Guardar la URL completa de Cloudinary
+                nombre=nombre,
+                archivo_url=result['secure_url'],  # Guardar la URL completa de Cloudinary
                 usuario=user if user else None
             )
-            
+
             # Para Cloudinary, devolver directamente la URL sin procesar
             file_url = result['secure_url']
             print(f"DEBUG: Usando URL directa de Cloudinary: {file_url}")
-            
+
         except Exception as e:
             print(f"DEBUG: ❌ Error subiendo a Cloudinary: {e}")
             # Si falla Cloudinary, usar almacenamiento local
             media_dir = os.path.join(settings.MEDIA_ROOT, 'galeria')
             if not os.path.exists(media_dir):
                 os.makedirs(media_dir, exist_ok=True)
-            
-            item = GaleriaItem.objects.create(nombre=nombre, archivo=archivo, usuario=user if user else None)
-            
+
+            item = GaleriaItem.objects.create(
+                nombre=nombre,
+                archivo=archivo,  # Archivo local
+                usuario=user if user else None
+            )
+
             # Para almacenamiento local, construir URL absoluta
             file_url = request.build_absolute_uri(item.archivo.url).replace('http://', 'https://')
             print(f"DEBUG: Usando URL local: {file_url}")
@@ -404,12 +389,13 @@ def galeria_upload(request):
         print(f"DEBUG: GaleriaItem creado exitosamente con ID: {item.id}")
         
         # Verificar que el archivo se guardó correctamente
-        if item.archivo:
-            print(f"DEBUG: Archivo guardado en: {item.archivo.path}")
-            print(f"DEBUG: URL del archivo: {item.archivo.url}")
-            print(f"DEBUG: Nombre del archivo en Cloudinary: {item.archivo.name}")
-            print(f"DEBUG: Tipo de archivo: {type(item.archivo)}")
-            print(f"DEBUG: Storage del archivo: {item.archivo.storage}")
+        if item.archivo or item.archivo_url:
+            print(f"DEBUG: Archivo guardado correctamente")
+            print(f"DEBUG: URL final: {item.url}")
+            if item.archivo:
+                print(f"DEBUG: Archivo local: {item.archivo.path}")
+            if item.archivo_url:
+                print(f"DEBUG: URL Cloudinary: {item.archivo_url}")
         else:
             print(f"DEBUG: ADVERTENCIA: El archivo no se guardó correctamente")
         

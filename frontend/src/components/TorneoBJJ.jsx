@@ -11,6 +11,7 @@ const apiCall = async (endpoint, options = {}) => {
 
   // Get token from authService
   const token = authService.getToken();
+  console.log('API Call:', endpoint, 'Token:', token ? 'Present' : 'Missing');
 
   if (!token) {
     throw new Error('No hay token de autenticación');
@@ -25,14 +26,20 @@ const apiCall = async (endpoint, options = {}) => {
     },
   };
 
+  console.log('Making request to:', url);
   const response = await fetch(url, { ...defaultOptions, ...options });
+  console.log('Response status:', response.status);
 
   if (!response.ok) {
+    const errorText = await response.text();
+    console.log('Error response:', errorText);
     const errorData = await response.json().catch(() => ({ error: 'Error desconocido' }));
     throw new Error(errorData.error || `Error ${response.status}`);
   }
 
-  return response.json();
+  const data = await response.json();
+  console.log('Response data:', data);
+  return data;
 };
 
 // API functions
@@ -129,8 +136,12 @@ const TorneoBJJ = () => {
 
   // Cargar torneos al montar el componente
   useEffect(() => {
+    console.log('useEffect ejecutándose, isAuthenticated:', isAuthenticated);
     if (isAuthenticated) {
+      console.log('Usuario autenticado, cargando torneos...');
       cargarTorneos();
+    } else {
+      console.log('Usuario no autenticado, esperando...');
     }
   }, [isAuthenticated]);
 
@@ -161,18 +172,31 @@ const TorneoBJJ = () => {
 
   const cargarTorneos = async () => {
     try {
+      console.log('Iniciando carga de torneos...');
       setLoading(true);
       const response = await api.getTorneos();
-      const torneosData = response.torneos || [];
+      console.log('Respuesta de API getTorneos:', response);
 
-      // Las categorías ya vienen incluidas en la respuesta de la API
-      // Solo aseguramos que cada torneo tenga un array de categorías válido
-      const torneosConCategorias = torneosData.map(torneo => ({
-        ...torneo,
-        categorias: Array.isArray(torneo.categorias) ? torneo.categorias : []
+      // La API de Django REST Framework devuelve datos en formato paginado
+      const torneosData = response.results || response || [];
+      console.log('Datos de torneos procesados:', torneosData);
+
+      // Para esta implementación, tratamos las categorías como "torneos"
+      // Convertimos las categorías en un formato que el frontend espera
+      const torneosConCategorias = torneosData.map(categoria => ({
+        id: categoria.id,
+        nombre: categoria.nombre,
+        fecha: categoria.fecha_creacion,
+        estado: categoria.estado,
+        categorias: [categoria], // La categoría es el propio torneo
+        participantes_count: categoria.participantes_count || 0,
+        llaves_count: categoria.llaves_count || 0,
+        luchas_pendientes: categoria.luchas_pendientes || 0
       }));
 
+      console.log('Torneos con categorías:', torneosConCategorias);
       setTorneos(torneosConCategorias);
+      setLoading(false);
     } catch (err) {
       console.error('Error cargando torneos:', err);
       setError('Error al cargar torneos: ' + err.message);

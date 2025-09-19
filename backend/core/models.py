@@ -3,7 +3,10 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 
 class GaleriaItem(models.Model):
-    archivo = models.FileField(upload_to='galeria/')
+    # Campo para archivo local (usado en desarrollo)
+    archivo = models.FileField(upload_to='galeria/', null=True, blank=True)
+    # Campo para URL de Cloudinary (usado en producción)
+    archivo_url = models.URLField(max_length=500, null=True, blank=True)
     nombre = models.CharField(max_length=100)
     fecha_subida = models.DateTimeField(auto_now_add=True)
     # El tipo se puede deducir del archivo, pero lo dejamos para consulta rápida
@@ -19,10 +22,25 @@ class GaleriaItem(models.Model):
                 self.tipo = 'video'
             else:
                 self.tipo = 'img'
+        elif self.archivo_url:
+            # Si tenemos URL, deducir tipo por extensión en la URL
+            if '.mp4' in self.archivo_url.lower():
+                self.tipo = 'video'
+            else:
+                self.tipo = 'img'
         else:
-            # Valor por defecto si no hay archivo
+            # Valor por defecto si no hay archivo ni URL
             self.tipo = 'img'
         super().save(*args, **kwargs)
+
+    @property
+    def url(self):
+        """Retorna la URL del archivo, ya sea local o de Cloudinary"""
+        if self.archivo_url:
+            return self.archivo_url
+        elif self.archivo:
+            return self.archivo.url
+        return None
 
     def __str__(self):
         return f"{self.nombre} ({self.tipo}) - {self.fecha_subida}"
