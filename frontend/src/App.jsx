@@ -4,7 +4,7 @@ import badgersLogo from "./assets/badgers-logo.png";
 import { Parallax } from 'react-parallax';
 import { Routes, Route, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext.jsx';
-import { ProtectedComponent } from './components/AuthComponents.jsx';
+import { ProtectedComponent, LoginModal } from './components/AuthComponents.jsx';
 import useAuth from './hooks/useAuth';
 import badgersHeroBg from "./assets/the-badgers-academia.jpeg";
 import gymBackground from "./assets/gym-background.jpeg";
@@ -36,7 +36,8 @@ function Navbar() {
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const { isAuthenticated, user } = useAuth();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const { isAuthenticated, user, logout } = useAuth();
 
   const handleNavigation = (href) => {
     if (href.startsWith('/#')) {
@@ -66,42 +67,12 @@ function Navbar() {
     setIsMenuOpen(false);
   };
 
-  // Doble click en logo para toggle admin/login
-  const handleLogoDoubleClick = async () => {
-    if (!isAdmin) {
-      const u = prompt('Usuario admin:');
-      if (!u) return;
-      const p = prompt('Contraseña:');
-      if (!p) return;
-      try {
-        const token = btoa(`${u}:${p}`);
-        console.log('DEBUG: Intentando login con URL:', `${FORCED_API_BASE}/api/galeria/upload/`);
-        console.log('DEBUG: Token generado:', token.substring(0, 20) + '...');
-        const r = await fetch(`${FORCED_API_BASE}/api/galeria/upload/`, {
-          method: 'GET',
-          headers: { Authorization: `Basic ${token}` }
-        });
-        console.log('DEBUG: Response status:', r.status);
-        console.log('DEBUG: Response ok:', r.ok);
-        const responseText = await r.text();
-        console.log('DEBUG: Response text:', responseText);
-
-        if (!r.ok) throw new Error(`HTTP ${r.status}: ${responseText}`);
-        localStorage.setItem('badgers_user', u);
-        localStorage.setItem('badgers_pass', p);
-        setIsAdmin(true);
-        window.dispatchEvent(new Event('badgers-admin-changed'));
-        alert('Modo admin activado');
-      } catch (error) {
-        console.error('DEBUG: Error de autenticación:', error);
-        alert(`Error de autenticación: ${error.message}`);
-      }
+  // Manejar login/logout
+  const handleAuthClick = () => {
+    if (isAuthenticated) {
+      logout();
     } else {
-      localStorage.removeItem('badgers_user');
-      localStorage.removeItem('badgers_pass');
-      setIsAdmin(false);
-      window.dispatchEvent(new Event('badgers-admin-changed'));
-      alert('Modo admin desactivado');
+      setShowLoginModal(true);
     }
   };
 
@@ -122,7 +93,7 @@ function Navbar() {
     <nav className="navbar-badgers fixed top-0 left-0 w-full z-50 shadow-xl border-b border-cyan-500/60 backdrop-blur-md">
       <div className="max-w-4xl mx-auto px-4 py-2 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <img src={badgersLogo} alt="Logo The Badgers" className="h-12 w-auto max-w-[56px] object-contain drop-shadow-2xl cursor-pointer" onDoubleClick={handleLogoDoubleClick} />
+          <img src={badgersLogo} alt="Logo The Badgers" className="h-12 w-auto max-w-[56px] object-contain drop-shadow-2xl" />
           <span className="text-2xl font-extrabold text-cyan-300 tracking-wide drop-shadow">The Badgers</span>
         </div>
 
@@ -155,6 +126,43 @@ function Navbar() {
             </li>
           ))}
         </ul>
+
+        {/* Botón de login/logout */}
+        <div className="hidden md:flex items-center gap-3">
+          <button
+            onClick={handleAuthClick}
+            className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${isAuthenticated
+              ? 'bg-red-500 hover:bg-red-600 text-white'
+              : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white'
+              } transform hover:scale-105`}
+          >
+            {isAuthenticated ? (
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Logout
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Login
+              </div>
+            )}
+          </button>
+          {isAuthenticated && user && (
+            <div className="flex items-center gap-2 text-cyan-300">
+              <span className="text-sm">{user.first_name || user.username}</span>
+              {user.is_staff && (
+                <span className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-2 py-1 rounded text-xs font-medium">
+                  ADMIN
+                </span>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Botón hamburguesa para móvil */}
         <button
@@ -201,8 +209,55 @@ function Navbar() {
               </li>
             ))}
           </ul>
+
+          {/* Botón de login/logout en móvil */}
+          <div className="border-t border-cyan-500/20 pt-4 mt-4">
+            <button
+              onClick={() => {
+                handleAuthClick();
+                setIsMenuOpen(false);
+              }}
+              className={`w-full px-4 py-3 rounded-lg font-semibold transition-all duration-300 ${isAuthenticated
+                ? 'bg-red-500 hover:bg-red-600 text-white'
+                : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white'
+                }`}
+            >
+              {isAuthenticated ? (
+                <div className="flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Cerrar Sesión
+                </div>
+              ) : (
+                <div className="flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Iniciar Sesión
+                </div>
+              )}
+            </button>
+            {isAuthenticated && user && (
+              <div className="flex items-center justify-center gap-2 text-cyan-300 mt-3">
+                <span className="text-sm">{user.first_name || user.username}</span>
+                {user.is_staff && (
+                  <span className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-2 py-1 rounded text-xs font-medium">
+                    ADMIN
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Modal de Login */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        title="Acceso Administrativo"
+      />
     </nav>
   );
 }
@@ -540,22 +595,31 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/tienda" element={<Tienda />} />
-        <Route path="/torneo" element={<TorneoBJJ />} />
+        <Route
+          path="/torneo"
+          element={
+            <ProtectedComponent>
+              <TorneoBJJ />
+            </ProtectedComponent>
+          }
+        />
         <Route
           path="/galeria"
           element={
-            <Galeria
-              isLoggedIn={!!(storedUser && storedPass)}
-              loginUser={storedUser || ''}
-              loginPass={storedPass || ''}
-              setShowLogin={() => { }}
-              handleLogin={() => { }}
-              handleLogout={() => { }}
-              loginError={null}
-              showLogin={false}
-              API_BASE={FORCED_API_BASE}
-              setLoginPass={(p) => localStorage.setItem('badgers_pass', p)}
-            />
+            <ProtectedComponent>
+              <Galeria
+                isLoggedIn={!!(storedUser && storedPass)}
+                loginUser={storedUser || ''}
+                loginPass={storedPass || ''}
+                setShowLogin={() => { }}
+                handleLogin={() => { }}
+                handleLogout={() => { }}
+                loginError={null}
+                showLogin={false}
+                API_BASE={FORCED_API_BASE}
+                setLoginPass={(p) => localStorage.setItem('badgers_pass', p)}
+              />
+            </ProtectedComponent>
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />
