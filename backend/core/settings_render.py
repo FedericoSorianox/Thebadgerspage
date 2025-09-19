@@ -3,6 +3,14 @@ Configuración específica para Render
 """
 from .settings import *
 
+# Debug para Render
+import os
+print("🔧 Configuración de Render cargada")
+print(f"📁 BASE_DIR: {BASE_DIR}")
+print(f"📁 Current working directory: {os.getcwd()}")
+print(f"🌐 RENDER env var: {os.environ.get('RENDER', 'Not set')}")
+print(f"🐍 Python executable: {os.sys.executable}")
+
 # Configuración para producción en Render
 DEBUG = False
 ALLOWED_HOSTS = [
@@ -76,8 +84,13 @@ if os.environ.get('RENDER'):
     # Ejecutar migraciones automáticamente en Render
     import subprocess
     try:
-        subprocess.run(['python', 'manage.py', 'migrate', '--noinput'], check=True)
+        # Intentar con python3 primero, luego python
+        python_cmd = 'python3' if os.path.exists('/usr/bin/python3') else 'python'
+        subprocess.run([python_cmd, 'manage.py', 'migrate', '--noinput'], check=True)
         print("✅ Migraciones ejecutadas automáticamente")
     except subprocess.CalledProcessError as e:
         print(f"⚠️ Error ejecutando migraciones: {e}")
+        # Continuar sin fallar el deploy
+    except FileNotFoundError:
+        print("⚠️ Python no encontrado para ejecutar migraciones")
         # Continuar sin fallar el deploy 

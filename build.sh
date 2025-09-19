@@ -49,19 +49,56 @@ if [ -f "backend/requirements.txt" ]; then
     # Instalar dependencias sin cache para reducir tamaño
     pip install --no-cache-dir -r requirements.txt
 
+    # Detectar comando Python para usar consistentemente
+    PYTHON_CMD=""
+    if command -v python3 &> /dev/null; then
+        PYTHON_CMD="python3"
+        echo "🐍 Usando python3"
+    elif command -v python &> /dev/null; then
+        PYTHON_CMD="python"
+        echo "🐍 Usando python"
+    else
+        echo "❌ No se encontró Python"
+        exit 1
+    fi
+
     echo "📂 Recolectando archivos estáticos..."
-    python manage.py collectstatic --noinput --clear
+    $PYTHON_CMD manage.py collectstatic --noinput --clear
+
+    echo "🔧 Verificando dependencias críticas..."
+    if ! command -v gunicorn &> /dev/null; then
+        echo "⚠️ Gunicorn no encontrado, instalando..."
+        pip install gunicorn
+    else
+        echo "✅ Gunicorn disponible"
+    fi
+
+    echo "🔧 Ejecutando diagnóstico completo..."
+    if $PYTHON_CMD ../render_diagnostic.py; then
+        echo "✅ Diagnóstico completado exitosamente"
+    else
+        echo "⚠️ Diagnóstico encontró algunos problemas, pero continuando..."
+    fi
 
     echo "🔧 Verificando configuración de Django..."
-    if python3 manage.py check --settings=core.settings_render; then
+
+    echo "🔍 Ejecutando: $PYTHON_CMD manage.py check --settings=core.settings_render"
+    if $PYTHON_CMD manage.py check --settings=core.settings_render; then
         echo "✅ Configuración de Django verificada correctamente"
     else
         echo "❌ Error en configuración de Django"
+        echo "🔍 Intentando diagnosticar el problema..."
+        echo "📄 Contenido del directorio actual:"
+        ls -la
+        echo "📄 Contenido del directorio backend:"
+        ls -la backend/
+        echo "📄 Variables de entorno relevantes:"
+        env | grep -E "(PYTHON|DJANGO|RENDER)" | head -10
         exit 1
     fi
 
     echo "📊 Verificando estado de migraciones..."
-    python3 manage.py showmigrations --settings=core.settings_render
+    $PYTHON_CMD manage.py showmigrations --settings=core.settings_render
 
     echo "✅ Build completado exitosamente!"
     echo ""

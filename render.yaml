@@ -24,6 +24,9 @@ services:
       # Variable para frontend - URL del backend API
       - key: VITE_API_BASE_URL
         value: https://thebadgerspage.onrender.com
+      # Variable para identificar entorno Render
+      - key: RENDER
+        value: 1
       # REMOVIDO: Variables de MongoDB - ahora usamos SQLite
     customDomains:
       - name: the-badgers.com
