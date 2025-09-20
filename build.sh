@@ -40,22 +40,41 @@ else
     exit 1
 fi
 
-echo "📋 Copiando script de inicio..."
-cp start_render.py backend/
-echo "✅ Script de inicio copiado"
-
-# Volver al directorio raíz
+# Volver al directorio raíz para copiar el script de inicio
 cd ..
+echo "📋 Copiando script de inicio..."
+if [ -f "start_render.py" ]; then
+    cp start_render.py backend/
+    echo "✅ Script de inicio copiado correctamente"
+    echo "   📄 Verificando copia:"
+    ls -la backend/start_render.py
+else
+    echo "❌ Error: start_render.py no encontrado en $(pwd)"
+    echo "📁 Contenido del directorio actual:"
+    ls -la
+    exit 1
+fi
+
+# Verificar que todos los archivos necesarios estén presentes
+echo "🔍 Verificando archivos críticos..."
+required_files=("backend/manage.py" "backend/core/settings_render.py" "backend/core/wsgi.py" "backend/start_render.py")
+for file in "${required_files[@]}"; do
+    if [ ! -f "$file" ]; then
+        echo "❌ Error: $file no encontrado en $(pwd)"
+        echo "📁 Contenido del directorio actual:"
+        ls -la
+        exit 1
+    else
+        echo "✅ $file encontrado"
+    fi
+done
 
 # Instalar dependencias de Python
 if [ -f "backend/requirements.txt" ]; then
     echo "🐍 Instalando dependencias de Python..."
     cd backend
 
-    # Instalar dependencias sin cache para reducir tamaño
-    pip install --no-cache-dir -r requirements.txt
-
-    # Detectar comando Python para usar consistentemente
+    # Detectar comandos para usar consistentemente
     PYTHON_CMD=""
     if command -v python3 &> /dev/null; then
         PYTHON_CMD="python3"
@@ -68,13 +87,39 @@ if [ -f "backend/requirements.txt" ]; then
         exit 1
     fi
 
+    PIP_CMD=""
+    if command -v pip3 &> /dev/null; then
+        PIP_CMD="pip3"
+        echo "📦 Usando pip3"
+    elif command -v pip &> /dev/null; then
+        PIP_CMD="pip"
+        echo "📦 Usando pip"
+    else
+        echo "❌ No se encontró pip"
+        exit 1
+    fi
+
+    # Instalar dependencias sin cache para reducir tamaño
+    # En Render esto funciona automáticamente, en local agregar flag si es necesario
+    if [[ "$PIP_CMD" == "pip3" ]] && command -v brew &> /dev/null; then
+        # En macOS con Homebrew, usar flag especial
+        $PIP_CMD install --no-cache-dir --break-system-packages -r requirements.txt
+    else
+        # En Render u otros entornos
+        $PIP_CMD install --no-cache-dir -r requirements.txt
+    fi
+
     echo "📂 Recolectando archivos estáticos..."
     $PYTHON_CMD manage.py collectstatic --noinput --clear
 
     echo "🔧 Verificando dependencias críticas..."
     if ! command -v gunicorn &> /dev/null; then
         echo "⚠️ Gunicorn no encontrado, instalando..."
-        pip install gunicorn
+        if [[ "$PIP_CMD" == "pip3" ]] && command -v brew &> /dev/null; then
+            $PIP_CMD install --break-system-packages gunicorn
+        else
+            $PIP_CMD install gunicorn
+        fi
     else
         echo "✅ Gunicorn disponible"
     fi
@@ -85,6 +130,9 @@ if [ -f "backend/requirements.txt" ]; then
     else
         echo "⚠️ Diagnóstico encontró algunos problemas, pero continuando..."
     fi
+
+    # Volver al directorio backend para las verificaciones finales
+    cd -
 
     echo "🔧 Verificando configuración de Django..."
 

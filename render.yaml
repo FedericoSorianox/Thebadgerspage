@@ -4,7 +4,7 @@ services:
     env: python
     plan: free
     buildCommand: ./build.sh
-    startCommand: cd backend && python3 ../start_render.py
+    startCommand: cd backend && python3 start_render.py
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: core.settings_render
