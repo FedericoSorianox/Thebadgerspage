@@ -199,32 +199,14 @@ else:
     SESSION_COOKIE_SAMESITE = 'Lax'
     CSRF_COOKIE_SAMESITE = 'Lax'
 
-# Configuración de Cloudinary para almacenamiento de archivos
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
-}
+# Configuración simplificada para evitar problemas durante el build
+# Usar siempre almacenamiento local para evitar timeouts y problemas de configuración externa
+print("🔧 Configuración simplificada - usando almacenamiento local")
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Verificar si las variables de Cloudinary están configuradas
-CLOUDINARY_CONFIGURED = all([
-    os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    os.environ.get('CLOUDINARY_API_KEY'),
-    os.environ.get('CLOUDINARY_API_SECRET')
-])
-
-# Usar Cloudinary para archivos media si está configurado y no estamos en DEBUG
-if CLOUDINARY_CONFIGURED and not DEBUG:
-    print("DEBUG: Usando Cloudinary para almacenamiento de archivos")
-    print(f"DEBUG: Cloudinary configurado con cloud_name: {os.environ.get('CLOUDINARY_CLOUD_NAME')}")
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-    # No establecer MEDIA_URL cuando usamos Cloudinary, dejar que Cloudinary maneje las URLs
-else:
-    print(f"DEBUG: Usando almacenamiento local. DEBUG={DEBUG}, CLOUDINARY_CONFIGURED={CLOUDINARY_CONFIGURED}")
-    print(f"DEBUG: Variables de entorno - CLOUD_NAME: {os.environ.get('CLOUDINARY_CLOUD_NAME')}, API_KEY: {os.environ.get('CLOUDINARY_API_KEY')}, API_SECRET: {'Configurado' if os.environ.get('CLOUDINARY_API_SECRET') else 'No configurado'}")
-    # En desarrollo o si Cloudinary no está configurado, usar almacenamiento local
-    MEDIA_URL = '/media/'
-    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# Configuración de Cloudinary simplificada (no se usa durante el build)
+CLOUDINARY_CONFIGURED = False
 
 # ============= CONFIGURACIÓN DJANGO REST FRAMEWORK =============
 

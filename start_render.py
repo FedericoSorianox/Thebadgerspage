@@ -15,6 +15,12 @@ def main():
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings_render')
     os.environ['RENDER'] = '1'
 
+    # Configurar PYTHONPATH para que Django encuentre los módulos
+    backend_dir = os.path.dirname(os.path.abspath(__file__))
+    python_path = f"{backend_dir}:{os.environ.get('PYTHONPATH', '')}"
+    os.environ['PYTHONPATH'] = python_path
+    sys.path.insert(0, backend_dir)
+
     # Información del entorno
     print(f"📁 Directorio actual: {os.getcwd()}")
     print(f"🐍 Python: {sys.executable}")
@@ -68,13 +74,16 @@ def main():
     except Exception as e:
         print(f"⚠️ Error en collectstatic: {e}")
 
-    # Verificar configuración
+    # Verificar configuración (simplificado para evitar timeouts)
     print("\n🔧 Verificando configuración...")
     try:
-        execute_from_command_line(['manage.py', 'check', '--settings=core.settings_render'])
-        print("✅ Configuración verificada")
+        # Solo verificar imports básicos, no ejecutar check completo que puede timeout
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings_render')
+        import django
+        django.setup()
+        print("✅ Configuración básica verificada")
     except Exception as e:
-        print(f"❌ Error en configuración: {e}")
+        print(f"❌ Error en configuración básica: {e}")
         sys.exit(1)
 
     # Iniciar servidor

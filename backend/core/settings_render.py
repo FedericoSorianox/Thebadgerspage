@@ -54,20 +54,9 @@ DATABASES = {
     }
 }
 
-# Configuración futura para MongoDB (comentada por ahora)
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'djongo',
-#         'NAME': os.environ.get('MONGODB_NAME', 'thebadgerspage_db'),
-#         'CLIENT': {
-#             'host': os.environ.get('MONGODB_URI', 'mongodb://localhost:27017'),
-#             'username': os.environ.get('MONGODB_USER'),
-#             'password': os.environ.get('MONGODB_PASSWORD'),
-#             'authSource': 'admin',
-#             'authMechanism': 'SCRAM-SHA-1'
-#         }
-#     }
-# }
+# Configuración simplificada para Render
+# Solo usar SQLite para evitar problemas de configuración externa
+# MongoDB se puede configurar manualmente después del deploy si es necesario
 
 # Configuración de seguridad
 SECURE_SSL_REDIRECT = True
