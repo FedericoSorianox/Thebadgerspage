@@ -124,35 +124,61 @@ if [ -f "backend/requirements.txt" ]; then
         echo "✅ Gunicorn disponible"
     fi
 
-    echo "🔧 Ejecutando diagnóstico completo..."
-    if $PYTHON_CMD ../render_diagnostic.py; then
+    echo "🔧 Ejecutando diagnóstico rápido..."
+    # Ejecutar diagnóstico con timeout para evitar que se atasque
+    timeout 15 $PYTHON_CMD ../render_diagnostic.py
+    if [ $? -eq 0 ]; then
         echo "✅ Diagnóstico completado exitosamente"
     else
-        echo "⚠️ Diagnóstico encontró algunos problemas, pero continuando..."
+        echo "⚠️ Diagnóstico encontró algunos problemas o timeout, pero continuando..."
     fi
-
-    # Volver al directorio backend para las verificaciones finales
-    cd -
 
     echo "🔧 Verificando configuración de Django..."
 
-    echo "🔍 Ejecutando: $PYTHON_CMD manage.py check --settings=core.settings_render"
+    # Configurar PYTHONPATH para que Django encuentre los módulos
+    export PYTHONPATH="${PYTHONPATH}:$(pwd)"
+
+    # Ejecutar desde el directorio backend para que manage.py funcione correctamente
+    echo "🔍 Ejecutando: $PYTHON_CMD manage.py check --settings=core.settings_render (desde backend/)"
+    echo "📁 PYTHONPATH: $PYTHONPATH"
     if $PYTHON_CMD manage.py check --settings=core.settings_render; then
         echo "✅ Configuración de Django verificada correctamente"
     else
         echo "❌ Error en configuración de Django"
         echo "🔍 Intentando diagnosticar el problema..."
+
+        # Verificar si estamos en el directorio correcto
+        if [ ! -f "manage.py" ]; then
+            echo "❌ manage.py no encontrado en $(pwd)"
+            echo "📁 Cambiando a directorio backend..."
+            cd backend
+            if [ ! -f "manage.py" ]; then
+                echo "❌ manage.py tampoco encontrado en backend/"
+                exit 1
+            fi
+        fi
+
         echo "📄 Contenido del directorio actual:"
         ls -la
-        echo "📄 Contenido del directorio backend:"
-        ls -la backend/
         echo "📄 Variables de entorno relevantes:"
-        env | grep -E "(PYTHON|DJANGO|RENDER)" | head -10
-        exit 1
+        env | grep -E "(PYTHON|DJANGO|RENDER|PATH)" | head -10
+
+        # Intentar ejecutar el comando nuevamente desde el directorio correcto
+        echo "🔄 Reintentando comando de Django..."
+        if $PYTHON_CMD manage.py check --settings=core.settings_render; then
+            echo "✅ Comando exitoso en reintento"
+        else
+            echo "❌ Comando falló incluso en reintento"
+            exit 1
+        fi
     fi
 
     echo "📊 Verificando estado de migraciones..."
-    $PYTHON_CMD manage.py showmigrations --settings=core.settings_render
+    if $PYTHON_CMD manage.py showmigrations --settings=core.settings_render; then
+        echo "✅ Migraciones verificadas correctamente"
+    else
+        echo "⚠️ Error verificando migraciones, pero continuando..."
+    fi
 
     echo "✅ Build completado exitosamente!"
     echo ""

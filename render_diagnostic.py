@@ -12,7 +12,7 @@ def run_command(cmd, description):
     print(f"\n🔍 {description}")
     print(f"   Comando: {' '.join(cmd) if isinstance(cmd, list) else cmd}")
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
         if result.returncode == 0:
             print("   ✅ Éxito")
             if result.stdout.strip():
