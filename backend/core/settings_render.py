@@ -62,6 +62,10 @@ DATABASES = {
 SECURE_SSL_REDIRECT = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+# Configuración de zona horaria para Render - IMPORTANTE para evitar errores con DateTimeField
+USE_TZ = True  # Habilitar zonas horarias
+TIME_ZONE = 'America/Argentina/Buenos_Aires'  # Zona horaria de Argentina
+
 # Configuración de archivos estáticos adicional
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'

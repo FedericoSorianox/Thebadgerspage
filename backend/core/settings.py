@@ -119,6 +119,10 @@ DATABASES = {
     }
 }
 
+# Configuración de zona horaria - IMPORTANTE para evitar errores con DateTimeField
+USE_TZ = True  # Habilitar zonas horarias
+TIME_ZONE = 'America/Argentina/Buenos_Aires'  # Zona horaria de Argentina
+
 # Configuración futura para MongoDB (cuando se resuelvan problemas de compatibilidad)
 # DATABASES = {
 #     'default': {
