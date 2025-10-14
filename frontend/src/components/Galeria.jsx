@@ -21,7 +21,7 @@ export default function Galeria({ API_BASE }) {
   const [loadedImages, setLoadedImages] = useState(new Set()); // Para evitar titileo de imágenes
 
   // Usar el hook de autenticación
-  const { isAuthenticated, user, login } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   const base = API_BASE || (import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : 'http://127.0.0.1:8000'));
 
@@ -151,7 +151,8 @@ export default function Galeria({ API_BASE }) {
         throw new Error(`HTTP ${response.status}: ${errorText}`);
       }
 
-      const data = await response.json();
+      // Confirmar que la respuesta fue exitosa (no necesitamos procesar los datos)
+      await response.json();
 
       // Remover el item de la lista
       setItems(prev => prev.filter(item => item.id !== itemId));
@@ -214,7 +215,7 @@ export default function Galeria({ API_BASE }) {
 
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 font-sans pt-32 flex flex-col items-center px-2">
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 font-sans pt-32 pb-32 flex flex-col items-center px-2">
       <h2 className="text-3xl md:text-4xl font-bold text-slate-800 mb-4">Galería</h2>
 
       {/* Controles de admin: solo si está autenticado como admin */}

@@ -71,6 +71,32 @@ STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
+# ============= CONFIGURACIÓN DE CLOUDINARY PARA PRODUCCIÓN =============
+# Cloudinary permite almacenar imágenes en la nube de forma persistente
+# Esto evita que se borren las fotos en cada deploy (Render usa contenedores efímeros)
+
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
+}
+
+# Verificar si Cloudinary está configurado correctamente
+if all([
+    os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    os.environ.get('CLOUDINARY_API_KEY'),
+    os.environ.get('CLOUDINARY_API_SECRET')
+]):
+    # Usar Cloudinary como almacenamiento por defecto para archivos media
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    CLOUDINARY_CONFIGURED = True
+    print("✅ Cloudinary configurado correctamente - Las imágenes se guardarán en la nube")
+else:
+    # Fallback a almacenamiento local (NO RECOMENDADO en producción)
+    CLOUDINARY_CONFIGURED = False
+    print("⚠️ ADVERTENCIA: Cloudinary NO configurado - Las imágenes se borrarán en cada deploy")
+    print("⚠️ Configura las variables de entorno: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET")
+
 # Configuración para migraciones automáticas en Render
 import os
 if os.environ.get('RENDER'):
