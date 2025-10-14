@@ -229,10 +229,10 @@ export default function Galeria({ API_BASE }) {
         </div>
       )}
 
-      {/* Mensaje para usuarios no autenticados */}
+      {/* Mensaje para usuarios no autenticados - Barra inferior fija */}
       {!isAuthenticated && (
-        <div className="mb-4 w-full max-w-6xl flex items-center justify-center">
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 text-center">
+        <div className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-center pb-4 px-4">
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 text-center shadow-2xl max-w-6xl w-full">
             <p className="text-blue-800 font-medium mb-2">¿Quieres subir fotos?</p>
             <p className="text-blue-600 text-sm mb-3">
               Inicia sesión como administrador para acceder a la función de subir archivos.
