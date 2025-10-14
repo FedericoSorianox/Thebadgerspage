@@ -215,7 +215,7 @@ export default function Galeria({ API_BASE }) {
 
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 font-sans pt-32 pb-32 flex flex-col items-center px-2">
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 font-sans pt-32 pb-8 flex flex-col items-center px-2">
       <h2 className="text-3xl md:text-4xl font-bold text-slate-800 mb-4">Galería</h2>
 
       {/* Controles de admin: solo si está autenticado como admin */}
@@ -230,8 +230,8 @@ export default function Galeria({ API_BASE }) {
         </div>
       )}
 
-      {/* Mensaje para usuarios no autenticados - Barra inferior fija */}
-      {!isAuthenticated && (
+      {/* Mensaje para usuarios no autenticados - OCULTO para no interferir con las fotos */}
+      {/* {!isAuthenticated && (
         <div className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-center pb-4 px-4">
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 text-center shadow-2xl max-w-6xl w-full">
             <p className="text-blue-800 font-medium mb-2">¿Quieres subir fotos?</p>
@@ -246,7 +246,7 @@ export default function Galeria({ API_BASE }) {
             </button>
           </div>
         </div>
-      )}
+      )} */}
 
       {/* Uploader solo para admins autenticados */}
       {canUpload() && showUploader && (
@@ -372,34 +372,56 @@ export default function Galeria({ API_BASE }) {
         </div>
       )}
 
-      {/* Modal de Zoom para Imágenes */}
+      {/* Modal de Zoom para Imágenes - Mejorado para mostrar fotos completas */}
       {selected && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4"
+          className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50 p-2 sm:p-4"
           onClick={() => setSelected(null)}
         >
-          <div className="max-w-4xl max-h-full relative">
-            <button
-              onClick={() => setSelected(null)}
-              className="absolute top-4 right-4 text-white text-2xl bg-black bg-opacity-50 rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-75 transition-all"
-            >
-              ×
-            </button>
-            {selected.tipo === 'video' ? (
-              <video src={selected.url} className="max-w-full max-h-full rounded-lg" controls autoPlay onClick={(e) => e.stopPropagation()} />
-            ) : (
-              <img
-                src={selected.url}
-                alt={selected.nombre}
-                className="max-w-full max-h-full object-contain rounded-lg"
-                onClick={(e) => e.stopPropagation()}
-              />
-            )}
-            <div className="absolute bottom-4 left-4 bg-black bg-opacity-75 text-white p-3 rounded-lg">
-              <h3 className="font-semibold">{selected.nombre}</h3>
-              {selected.fecha && (
-                <p className="text-sm opacity-75">{selected.fecha}</p>
+          {/* Contenedor principal con scroll si es necesario */}
+          <div className="w-full h-full flex items-center justify-center overflow-auto">
+            <div className="relative max-w-none max-h-none flex items-center justify-center">
+              {/* Botón de cerrar mejorado */}
+              <button
+                onClick={() => setSelected(null)}
+                className="absolute top-2 right-2 z-10 text-white text-3xl bg-black bg-opacity-70 rounded-full w-12 h-12 flex items-center justify-center hover:bg-opacity-90 transition-all shadow-lg"
+                aria-label="Cerrar imagen"
+              >
+                ×
+              </button>
+
+              {/* Contenido de imagen/video */}
+              {selected.tipo === 'video' ? (
+                <video
+                  src={selected.url}
+                  className="max-w-[95vw] max-h-[95vh] rounded-lg shadow-2xl"
+                  controls
+                  autoPlay
+                  onClick={(e) => e.stopPropagation()}
+                />
+              ) : (
+                <img
+                  src={selected.url}
+                  alt={selected.nombre}
+                  className="max-w-[95vw] max-h-[95vh] w-auto h-auto object-contain rounded-lg shadow-2xl"
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ maxWidth: '95vw', maxHeight: '95vh' }}
+                />
               )}
+
+              {/* Información de la imagen mejorada */}
+              <div className="absolute bottom-2 left-2 right-2 bg-black bg-opacity-80 text-white p-3 rounded-lg backdrop-blur-sm">
+                <h3 className="font-semibold text-lg truncate">{selected.nombre}</h3>
+                {selected.fecha && (
+                  <p className="text-sm opacity-75 mt-1">
+                    {new Date(selected.fecha).toLocaleDateString('es-ES', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
