@@ -65,6 +65,7 @@ urlpatterns = [
 
     path('api/galeria/upload/', views.galeria_upload),
     path('api/galeria/delete/<int:item_id>/', views.galeria_delete),
+    path('api/debug/cloudinary/', views.debug_cloudinary),
     path('api/productos/', views.productos_proxy),
     
     # Endpoints de desarrollo (solo disponibles cuando DEBUG=True)

@@ -591,6 +591,103 @@ class FrontendAppView(View):
         return HttpResponse("Frontend build not found. Please run 'npm run build' in the frontend directory.", status=404)
 
 @csrf_exempt
+def debug_cloudinary(request):
+    """
+    Endpoint de diagnóstico para verificar configuración de Cloudinary
+    Solo accesible en desarrollo o con autenticación de admin
+    """
+    import os
+    from django.conf import settings
+    from core.models import GaleriaItem
+    
+    # Verificar si es desarrollo o admin autenticado
+    if not settings.DEBUG:
+        # En producción, requerir autenticación de admin
+        auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+        if not auth_header.startswith('Token '):
+            return JsonResponse({'error': 'Token requerido en producción'}, status=401)
+        
+        try:
+            from rest_framework.authtoken.models import Token
+            token_key = auth_header.split(' ')[1]
+            token = Token.objects.get(key=token_key)
+            user = token.user
+            if not (user.is_staff or user.is_superuser):
+                return JsonResponse({'error': 'Permisos de admin requeridos'}, status=403)
+        except:
+            return JsonResponse({'error': 'Token inválido'}, status=401)
+    
+    try:
+        # 1. Variables de entorno
+        cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME')
+        api_key = os.environ.get('CLOUDINARY_API_KEY')
+        api_secret = os.environ.get('CLOUDINARY_API_SECRET')
+        
+        env_status = {
+            'CLOUDINARY_CLOUD_NAME': bool(cloud_name),
+            'CLOUDINARY_API_KEY': bool(api_key),
+            'CLOUDINARY_API_SECRET': bool(api_secret),
+            'cloud_name_value': cloud_name,
+            'api_key_preview': api_key[:8] + '...' if api_key else None
+        }
+        
+        # 2. Configuración de Django
+        django_config = {
+            'CLOUDINARY_CONFIGURED': getattr(settings, 'CLOUDINARY_CONFIGURED', False),
+            'DEFAULT_FILE_STORAGE': getattr(settings, 'DEFAULT_FILE_STORAGE', None),
+            'MEDIA_ROOT': getattr(settings, 'MEDIA_ROOT', None),
+            'DEBUG': settings.DEBUG
+        }
+        
+        # 3. Items en la base de datos
+        items = GaleriaItem.objects.all().order_by('-fecha_subida')[:5]
+        db_items = []
+        for item in items:
+            db_items.append({
+                'id': item.id,
+                'nombre': item.nombre,
+                'has_local_file': bool(item.archivo),
+                'has_cloudinary_url': bool(item.archivo_url),
+                'final_url': item.url,
+                'fecha': item.fecha_subida.isoformat() if item.fecha_subida else None
+            })
+        
+        # 4. Test de Cloudinary
+        cloudinary_test = {'success': False, 'error': None}
+        if all([cloud_name, api_key, api_secret]):
+            try:
+                import cloudinary
+                cloudinary.config(
+                    cloud_name=cloud_name,
+                    api_key=api_key,
+                    api_secret=api_secret
+                )
+                result = cloudinary.api.resources(max_results=1)
+                cloudinary_test = {
+                    'success': True,
+                    'total_resources': result.get('total_count', 0)
+                }
+            except Exception as e:
+                cloudinary_test = {'success': False, 'error': str(e)}
+        
+        return JsonResponse({
+            'status': 'success',
+            'environment_variables': env_status,
+            'django_configuration': django_config,
+            'database_items': db_items,
+            'cloudinary_test': cloudinary_test,
+            'total_items_in_db': GaleriaItem.objects.count()
+        })
+        
+    except Exception as e:
+        import traceback
+        return JsonResponse({
+            'status': 'error',
+            'error': str(e),
+            'traceback': traceback.format_exc()
+        }, status=500)
+
+@csrf_exempt
 def productos_proxy(request):
     """
     Proxy para el endpoint de productos externo para evitar errores de CORS

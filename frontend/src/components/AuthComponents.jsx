@@ -39,8 +39,8 @@ export const LoginModal = ({ isOpen, onClose, title = "Iniciar Sesión" }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-            <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 border border-cyan-400/30 rounded-2xl shadow-2xl max-w-md w-full mx-4 p-8 relative animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-y-auto">
+            <div className="bg-gradient-to-br from-slate-900 via-blue-900 to-indigo-900 border border-cyan-400/30 rounded-2xl shadow-2xl max-w-md w-full mx-4 p-6 sm:p-8 relative animate-fade-in my-auto">
                 {/* Close button */}
                 <button
                     onClick={onClose}
