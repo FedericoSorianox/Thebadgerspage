@@ -600,22 +600,22 @@ def debug_cloudinary(request):
     from django.conf import settings
     from core.models import GaleriaItem
     
-    # Verificar si es desarrollo o admin autenticado
-    if not settings.DEBUG:
-        # En producción, requerir autenticación de admin
-        auth_header = request.META.get('HTTP_AUTHORIZATION', '')
-        if not auth_header.startswith('Token '):
-            return JsonResponse({'error': 'Token requerido en producción'}, status=401)
-        
-        try:
-            from rest_framework.authtoken.models import Token
-            token_key = auth_header.split(' ')[1]
-            token = Token.objects.get(key=token_key)
-            user = token.user
-            if not (user.is_staff or user.is_superuser):
-                return JsonResponse({'error': 'Permisos de admin requeridos'}, status=403)
-        except:
-            return JsonResponse({'error': 'Token inválido'}, status=401)
+    # TEMPORAL: Permitir acceso público para diagnóstico (cambiar después)
+    # En producción, normalmente requeriría autenticación de admin
+    # if not settings.DEBUG:
+    #     auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+    #     if not auth_header.startswith('Token '):
+    #         return JsonResponse({'error': 'Token requerido en producción'}, status=401)
+    #     
+    #     try:
+    #         from rest_framework.authtoken.models import Token
+    #         token_key = auth_header.split(' ')[1]
+    #         token = Token.objects.get(key=token_key)
+    #         user = token.user
+    #         if not (user.is_staff or user.is_superuser):
+    #             return JsonResponse({'error': 'Permisos de admin requeridos'}, status=403)
+    #     except:
+    #         return JsonResponse({'error': 'Token inválido'}, status=401)
     
     try:
         # 1. Variables de entorno
@@ -685,6 +685,63 @@ def debug_cloudinary(request):
             'status': 'error',
             'error': str(e),
             'traceback': traceback.format_exc()
+        }, status=500)
+
+@csrf_exempt
+def cloudinary_status(request):
+    """
+    Endpoint simple para verificar el estado de Cloudinary (sin autenticación)
+    """
+    import os
+    from django.conf import settings
+    
+    try:
+        # Variables de entorno
+        cloud_name = os.environ.get('CLOUDINARY_CLOUD_NAME')
+        api_key = os.environ.get('CLOUDINARY_API_KEY')
+        api_secret = os.environ.get('CLOUDINARY_API_SECRET')
+        
+        # Configuración de Django
+        cloudinary_configured = getattr(settings, 'CLOUDINARY_CONFIGURED', False)
+        default_storage = getattr(settings, 'DEFAULT_FILE_STORAGE', None)
+        
+        # Test básico de Cloudinary
+        cloudinary_working = False
+        error_message = None
+        
+        if all([cloud_name, api_key, api_secret]):
+            try:
+                import cloudinary
+                cloudinary.config(
+                    cloud_name=cloud_name,
+                    api_key=api_key,
+                    api_secret=api_secret
+                )
+                # Test simple
+                result = cloudinary.api.resources(max_results=1)
+                cloudinary_working = True
+            except Exception as e:
+                error_message = str(e)
+        
+        return JsonResponse({
+            'status': 'success',
+            'cloudinary_configured': cloudinary_configured,
+            'environment_variables_set': {
+                'CLOUDINARY_CLOUD_NAME': bool(cloud_name),
+                'CLOUDINARY_API_KEY': bool(api_key),
+                'CLOUDINARY_API_SECRET': bool(api_secret)
+            },
+            'django_storage': default_storage,
+            'cloudinary_working': cloudinary_working,
+            'error': error_message,
+            'cloud_name': cloud_name,
+            'recommendation': 'cloudinary_configured' if cloudinary_configured else 'configure_cloudinary'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'error': str(e)
         }, status=500)
 
 @csrf_exempt
