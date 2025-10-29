@@ -41,14 +41,14 @@ def global_options_handler(request):
     
     return response
 
-# Router para las APIs del sistema de gestión BJJ
+# Router para las APIs del sistema de gestión BJJ (DESHABILITADO)
 router = DefaultRouter()
-router.register(r'categorias', views.CategoriaViewSet)
-router.register(r'participantes', views.ParticipanteViewSet)
-router.register(r'llaves', views.LlaveViewSet)
-router.register(r'luchas', views.LuchaViewSet)
-router.register(r'atletas', views.AtletaViewSet)
-router.register(r'atleta-puntos', views.AtletaPuntoViewSet)
+# router.register(r'categorias', views.CategoriaViewSet)
+# router.register(r'participantes', views.ParticipanteViewSet)
+# router.register(r'llaves', views.LlaveViewSet)
+# router.register(r'luchas', views.LuchaViewSet)
+# router.register(r'atletas', views.AtletaViewSet)
+# router.register(r'atleta-puntos', views.AtletaPuntoViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -74,14 +74,15 @@ urlpatterns = [
     path('api/dev/auth/status/', dev_views.dev_auth_status),
     path('api/dev/auth/login/', dev_views.dev_login),
    
-    # APIs del sistema de gestión BJJ
-    path('api/torneo/', include(router.urls)),
-    path('api/torneo/luchas-disponibles/', views.luchas_disponibles),
+    # APIs del sistema de gestión BJJ (DESHABILITADAS)
+    # path('api/torneo/', include(router.urls)),
+    # path('api/torneo/luchas-disponibles/', views.luchas_disponibles),
    
-    path('api/update-item-cloudinary/', views.update_item_cloudinary_url),
-    path('api/usuarios/crear/', views.crear_usuario),
-    path('api/usuarios/cambiar-password/', views.cambiar_password),
-    path('api/usuarios/setup/', views.setup_usuarios),
+    # APIs de utilidades deshabilitadas temporalmente
+    # path('api/update-item-cloudinary/', views.update_item_cloudinary_url),
+    # path('api/usuarios/crear/', views.crear_usuario),
+    # path('api/usuarios/cambiar-password/', views.cambiar_password),
+    # path('api/usuarios/setup/', views.setup_usuarios),
 
     
     # Servir archivos estáticos con MIME types correctos
