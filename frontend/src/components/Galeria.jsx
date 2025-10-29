@@ -19,6 +19,7 @@ export default function Galeria({ API_BASE }) {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [deleting, setDeleting] = useState(null); // ID del item que se está eliminando
   const [loadedImages, setLoadedImages] = useState(new Set()); // Para evitar titileo de imágenes
+  const [initialLoad, setInitialLoad] = useState(false); // Para controlar la carga inicial
 
   // Usar el hook de autenticación
   const { isAuthenticated, user } = useAuth();
@@ -170,12 +171,16 @@ export default function Galeria({ API_BASE }) {
   };
 
   useEffect(() => {
-    // Carga inicial o cuando cambia la base de la API
-    setItems([]);
-    setHasMore(true);
-    cursorRef.current = null;
-    fetchPage(true);
-  }, [base, fetchPage]);
+    // Carga inicial solamente - NO resetear cuando cambie la base de la API para evitar perder fotos en deploy
+    // Solo cargar al montar el componente por primera vez
+    if (!initialLoad) {
+      setItems([]);
+      setHasMore(true);
+      cursorRef.current = null;
+      fetchPage(true);
+      setInitialLoad(true);
+    }
+  }, [fetchPage, initialLoad]);
 
   // Cerrar uploader si el usuario pierde permisos
   useEffect(() => {

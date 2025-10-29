@@ -392,7 +392,7 @@ function SobreNosotrosYClases() {
                   <tr className="border-b border-cyan-900/40">
                     <td className="py-2 px-2">19:00 hs</td>
                     <td className="py-2 px-2">Muay thai</td>
-                    <td className="py-2 px-2">Jiu Jitsu No GI</td>
+                    <td className="py-2 px-2">Jiu Jitsu GI</td>
                     <td className="py-2 px-2">Muay thai</td>
                     <td className="py-2 px-2">Jiu Jitsu No GI</td>
                     <td className="py-2 px-2">Muay thai</td>
@@ -402,7 +402,7 @@ function SobreNosotrosYClases() {
                     <td className="py-2 px-2">20:00 hs</td>
                     <td className="py-2 px-2">Jiu Jitsu GI</td>
                     <td className="py-2 px-2">Muay thai</td>
-                    <td className="py-2 px-2">Jiu Jitsu GI</td>
+                    <td className="py-2 px-2">Jiu Jitsu No GI</td>
                     <td className="py-2 px-2">Muay thai</td>
                     <td className="py-2 px-2">Jiu Jitsu</td>
                     <td className="py-2 px-2"></td>

@@ -18,6 +18,14 @@ services:
         value: https://thebadgerspage.onrender.com
       - key: RENDER
         value: 1
+      # Variables de entorno para Cloudinary (almacenamiento persistente de imágenes)
+      # NOTA: Estas deben configurarse en el dashboard de Render con los valores reales
+      # - key: CLOUDINARY_CLOUD_NAME
+      #   sync: false  # Debe configurarse manualmente en Render dashboard
+      # - key: CLOUDINARY_API_KEY  
+      #   sync: false  # Debe configurarse manualmente en Render dashboard
+      # - key: CLOUDINARY_API_SECRET
+      #   sync: false  # Debe configurarse manualmente en Render dashboard
     customDomains:
       - name: the-badgers.com
       - name: www.the-badgers.com 
