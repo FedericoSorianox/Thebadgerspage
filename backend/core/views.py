@@ -242,17 +242,21 @@ def galeria_upload(request):
         return JsonResponse({'error': 'No autenticado'}, status=401)
     
     auth = request.META['HTTP_AUTHORIZATION']
-    if not auth.startswith('Basic '):
-        return JsonResponse({'error': 'Tipo de autenticación no soportado'}, status=401)
+    if not auth.startswith('Token '):
+        return JsonResponse({'error': 'Token requerido'}, status=401)
     
     try:
-        userpass = base64.b64decode(auth.split(' ')[1]).decode('utf-8')
-        username, password = userpass.split(':', 1)
-        user = authenticate(username=username, password=password)
-        if not user:
-            return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
+        token_key = auth.split(' ')[1]
+        token = Token.objects.get(key=token_key)
+        user = token.user
+    except Token.DoesNotExist:
+        return JsonResponse({'error': 'Token inválido'}, status=401)
     except Exception as e:
         return JsonResponse({'error': 'Error en autenticación'}, status=401)
+    
+    # Verificar permisos de admin
+    if not (user.is_staff or user.is_superuser):
+        return JsonResponse({'error': 'Permisos insuficientes'}, status=403)
     
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
