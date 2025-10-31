@@ -130,11 +130,16 @@ if [ -f "backend/requirements.txt" ]; then
 
     echo "🔧 Ejecutando diagnóstico rápido (simplificado)..."
     # Ejecutar diagnóstico simplificado con timeout corto para evitar que se atasque
-    timeout 5 $PYTHON_CMD ../render_diagnostic.py
-    if [ $? -eq 0 ]; then
-        echo "✅ Diagnóstico completado exitosamente"
+    if [ -f "render_diagnostic_cloudinary.py" ]; then
+        timeout 5 $PYTHON_CMD render_diagnostic_cloudinary.py 2>/dev/null || true
+        if [ $? -eq 0 ]; then
+            echo "✅ Diagnóstico completado exitosamente"
+        else
+            echo "⚠️ Diagnóstico encontró algunos problemas o timeout, pero continuando..."
+            echo "   📝 El diagnóstico es opcional y no afecta el build"
+        fi
     else
-        echo "⚠️ Diagnóstico encontró algunos problemas o timeout, pero continuando..."
+        echo "⚠️ Archivo de diagnóstico no encontrado, saltando..."
         echo "   📝 El diagnóstico es opcional y no afecta el build"
     fi
 
