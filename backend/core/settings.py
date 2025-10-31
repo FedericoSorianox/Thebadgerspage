@@ -170,9 +170,7 @@ STATICFILES_DIRS = [
 # Configuración de WhiteNoise para archivos estáticos
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# Media files configuration
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
 
 # Configuración de AutoField para evitar warnings
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -203,14 +201,19 @@ else:
     SESSION_COOKIE_SAMESITE = 'Lax'
     CSRF_COOKIE_SAMESITE = 'Lax'
 
-# Configuración simplificada para evitar problemas durante el build
-# Usar siempre almacenamiento local para evitar timeouts y problemas de configuración externa
-print("🔧 Configuración simplificada - usando almacenamiento local")
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# --- Storage: sólo usar media local si DEBUG=True ---
+if DEBUG:
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+else:
+    # En producción dejamos que settings_render.py decida DEFAULT_FILE_STORAGE.
+    # Mantener MEDIA_URL por compatibilidad, pero no forzar DEFAULT_FILE_STORAGE aquí.
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-# Configuración de Cloudinary simplificada (no se usa durante el build)
+# Inicializamos la variable para que exista; settings_render la ajustará en prod.
 CLOUDINARY_CONFIGURED = False
+
 
 # ============= CONFIGURACIÓN DJANGO REST FRAMEWORK =============
 

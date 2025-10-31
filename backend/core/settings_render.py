@@ -1,35 +1,30 @@
 """
 Configuración específica para Render
 """
-from .settings import *
-
-# Debug para Render
 import os
+from .settings import *
+from django.core.exceptions import ImproperlyConfigured
+
 print("🔧 Configuración de Render cargada")
 print(f"📁 BASE_DIR: {BASE_DIR}")
-print(f"📁 Current working directory: {os.getcwd()}")
-print(f"🌐 RENDER env var: {os.environ.get('RENDER', 'Not set')}")
-print(f"🐍 Python executable: {os.sys.executable}")
 
 # Configuración para producción en Render
 DEBUG = False
 ALLOWED_HOSTS = [
     'the-badgers.com',
-    'www.the-badgers.com', 
+    'www.the-badgers.com',
     'thebadgerspage.onrender.com',
-    'localhost',
-    '127.0.0.1',
-    '*',  # Temporal para desarrollo
 ]
 
-# Configuración de archivos estáticos para Render
+# Static files
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'frontend_build'),
-]
-
-# Configuración de WhiteNoise con MIME types correctos
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'frontend_build')]
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATIC_URL = '/static/'
+
+# Media base
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Configuración de WhiteNoise
 WHITENOISE_USE_FINDERS = True
@@ -46,13 +41,24 @@ WHITENOISE_MIMETYPES = {
     '.ico': 'image/x-icon',
 }
 
-# Configuración de base de datos SQLite para Render (más simple y confiable)
+# # Configuración de base de datos SQLite para Render (más simple y confiable)
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+#     }
+# }
+
+# ============= DATABASE via DATABASE_URL (recommended) =============
+# Usa dj-database-url para obtener DATABASE_URL si está seteado; si no, cae a sqlite (solo dev).
+import dj_database_url
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
+    'default': dj_database_url.config(
+        default=os.environ.get('DATABASE_URL', 'sqlite:///' + os.path.join(BASE_DIR, 'db.sqlite3')),
+        conn_max_age=600,
+    )
 }
+
 
 # Configuración simplificada para Render
 # Solo usar SQLite para evitar problemas de configuración externa
@@ -75,41 +81,25 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # Cloudinary permite almacenar imágenes en la nube de forma persistente
 # Esto evita que se borren las fotos en cada deploy (Render usa contenedores efímeros)
 
+# ============= CLOUDINARY =============
 CLOUDINARY_STORAGE = {
     'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
     'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
     'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
 }
 
-# Verificar si Cloudinary está configurado correctamente
 if all([
     os.environ.get('CLOUDINARY_CLOUD_NAME'),
     os.environ.get('CLOUDINARY_API_KEY'),
     os.environ.get('CLOUDINARY_API_SECRET')
 ]):
-    # Usar Cloudinary como almacenamiento por defecto para archivos media
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     CLOUDINARY_CONFIGURED = True
-    print("✅ Cloudinary configurado correctamente - Las imágenes se guardarán en la nube")
+    print("✅ Cloudinary configurado correctamente - Las imágenes se guardarán en Cloudinary")
 else:
-    # Fallback a almacenamiento local (NO RECOMENDADO en producción)
     CLOUDINARY_CONFIGURED = False
-    print("⚠️ ADVERTENCIA: Cloudinary NO configurado - Las imágenes se borrarán en cada deploy")
-    print("⚠️ Configura las variables de entorno: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET")
-
-# Configuración para migraciones automáticas en Render
-import os
-if os.environ.get('RENDER'):
-    # Ejecutar migraciones automáticamente en Render
-    import subprocess
-    try:
-        # Intentar con python3 primero, luego python
-        python_cmd = 'python3' if os.path.exists('/usr/bin/python3') else 'python'
-        subprocess.run([python_cmd, 'manage.py', 'migrate', '--noinput'], check=True)
-        print("✅ Migraciones ejecutadas automáticamente")
-    except subprocess.CalledProcessError as e:
-        print(f"⚠️ Error ejecutando migraciones: {e}")
-        # Continuar sin fallar el deploy
-    except FileNotFoundError:
-        print("⚠️ Python no encontrado para ejecutar migraciones")
-        # Continuar sin fallar el deploy 
+    # En producción: preferimos fallar temprano a correr con storage efímero
+    raise ImproperlyConfigured(
+        "Cloudinary no está configurado en producción. "
+        "Setea CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY y CLOUDINARY_API_SECRET en Render."
+    )
