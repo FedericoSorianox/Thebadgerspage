@@ -242,21 +242,17 @@ def galeria_upload(request):
         return JsonResponse({'error': 'No autenticado'}, status=401)
     
     auth = request.META['HTTP_AUTHORIZATION']
-    if not auth.startswith('Token '):
-        return JsonResponse({'error': 'Token requerido'}, status=401)
+    if not auth.startswith('Basic '):
+        return JsonResponse({'error': 'Tipo de autenticación no soportado'}, status=401)
     
     try:
-        token_key = auth.split(' ')[1]
-        token = Token.objects.get(key=token_key)
-        user = token.user
-    except Token.DoesNotExist:
-        return JsonResponse({'error': 'Token inválido'}, status=401)
+        userpass = base64.b64decode(auth.split(' ')[1]).decode('utf-8')
+        username, password = userpass.split(':', 1)
+        user = authenticate(username=username, password=password)
+        if not user:
+            return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
     except Exception as e:
         return JsonResponse({'error': 'Error en autenticación'}, status=401)
-    
-    # Verificar permisos de admin
-    if not (user.is_staff or user.is_superuser):
-        return JsonResponse({'error': 'Permisos insuficientes'}, status=403)
     
     if request.method != 'POST':
         return JsonResponse({'error': 'Método no permitido'}, status=405)
@@ -489,43 +485,3 @@ def productos_proxy(request):
 
 # class TorneoViewSet, CategoriaViewSet, ParticipanteViewSet, etc:
 #     pass
-
-# ============= UTILIDADES =============
-@csrf_exempt
-def create_user(request):
-    """Endpoint para crear usuarios (solo para superusuarios)"""
-    if request.method == 'POST' and request.user.is_superuser:
-        try:
-            data = json.loads(request.body)
-            username = data.get('username')
-            password = data.get('password')
-            email = data.get('email', '')
-            first_name = data.get('first_name', '')
-            last_name = data.get('last_name', '')
-            
-            if not username or not password:
-                return JsonResponse({'error': 'Username y password son requeridos'}, status=400)
-            
-            if User.objects.filter(username=username).exists():
-                return JsonResponse({'error': 'El usuario ya existe'}, status=400)
-            
-            user = User.objects.create_user(
-                username=username,
-                password=password,
-                email=email,
-                first_name=first_name,
-                last_name=last_name
-            )
-            
-            return JsonResponse({
-                'message': 'Usuario creado exitosamente',
-                'user_id': user.id,
-                'username': user.username
-            })
-            
-        except json.JSONDecodeError:
-            return JsonResponse({'error': 'JSON inválido'}, status=400)
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
-    
-    return JsonResponse({'error': 'No autorizado'}, status=403)

@@ -145,11 +145,11 @@ if all([
 ]):
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     CLOUDINARY_CONFIGURED = True
-else:
-    # Fallback a almacenamiento local en caso de no tener Cloudinary
-    MEDIA_URL = '/media/'
-    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
-    CLOUDINARY_CONFIGURED = False
+# else:
+#     # Fallback a almacenamiento local en caso de no tener Cloudinary
+#     MEDIA_URL = '/media/'
+#     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+#     CLOUDINARY_CONFIGURED = False
 
 # Configuración de logging para producción
 LOGGING = {
