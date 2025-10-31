@@ -42,14 +42,18 @@ fi
 
 # Volver al directorio raíz para copiar el script de inicio
 cd ..
-echo "📋 Copiando script de inicio..."
-if [ -f "start_render.py" ]; then
+echo "📋 Verificando script de inicio..."
+if [ -f "backend/start_render.py" ]; then
+    echo "✅ Script de inicio ya está en backend/"
+    echo "   📄 Verificando ubicación:"
+    ls -la backend/start_render.py
+elif [ -f "start_render.py" ]; then
     cp start_render.py backend/
     echo "✅ Script de inicio copiado correctamente"
     echo "   📄 Verificando copia:"
     ls -la backend/start_render.py
 else
-    echo "❌ Error: start_render.py no encontrado en $(pwd)"
+    echo "❌ Error: start_render.py no encontrado en $(pwd) ni en backend/"
     echo "📁 Contenido del directorio actual:"
     ls -la
     exit 1

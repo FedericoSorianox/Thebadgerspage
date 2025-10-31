@@ -9,7 +9,6 @@ import useAuth from './hooks/useAuth';
 import badgersHeroBg from "./assets/the-badgers-academia.jpeg";
 import gymBackground from "./assets/gym-background.jpeg";
 import Galeria from './components/Galeria.jsx';
-import TorneoBJJ from './components/TorneoBJJ.jsx';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ||
   (import.meta.env.PROD ? 'https://thebadgerspage.onrender.com' : 'http://127.0.0.1:8000');
@@ -48,7 +47,6 @@ function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const { isAuthenticated, user, logout } = useAuth();
 
@@ -88,19 +86,6 @@ function Navbar() {
       setShowLoginModal(true);
     }
   };
-
-  // Reflejar estado admin al cargar
-  useEffect(() => {
-    const sync = () => {
-      const localAdmin = !!(localStorage.getItem('badgers_user') && localStorage.getItem('badgers_pass'));
-      const authAdmin = isAuthenticated && user && (user.is_staff || user.is_superuser);
-      setIsAdmin(localAdmin || authAdmin);
-    };
-
-    sync(); // Ejecutar inmediatamente
-    window.addEventListener('badgers-admin-changed', sync);
-    return () => window.removeEventListener('badgers-admin-changed', sync);
-  }, [isAuthenticated, user]);
 
   return (
     <nav className="navbar-badgers fixed top-0 left-0 w-full z-50 shadow-xl border-b border-cyan-500/60 backdrop-blur-md">
@@ -608,14 +593,6 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/tienda" element={<Tienda />} />
-        <Route
-          path="/torneo"
-          element={
-            <ProtectedComponent>
-              <TorneoBJJ />
-            </ProtectedComponent>
-          }
-        />
         <Route
           path="/galeria"
           element={
