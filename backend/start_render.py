@@ -68,6 +68,34 @@ def main():
         print("🔧 Las migraciones son necesarias para el funcionamiento de la aplicación")
         sys.exit(1)
 
+    # Crear usuario administrador si no existe
+    print("\n👤 Verificando usuario administrador...")
+    try:
+        os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'core.settings_render')
+        import django
+        django.setup()
+        
+        from django.contrib.auth.models import User
+        
+        username = 'admin'
+        email = 'admin@thebadgers.com'
+        password = 'badgers2024!'
+        
+        if not User.objects.filter(username=username).exists():
+            user = User.objects.create_superuser(
+                username=username,
+                email=email,
+                password=password
+            )
+            print(f"✅ Usuario administrador '{username}' creado")
+            print("🔑 Credenciales: admin / badgers2024!")
+        else:
+            print(f"✅ Usuario administrador '{username}' ya existe")
+            
+    except Exception as e:
+        print(f"⚠️ Error creando usuario administrador: {e}")
+        print("   Continuando sin usuario administrador...")
+
     # Recolectar archivos estáticos
     print("\n📂 Recolectando archivos estáticos...")
     try:
