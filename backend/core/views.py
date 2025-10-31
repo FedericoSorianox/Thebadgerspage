@@ -492,10 +492,8 @@ def cloudinary_status(request):
 @csrf_exempt  
 def productos_proxy(request):
     """Proxy simple para productos (placeholder)"""
-    return JsonResponse({
-        'productos': [],
-        'message': 'Próximamente - Tienda en desarrollo'
-    })
+    # Retornar array vacío directamente para compatibilidad con frontend
+    return JsonResponse([], safe=False)
 
 # ============= TORNEO BJJ (DESHABILITADO) =============
 # TODO: Las siguientes funciones están deshabilitadas temporalmente

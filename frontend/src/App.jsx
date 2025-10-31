@@ -518,7 +518,11 @@ function Tienda() {
         if (!res.ok) throw new Error('Error al cargar productos');
         return res.json();
       })
-      .then(data => setProductos(data))
+      .then(data => {
+        // Asegurar que data sea un array
+        const productosArray = Array.isArray(data) ? data : (data.productos || []);
+        setProductos(productosArray);
+      })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
@@ -551,20 +555,26 @@ function Tienda() {
         {error && <p className="text-red-500">{error}</p>}
         <ProductoModal producto={productoSeleccionado} onClose={() => setProductoSeleccionado(null)} />
         <div className="w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 mb-16">
-          {productos
-            .filter(prod => !["Agua Salus", "Alfa Way", "Way Bar", "Power Ade", "Cuota", "Cuota Sala", "Parche chico", "Parche Grande"].includes(prod.nombre))
-            .map(prod => (
-              <div key={prod.id} className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-slate-200 flex flex-col items-center p-5 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:border-indigo-300 cursor-pointer" onClick={() => setProductoSeleccionado(prod)}>
-                {prod.foto_url ? (
-                  <img src={prod.foto_url} alt={prod.nombre} className="w-32 h-32 object-contain rounded-xl mb-3 bg-slate-50" />
-                ) : (
-                  <div className="w-32 h-32 flex items-center justify-center rounded-xl mb-3 bg-slate-100 text-slate-500 text-2xl">Sin foto</div>
-                )}
-                <h2 className="text-lg font-bold text-slate-800 text-center mb-1">{prod.nombre}</h2>
-                <div className="text-indigo-600 font-semibold text-base mb-1">${parseFloat(prod.precio_venta).toLocaleString('es-UY', { minimumFractionDigits: 2 })}</div>
-                <div className="text-slate-600 text-sm mb-2">Stock: {prod.stock > 0 ? prod.stock : <span className='text-red-500 font-bold'>Sin stock</span>}</div>
-              </div>
-            ))}
+          {Array.isArray(productos) && productos.length > 0 ? (
+            productos
+              .filter(prod => !["Agua Salus", "Alfa Way", "Way Bar", "Power Ade", "Cuota", "Cuota Sala", "Parche chico", "Parche Grande"].includes(prod.nombre))
+              .map(prod => (
+                <div key={prod.id} className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-slate-200 flex flex-col items-center p-5 transition-all duration-300 hover:scale-105 hover:shadow-xl hover:border-indigo-300 cursor-pointer" onClick={() => setProductoSeleccionado(prod)}>
+                  {prod.foto_url ? (
+                    <img src={prod.foto_url} alt={prod.nombre} className="w-32 h-32 object-contain rounded-xl mb-3 bg-slate-50" />
+                  ) : (
+                    <div className="w-32 h-32 flex items-center justify-center rounded-xl mb-3 bg-slate-100 text-slate-500 text-2xl">Sin foto</div>
+                  )}
+                  <h2 className="text-lg font-bold text-slate-800 text-center mb-1">{prod.nombre}</h2>
+                  <div className="text-indigo-600 font-semibold text-base mb-1">${parseFloat(prod.precio_venta).toLocaleString('es-UY', { minimumFractionDigits: 2 })}</div>
+                  <div className="text-slate-600 text-sm mb-2">Stock: {prod.stock > 0 ? prod.stock : <span className='text-red-500 font-bold'>Sin stock</span>}</div>
+                </div>
+              ))
+          ) : (
+            <div className="col-span-full text-center py-8">
+              <p className="text-slate-600 text-lg">Próximamente - Tienda en desarrollo</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
