@@ -258,20 +258,23 @@ def galeria_upload(request):
     """Endpoint para subir archivos a la galería"""
     print(f"DEBUG: Método de la petición: {request.method}")
     
-    # Verificar autenticación
+    # Verificar autenticación con Token
     if not request.META.get('HTTP_AUTHORIZATION'):
         return JsonResponse({'error': 'No autenticado'}, status=401)
     
     auth = request.META['HTTP_AUTHORIZATION']
-    if not auth.startswith('Basic '):
+    if not auth.startswith('Token '):
         return JsonResponse({'error': 'Tipo de autenticación no soportado'}, status=401)
     
     try:
-        userpass = base64.b64decode(auth.split(' ')[1]).decode('utf-8')
-        username, password = userpass.split(':', 1)
-        user = authenticate(username=username, password=password)
-        if not user:
-            return JsonResponse({'error': 'Credenciales inválidas'}, status=401)
+        from rest_framework.authtoken.models import Token
+        token_key = auth.split(' ')[1]
+        token = Token.objects.get(key=token_key)
+        user = token.user
+        if not user.is_active:
+            return JsonResponse({'error': 'Usuario inactivo'}, status=401)
+    except Token.DoesNotExist:
+        return JsonResponse({'error': 'Token inválido'}, status=401)
     except Exception as e:
         return JsonResponse({'error': 'Error en autenticación'}, status=401)
     
