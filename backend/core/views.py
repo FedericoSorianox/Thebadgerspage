@@ -112,34 +112,25 @@ def galeria_list(request):
         for item in items:
             print(f"DEBUG galeria_list: Procesando item {item.id} - {item.nombre}")
             
-            # Obtener valor del campo archivo
-            archivo_value = str(item.archivo) if item.archivo else ""
-            print(f"DEBUG galeria_list: Valor real del campo archivo: {archivo_value}")
+            # Obtener URL usando el nuevo método
+            file_url = item.get_url()
             
-            # Si es una URL de Unsplash, saltar (son datos de ejemplo)
-            if 'unsplash.com' in archivo_value:
-                print(f"DEBUG galeria_list: Saltando imagen de Unsplash: {archivo_value}")
-                continue
-            
-            # Determinar URL final
-            if archivo_value.startswith('https://res.cloudinary.com'):
-                # URL directa de Cloudinary
-                file_url = archivo_value
-                print(f"DEBUG galeria_list: URL directa de Cloudinary encontrada: {file_url}")
-            elif hasattr(item.archivo, 'url') and item.archivo.url.startswith('https://res.cloudinary.com'):
-                # URL de Cloudinary desde storage
-                file_url = item.archivo.url
-                print(f"DEBUG galeria_list: URL de Cloudinary desde storage encontrada: {file_url}")
-            elif hasattr(item.archivo, 'url'):
-                # URL local, construir URL absoluta
-                file_url = item.archivo.url
-                if not file_url.startswith('http'):
-                    file_url = f"https://thebadgerspage.onrender.com{file_url}"
-                print(f"DEBUG galeria_list: URL construida: {file_url}")
-            else:
-                # Si no hay URL válida, saltar este item
+            if not file_url:
                 print(f"DEBUG galeria_list: Item {item.id} no tiene URL válida, saltando...")
                 continue
+            
+            # Si es una URL de Unsplash, saltar (son datos de ejemplo)
+            if 'unsplash.com' in file_url:
+                print(f"DEBUG galeria_list: Saltando imagen de Unsplash: {file_url}")
+                continue
+            
+            # Asegurar que las URLs locales sean absolutas y HTTPS
+            if not file_url.startswith('http'):
+                file_url = f"https://thebadgerspage.onrender.com{file_url}"
+            elif file_url.startswith('http://'):
+                file_url = file_url.replace('http://', 'https://')
+            
+            print(f"DEBUG galeria_list: URL final: {file_url}")
             
             data.append({
                 'id': item.id,
@@ -205,24 +196,21 @@ def galeria_items(request):
         # Construir respuesta
         results = []
         for item in items:
-            # Determinar URL del archivo
-            archivo_value = str(item.archivo) if item.archivo else ""
+            # Obtener URL usando el nuevo método
+            file_url = item.get_url()
+            
+            if not file_url:
+                continue  # Saltar si no hay URL válida
             
             # Saltar URLs de Unsplash (datos de ejemplo)
-            if 'unsplash.com' in archivo_value:
+            if 'unsplash.com' in file_url:
                 continue
                 
-            # Determinar URL final
-            if archivo_value.startswith('https://res.cloudinary.com'):
-                file_url = archivo_value
-            elif hasattr(item.archivo, 'url') and item.archivo.url.startswith('https://res.cloudinary.com'):
-                file_url = item.archivo.url  
-            elif hasattr(item.archivo, 'url'):
-                file_url = item.archivo.url
-                if not file_url.startswith('http'):
-                    file_url = f"https://thebadgerspage.onrender.com{file_url}"
-            else:
-                continue  # Saltar si no hay URL válida
+            # Asegurar que las URLs locales sean absolutas y HTTPS
+            if not file_url.startswith('http'):
+                file_url = f"https://thebadgerspage.onrender.com{file_url}"
+            elif file_url.startswith('http://'):
+                file_url = file_url.replace('http://', 'https://')
             
             results.append({
                 'id': item.id,
@@ -310,9 +298,10 @@ def galeria_upload(request):
                 resource_type="auto"
             )
             
+            # Crear item con URL de Cloudinary
             item = GaleriaItem.objects.create(
                 nombre=nombre,
-                archivo=result['secure_url'],
+                url=result['secure_url'],  # Guardar URL en el campo url
                 usuario=user
             )
             
@@ -321,7 +310,7 @@ def galeria_upload(request):
             # Fallback a almacenamiento local
             item = GaleriaItem.objects.create(
                 nombre=nombre,
-                archivo=archivo,
+                archivo=archivo,  # Guardar archivo en el campo archivo
                 usuario=user
             )
             
@@ -368,11 +357,11 @@ def galeria_delete(request, item_id):
         item = GaleriaItem.objects.get(id=item_id)
         
         # Eliminar de Cloudinary si es necesario
-        archivo_value = str(item.archivo)
-        if 'cloudinary.com' in archivo_value:
+        file_url = item.get_url()
+        if file_url and 'cloudinary.com' in file_url:
             try:
                 # Extraer public_id de la URL de Cloudinary
-                parts = archivo_value.split('/')
+                parts = file_url.split('/')
                 if 'upload' in parts:
                     idx = parts.index('upload') + 2  # Saltar version
                     public_id = '/'.join(parts[idx:]).split('.')[0]

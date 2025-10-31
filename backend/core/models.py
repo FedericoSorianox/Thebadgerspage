@@ -10,7 +10,8 @@ class GaleriaItem(models.Model):
         ('video', 'Video'),
     ]
     
-    archivo = models.FileField(upload_to='galeria/')
+    archivo = models.FileField(upload_to='galeria/', null=True, blank=True)
+    url = models.URLField(max_length=500, null=True, blank=True, help_text="URL externa (ej. Cloudinary)")
     nombre = models.CharField(max_length=100)
     fecha_subida = models.DateTimeField(auto_now_add=True)
     tipo = models.CharField(max_length=10, choices=TIPO_CHOICES, blank=True)
@@ -25,8 +26,9 @@ class GaleriaItem(models.Model):
         return f"{self.nombre} - {self.fecha_subida.strftime('%Y-%m-%d')}"
     
     def save(self, *args, **kwargs):
-        """Determinar automáticamente el tipo basado en el archivo"""
+        """Determinar automáticamente el tipo basado en el archivo o URL"""
         if self.archivo:
+            # Caso: archivo local
             if hasattr(self.archivo, 'content_type'):
                 content_type = self.archivo.content_type
             elif hasattr(self.archivo, 'file') and hasattr(self.archivo.file, 'content_type'):
@@ -43,5 +45,19 @@ class GaleriaItem(models.Model):
                 self.tipo = 'video'
             else:
                 self.tipo = 'img'
+        elif self.url:
+            # Caso: URL externa (ej. Cloudinary)
+            if self.url.lower().endswith(('.mp4', '.mov', '.avi', '.mkv')):
+                self.tipo = 'video'
+            else:
+                self.tipo = 'img'
         
         super().save(*args, **kwargs)
+    
+    def get_url(self):
+        """Obtener la URL del archivo, ya sea local o externa"""
+        if self.url:
+            return self.url
+        elif self.archivo:
+            return self.archivo.url
+        return None
