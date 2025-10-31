@@ -64,7 +64,9 @@ def main():
         execute_from_command_line(['manage.py', 'migrate', '--noinput'])
         print("✅ Migraciones completadas")
     except Exception as e:
-        print(f"⚠️ Error en migraciones (continuando): {e}")
+        print(f"❌ Error crítico en migraciones: {e}")
+        print("🔧 Las migraciones son necesarias para el funcionamiento de la aplicación")
+        sys.exit(1)
 
     # Recolectar archivos estáticos
     print("\n📂 Recolectando archivos estáticos...")

@@ -94,7 +94,18 @@ def galeria_list(request):
     print(f"DEBUG galeria_list: Método {request.method}")
     
     try:
-        items = GaleriaItem.objects.order_by('-fecha_subida')[:8]
+        # Verificar si la tabla tiene la columna usuario_id
+        from django.db import connection
+        cursor = connection.cursor()
+        cursor.execute("PRAGMA table_info(core_galeriaitem)")
+        columns = [column[1] for column in cursor.fetchall()]
+        has_usuario_column = 'usuario_id' in columns
+        
+        if has_usuario_column:
+            items = GaleriaItem.objects.select_related('usuario').order_by('-fecha_subida')[:8]
+        else:
+            items = GaleriaItem.objects.order_by('-fecha_subida')[:8]
+            
         print(f"DEBUG galeria_list: Encontrados {items.count()} items en la base de datos")
         
         data = []
@@ -136,7 +147,7 @@ def galeria_list(request):
                 'nombre': item.nombre,
                 'fecha': item.fecha_subida.strftime('%Y-%m-%d'),
                 'tipo': item.tipo,
-                'usuario': item.usuario.username if item.usuario else 'Anónimo',
+                'usuario': getattr(item, 'usuario', None).username if getattr(item, 'usuario', None) else 'Anónimo',
             })
         
         print(f"DEBUG galeria_list: Respuesta final: {data}")
@@ -153,12 +164,22 @@ def galeria_items(request):
     print(f"DEBUG galeria_items: Método {request.method}")
     
     try:
+        # Verificar si la tabla tiene la columna usuario_id
+        from django.db import connection
+        cursor = connection.cursor()
+        cursor.execute("PRAGMA table_info(core_galeriaitem)")
+        columns = [column[1] for column in cursor.fetchall()]
+        has_usuario_column = 'usuario_id' in columns
+        
         # Parámetros de paginación
         cursor = request.GET.get('cursor')
         limit = int(request.GET.get('limit', 24))
         
         # Obtener items ordenados por fecha
-        queryset = GaleriaItem.objects.order_by('-fecha_subida', '-id')
+        if has_usuario_column:
+            queryset = GaleriaItem.objects.select_related('usuario').order_by('-fecha_subida', '-id')
+        else:
+            queryset = GaleriaItem.objects.order_by('-fecha_subida', '-id')
         
         # Aplicar cursor si existe
         if cursor:
@@ -209,7 +230,7 @@ def galeria_items(request):
                 'nombre': item.nombre,
                 'fecha': item.fecha_subida.isoformat(),
                 'tipo': item.tipo,
-                'usuario': item.usuario.username if item.usuario else 'Anónimo',
+                'usuario': getattr(item, 'usuario', None).username if getattr(item, 'usuario', None) else 'Anónimo',
             })
         
         # Calcular next_cursor
