@@ -494,9 +494,42 @@ def cloudinary_status(request):
 
 @csrf_exempt  
 def productos_proxy(request):
-    """Proxy simple para productos (placeholder)"""
-    # Retornar array vacío directamente para compatibilidad con frontend
-    return JsonResponse([], safe=False)
+    """Proxy para obtener productos desde la API externa"""
+    import requests
+    
+    try:
+        # URL de la API externa
+        api_url = "https://thebadgersadmin.onrender.com/api/productos/"
+        
+        # Hacer request a la API externa
+        response = requests.get(api_url, timeout=10)
+        
+        if response.status_code == 200:
+            productos_data = response.json()
+            
+            # Si la respuesta es un objeto con 'productos', extraer el array
+            if isinstance(productos_data, dict) and 'productos' in productos_data:
+                productos = productos_data['productos']
+            else:
+                # Si ya es un array, usarlo directamente
+                productos = productos_data if isinstance(productos_data, list) else []
+            
+            # Retornar los productos directamente
+            return JsonResponse(productos, safe=False)
+        else:
+            print(f"Error obteniendo productos: HTTP {response.status_code}")
+            # Retornar array vacío en caso de error
+            return JsonResponse([], safe=False)
+            
+    except requests.exceptions.Timeout:
+        print("Timeout obteniendo productos de la API externa")
+        return JsonResponse([], safe=False)
+    except requests.exceptions.RequestException as e:
+        print(f"Error de conexión obteniendo productos: {e}")
+        return JsonResponse([], safe=False)
+    except Exception as e:
+        print(f"Error procesando productos: {e}")
+        return JsonResponse([], safe=False)
 
 # ============= TORNEO BJJ (DESHABILITADO) =============
 # TODO: Las siguientes funciones están deshabilitadas temporalmente
