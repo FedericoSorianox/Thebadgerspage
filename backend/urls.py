@@ -59,7 +59,7 @@ urlpatterns = [
     path('api/auth/user/', views.user_info, name='api_user_info'),
     path('api/auth/status/', views.check_auth_status, name='api_auth_status'),
     path('api/user/', views.user_info),
-    path('api/create-user/', views.create_user),
+    # path('api/create-user/', views.create_user),  # Temporalmente deshabilitado
     path('api/galeria/', views.galeria_list),
     path('api/galeria/items/', views.galeria_items),
 
