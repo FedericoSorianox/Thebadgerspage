@@ -1,31 +1,17 @@
 services:
-  - type: web
-    name: thebadgerspage
-    env: python
+  - type: static
+    name: thebadgerspage-frontend
+    env: static
     plan: free
-    buildCommand: ./build.sh
-    startCommand: cd backend && python3 start_render.py
-    envVars:
-      - key: DJANGO_SETTINGS_MODULE
-        value: core.settings_render
-      - key: SECRET_KEY
-        generateValue: true
-      - key: DEBUG
-        value: false
-      - key: ALLOWED_HOSTS
-        value: the-badgers.com,www.the-badgers.com,thebadgerspage.onrender.com
-      - key: VITE_API_BASE_URL
-        value: https://thebadgerspage.onrender.com
-      - key: RENDER
-        value: 1
-      # Variables de entorno para Cloudinary (almacenamiento persistente de imágenes)
-      # NOTA: Estas deben configurarse en el dashboard de Render con los valores reales
-      # - key: CLOUDINARY_CLOUD_NAME
-      #   sync: false  # Debe configurarse manualmente en Render dashboard
-      # - key: CLOUDINARY_API_KEY  
-      #   sync: false  # Debe configurarse manualmente en Render dashboard
-      # - key: CLOUDINARY_API_SECRET
-      #   sync: false  # Debe configurarse manualmente en Render dashboard
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: frontend/dist
+    routes:
+      - type: rewrite
+        source: /api/productos/
+        destination: https://thebadgersadmin.onrender.com/api/productos/
+      - type: rewrite
+        source: /*
+        destination: /index.html
     customDomains:
       - name: the-badgers.com
-      - name: www.the-badgers.com 
+      - name: www.the-badgers.com

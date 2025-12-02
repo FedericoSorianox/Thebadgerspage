@@ -6,16 +6,14 @@ export default defineConfig({
   plugins: [react()],
   server: {
     proxy: {
-      '/api': {
-        target: 'http://127.0.0.1:8000',
+      // Redirige las peticiones de /api/productos a la API externa en Render
+      '/api/productos': {
+        target: 'https://thebadgersadmin.onrender.com',
         changeOrigin: true,
         secure: false,
+        // La ruta se mantiene como /api/productos, que es lo que espera el backend externo
       },
-      '/admin': {
-        target: 'http://127.0.0.1:8000',
-        changeOrigin: true,
-        secure: false,
-      }
+      // El proxy para /admin y otras rutas de /api ya no son necesarios
     }
   }
 })
