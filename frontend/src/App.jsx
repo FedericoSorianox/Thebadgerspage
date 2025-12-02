@@ -3,9 +3,6 @@ import "./App.css";
 import badgersLogo from "./assets/badgers-logo.png";
 import { Parallax } from 'react-parallax';
 import { Routes, Route, Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext.jsx';
-import { ProtectedComponent, LoginModal } from './components/AuthComponents.jsx';
-import useAuth from './hooks/useAuth';
 import badgersHeroBg from "./assets/the-badgers-academia.jpeg";
 import gymBackground from "./assets/gym-background.jpeg";
 import Galeria from './components/Galeria.jsx';
@@ -47,8 +44,6 @@ function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [showLoginModal, setShowLoginModal] = useState(false);
-  const { isAuthenticated, user, logout } = useAuth();
 
   const handleNavigation = (href) => {
     if (href.startsWith('/#')) {
@@ -76,15 +71,6 @@ function Navbar() {
 
   const handleLinkClick = () => {
     setIsMenuOpen(false);
-  };
-
-  // Manejar login/logout
-  const handleAuthClick = () => {
-    if (isAuthenticated) {
-      logout();
-    } else {
-      setShowLoginModal(true);
-    }
   };
 
   return (
@@ -124,43 +110,6 @@ function Navbar() {
             </li>
           ))}
         </ul>
-
-        {/* Botón de login/logout */}
-        <div className="hidden md:line-clamp-5 items-center gap-4">
-          <button
-            onClick={handleAuthClick}
-            className={`px-4 py-2 rounded-lg font-semibold transition-all duration-300 ${isAuthenticated
-              ? 'bg-red-500 hover:bg-red-600 text-white'
-              : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white'
-              } transform hover:scale-105`}
-          >
-            {isAuthenticated ? (
-              <div className="flex items- gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Logout
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Login
-              </div>
-            )}
-          </button>
-          {isAuthenticated && user && (
-            <div className="flex items-center gap-2 text-cyan-300">
-              <span className="text-sm">{user.first_name || user.username}</span>
-              {user.is_staff && (
-                <span className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-2 py-1 rounded text-xs font-medium">
-                  ADMIN
-                </span>
-              )}
-            </div>
-          )}
-        </div>
 
         {/* Botón hamburguesa para móvil */}
         <button
@@ -209,53 +158,9 @@ function Navbar() {
           </ul>
 
           {/* Botón de login/logout en móvil */}
-          <div className="border-t border-cyan-500/20 pt-4 mt-4">
-            <button
-              onClick={() => {
-                handleAuthClick();
-                setIsMenuOpen(false);
-              }}
-              className={`w-full px-4 py-3 rounded-lg font-semibold transition-all duration-300 ${isAuthenticated
-                ? 'bg-red-500 hover:bg-red-600 text-white'
-                : 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white'
-                }`}
-            >
-              {isAuthenticated ? (
-                <div className="flex items-center justify-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  Cerrar Sesión
-                </div>
-              ) : (
-                <div className="flex items-center justify-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                  </svg>
-                  Iniciar Sesión
-                </div>
-              )}
-            </button>
-            {isAuthenticated && user && (
-              <div className="flex items-center justify-center gap-2 text-cyan-300 mt-3">
-                <span className="text-sm">{user.first_name || user.username}</span>
-                {user.is_staff && (
-                  <span className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white px-2 py-1 rounded text-xs font-medium">
-                    ADMIN
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
+
         </div>
       </div>
-
-      {/* Modal de Login */}
-      <LoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        title="Acceso Administrativo"
-      />
     </nav>
   );
 }
@@ -594,11 +499,10 @@ function Home() {
 
 export default function App() {
   // Stubs para compatibilidad con Galeria actual (auth básica de galería)
-  const storedUser = typeof window !== 'undefined' ? localStorage.getItem('badgers_user') : null;
-  const storedPass = typeof window !== 'undefined' ? localStorage.getItem('badgers_pass') : null;
+
 
   return (
-    <AuthProvider>
+    <>
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -607,21 +511,12 @@ export default function App() {
           path="/galeria"
           element={
             <Galeria
-              isLoggedIn={!!(storedUser && storedPass)}
-              loginUser={storedUser || ''}
-              loginPass={storedPass || ''}
-              setShowLogin={() => { }}
-              handleLogin={() => { }}
-              handleLogout={() => { }}
-              loginError={null}
-              showLogin={false}
               API_BASE={FINAL_API_BASE}
-              setLoginPass={(p) => localStorage.setItem('badgers_pass', p)}
             />
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </AuthProvider>
+    </>
   );
 }
