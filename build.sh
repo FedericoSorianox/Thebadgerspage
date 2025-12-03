@@ -6,7 +6,3 @@ set -o errexit
 cd frontend
 npm install
 npm run build
-cd ..
-
-# Instalar dependencias del backend
-pip install -r requirements.txt
